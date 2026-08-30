@@ -15,6 +15,7 @@ from backend.app.adapters.base import (
     EventSink,
     GenerationResponse,
     parse_generation_output,
+    provider_request_payload,
 )
 from backend.app.domain import GenerationRequest
 from backend.app.security import SecretStore
@@ -116,7 +117,20 @@ class OpenAICompatibleAdapter:
             }
         elif profile.response_mode == "json_object":
             body["response_format"] = {"type": "json_object"}
-        await emit("provider.requested", "info", {"status": "running"})
+        await emit(
+            "provider.requested",
+            "info",
+            provider_request_payload(
+                profile,
+                request,
+                transport="http",
+                invocation={
+                    "method": "POST",
+                    "path": "/chat/completions",
+                    "body": body,
+                },
+            ),
+        )
         started = time.perf_counter()
         state = OpenAIStreamState(profile.model_id)
         try:

@@ -104,6 +104,47 @@ export interface SuiteReport extends EvidenceIndexSuite {
   sqlglot_version: string;
 }
 
+export interface EvidenceEvent {
+  seq: number;
+  event_type: string;
+  level: string;
+  created_at: string;
+  model_run_id: number | null;
+  case_run_id: number | null;
+  message: string;
+  payload: Record<string, unknown>;
+}
+
+export interface CaseEvidenceDocument {
+  id: number;
+  run_id: number;
+  model_run_id: number;
+  stable_key: string;
+  title: string;
+  question: string;
+  model_name: string;
+  requested_model_id: string;
+  resolved_model_id: string | null;
+  status: string;
+  prompt: string | null;
+  raw_output: string | null;
+  generated_sql: string | null;
+  formatted_sql: string | null;
+  reference_sql: string | null;
+  provider_request_id: string | null;
+  token_usage: Record<string, unknown> | null;
+  score: Record<string, unknown> | null;
+  [key: string]: unknown;
+}
+
+export interface CaseEvidencePage {
+  index: EvidenceIndexRun;
+  report: RunReport;
+  model: ModelReport;
+  evidence: CaseEvidenceDocument;
+  events: EvidenceEvent[];
+}
+
 async function readJson<T>(path: string): Promise<T> {
   return JSON.parse(await readFile(path, "utf8")) as T;
 }
@@ -119,6 +160,34 @@ export async function getRuns(): Promise<Array<{ index: EvidenceIndexRun; report
     report: await readJson<RunReport>(resolve(evidenceRoot, entry.path, "report.json"))
   })));
   return runs.sort((a, b) => b.report.id - a.report.id);
+}
+
+export async function getCaseEvidencePages(): Promise<CaseEvidencePage[]> {
+  const runs = await getRuns();
+  const pages = await Promise.all(runs.map(async ({ index, report }) => {
+    const eventText = await readFile(resolve(evidenceRoot, index.path, "events.jsonl"), "utf8");
+    const events = eventText.trim()
+      ? eventText.trim().split("\n").map((line) => JSON.parse(line) as EvidenceEvent)
+      : [];
+    const records = report.models.flatMap((model) => model.cases.map(async (caseReport) => {
+      const evidence = await readJson<CaseEvidenceDocument>(
+        resolve(evidenceRoot, index.path, "cases", `case-run-${String(caseReport.id).padStart(5, "0")}.json`)
+      );
+      return {
+        index,
+        report,
+        model,
+        evidence,
+        events: events.filter((event) => event.case_run_id === caseReport.id)
+      };
+    }));
+    return Promise.all(records);
+  }));
+  return pages.flat();
+}
+
+export function caseRunSlug(id: number): string {
+  return `case-run-${String(id).padStart(5, "0")}`;
 }
 
 export async function getSuites(): Promise<SuiteReport[]> {

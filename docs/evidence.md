@@ -210,6 +210,22 @@ uv run pytest -q tests/test_retail_suite.py tests/test_result_compare.py tests/t
 - 证据变更后必须重新执行站点检查与构建，禁止手工维护第二份运行列表；
 - GitHub Pages 只发布静态产物，不接收模型密钥、用户输入或运行时数据库。
 
+每一条 `CaseRun` 还会生成独立详情页：
+
+```text
+/runs/run-XXXX/cases/case-run-YYYYY/
+```
+
+详情页完整展示：实际 Prompt、请求事件、原始响应、解析方案、生成/格式化 SQL、Token 与耗时、评分规则、期望/实际结果、全部案例事件及未经裁剪的案例 JSON。运行报告中的每个模型 × 测试用例记录都直接链接到对应详情页。
+
+`provider.requested` 从新运行开始保存脱敏调用信封：
+
+- OpenAI-compatible：HTTP method、path 和实际 JSON body；
+- CLI 适配器：命令、参数、stdin/Prompt、输出 Schema 与隔离策略摘要；
+- 所有适配器：请求模型、响应模式、参数、完整 Prompt 和输出 Schema。
+
+认证头、API Key、Token、Secret、用户路径和临时目录仍按第 4 节规则脱敏。Run 1—18 的历史事件是在该调用信封字段加入前产生的，因此页面会明确标注“历史证据未保存底层调用报文”，不会根据现有 Prompt 反向伪造请求。
+
 本地站点验收：
 
 ```bash

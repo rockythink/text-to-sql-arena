@@ -14,6 +14,7 @@ from backend.app.adapters.base import (
     GenerationResponse,
     json_lines,
     parse_generation_output,
+    provider_request_payload,
     run_cli,
     safe_subprocess_env,
 )
@@ -108,7 +109,24 @@ class ClaudeCliAdapter:
             "1",
             request.prompt,
         ]
-        await emit("provider.requested", "info", {"status": "running"})
+        await emit(
+            "provider.requested",
+            "info",
+            provider_request_payload(
+                profile,
+                request,
+                transport="cli",
+                invocation={
+                    "command": "claude",
+                    "arguments": [
+                        "-p", "--output-format", "stream-json", "--json-schema",
+                        request.output_schema, "--model", profile.model_id, "--tools", "",
+                        "--disallowedTools", "mcp__*", "--restricted", "--max-turns", "1",
+                        request.prompt,
+                    ],
+                },
+            ),
+        )
         with tempfile.TemporaryDirectory(prefix="llm-test-claude-") as temp_name:
             result = await run_cli(
                 command,

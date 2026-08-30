@@ -90,6 +90,30 @@ class AdapterError(RuntimeError):
 
 EventSink = Callable[[str, str, dict[str, Any]], Awaitable[None]]
 
+def provider_request_payload(
+    profile: AdapterProfile,
+    request: GenerationRequest,
+    *,
+    transport: Literal["http", "cli"],
+    invocation: dict[str, Any],
+) -> dict[str, Any]:
+    """Build the secret-redacted request envelope persisted in run events."""
+    return redact_secrets(
+        {
+            "status": "running",
+            "transport": transport,
+            "adapter_kind": profile.adapter_kind,
+            "requested_model_id": profile.model_id,
+            "response_mode": profile.response_mode,
+            "parameters": profile.parameters,
+            "context": {
+                "prompt": request.prompt,
+                "output_schema": request.output_schema,
+            },
+            "invocation": invocation,
+        }
+    )
+
 
 class ModelAdapter(Protocol):
     async def check(self, profile: AdapterProfile) -> AdapterHealth: ...

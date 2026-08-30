@@ -16,6 +16,7 @@ from backend.app.adapters.base import (
     GenerationResponse,
     json_lines,
     parse_generation_output,
+    provider_request_payload,
     run_cli,
     safe_subprocess_env,
 )
@@ -211,7 +212,21 @@ class CodexCliAdapter:
             await emit(
                 "provider.requested",
                 "info",
-                {"status": "running", "isolation_policy_hash": file_hash(policy)},
+                provider_request_payload(
+                    profile,
+                    request,
+                    transport="cli",
+                    invocation={
+                        "command": "codex exec",
+                        "arguments": [
+                            "--json", "--ephemeral", "--ignore-user-config", "--ignore-rules",
+                            "--sandbox", "read-only", "--skip-git-repo-check",
+                            "--model", profile.model_id, "--output-schema", "<generated-schema.json>", "-",
+                        ],
+                        "stdin": request.prompt,
+                        "isolation_policy_hash": file_hash(policy),
+                    },
+                ),
             )
             result = await run_cli(
                 command,

@@ -81,7 +81,10 @@ const evidenceUrl = `${githubEvidenceRoot}/${index.path}`;
                 <p>{result.visible_summary ?? result.error_message ?? "没有可见摘要。"}</p>
                 {result.formatted_sql && <pre><code>{result.formatted_sql}</code></pre>}
                 <div class="hash-line"><span>STATUS</span><code>{result.status}</code><span>GEN</span><code>{result.generation_ms ?? "—"}ms</code><span>EXEC</span><code>{result.execution_ms ?? "—"}ms</code></div>
-                <a class="button-link" href={`${evidenceUrl}/cases/case-run-${String(result.id).padStart(5, "0")}.json`}>完整案例证据 ↗</a>
+                <div class="evidence-actions">
+                  <a class="button-link primary" href={`${base}runs/${runSlug(report.id)}/cases/case-run-${String(result.id).padStart(5, "0")}/`}>上下文、请求与日志</a>
+                  <a class="button-link" href={`${evidenceUrl}/cases/case-run-${String(result.id).padStart(5, "0")}.json`}>原始 JSON ↗</a>
+                </div>
               </> : <p>这个模型没有产生该案例记录。</p>}
             </article>)}
           </div>

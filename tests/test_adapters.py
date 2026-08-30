@@ -8,7 +8,9 @@ import pytest
 
 from backend.app.adapters.base import (
     AdapterError,
+    AdapterProfile,
     parse_generation_output,
+    provider_request_payload,
     run_cli,
     safe_subprocess_env,
 )
@@ -27,10 +29,46 @@ from backend.app.adapters.openai_compatible import (
     OpenAIStreamState,
     trust_environment_proxy,
 )
+from backend.app.domain import GenerationRequest
 from backend.app.security import redact_secrets
 
 FIXTURES = Path(__file__).parent / "fixtures"
 EXPECTED_SQL = "SELECT 1 AS value"
+
+def test_provider_request_payload_preserves_context_and_redacts_secrets() -> None:
+    profile = AdapterProfile(
+        id=1,
+        name="test",
+        adapter_kind="openai_compatible",
+        model_id="model-a",
+        base_url="https://api.example.com/v1",
+        response_mode="json_schema",
+        api_key_ref="env:API_KEY",
+        parameters={"temperature": 0, "api_key": "private-token"},
+    )
+    request = GenerationRequest(
+        case_key="case-a",
+        prompt="full prompt",
+        output_schema={"type": "object"},
+    )
+
+    payload = provider_request_payload(
+        profile,
+        request,
+        transport="http",
+        invocation={"method": "POST", "body": {"prompt": "full prompt"}},
+    )
+
+    assert payload["context"] == {
+        "prompt": "full prompt",
+        "output_schema": {"type": "object"},
+    }
+    assert payload["invocation"] == {
+        "method": "POST",
+        "body": {"prompt": "full prompt"},
+    }
+    assert payload["parameters"] == {"temperature": 0, "api_key": "[REDACTED]"}
+    assert "private-token" not in str(payload)
 
 
 def test_loopback_compatible_endpoint_bypasses_environment_proxy() -> None:

@@ -1,0 +1,158 @@
+---
+import SiteLayout from "../../../../layouts/SiteLayout.astro";
+import {
+  caseRunSlug,
+  displayModelName,
+  formatDate,
+  getCaseEvidencePages,
+  githubEvidenceRoot,
+  runSlug,
+  scoreText,
+  statusLabel,
+} from "../../../../lib/evidence";
+
+export async function getStaticPaths() {
+  const pages = await getCaseEvidencePages();
+  return pages.map((page) => ({
+    params: { run: runSlug(page.report.id), case: caseRunSlug(page.evidence.id) },
+    props: page,
+  }));
+}
+
+const { index, report, model, evidence, events } = Astro.props;
+const base = import.meta.env.BASE_URL;
+const runPath = `${base}runs/${runSlug(report.id)}/`;
+const rawEvidenceUrl = `${githubEvidenceRoot}/${index.path}/cases/${caseRunSlug(evidence.id)}.json`;
+const rawEventsUrl = `${githubEvidenceRoot}/${index.path}/events.jsonl`;
+const requestEvents = events.filter((event) => event.event_type === "provider.requested");
+const hasCapturedEnvelope = requestEvents.some((event) =>
+  ["request", "body", "invocation"].some((key) => Object.hasOwn(event.payload, key))
+);
+const jsonText = (value: unknown) => JSON.stringify(value, null, 2) ?? String(value);
+const hasValue = (value: unknown) => value !== null && value !== undefined && value !== "";
+const eventTime = (value: string) => new Intl.DateTimeFormat("zh-CN", {
+  dateStyle: "medium",
+  timeStyle: "medium",
+  timeZone: "UTC",
+}).format(new Date(value));
+---
+<SiteLayout
+  title={`${evidence.title} · ${displayModelName(evidence.model_name)}`}
+  description={`运行 #${report.id}、案例 ${evidence.stable_key} 的完整上下文、模型调用、原始响应、评分证据与逐事件日志。`}
+  current="runs"
+>
+  <header class="case-evidence-hero">
+    <div>
+      <p class="eyebrow">CASE EVIDENCE / {caseRunSlug(evidence.id).toUpperCase()}</p>
+      <p class="case-breadcrumb"><a href={runPath}>运行 #{report.id}</a><span>/</span><code>{evidence.stable_key}</code></p>
+      <h1>{evidence.title}</h1>
+      <p class="page-lede">{evidence.question}</p>
+    </div>
+    <aside class="case-verdict">
+      <small>{displayModelName(evidence.model_name)}</small>
+      <strong>{scoreText(typeof evidence.score?.total === "number" ? evidence.score.total : null)}</strong>
+      <span>{statusLabel(evidence.status)}</span>
+    </aside>
+  </header>
+
+  <section class="section evidence-section">
+    <div class="section-heading">
+      <div><p class="eyebrow">EXECUTION IDENTITY</p><h2>这一次具体测了什么</h2></div>
+      <p>案例、模型、尝试次数和证据标识全部来自本次冻结记录，不读取当前配置。</p>
+    </div>
+    <div class="protocol-grid">
+      <div class="protocol-item"><small>run</small><code>#{report.id}</code></div>
+      <div class="protocol-item"><small>case run</small><code>#{evidence.id}</code></div>
+      <div class="protocol-item"><small>attempt</small><code>{String(evidence.attempt ?? "—")}</code></div>
+      <div class="protocol-item"><small>status</small><code>{evidence.status}</code></div>
+      <div class="protocol-item"><small>adapter</small><code>{model.adapter_kind}</code></div>
+      <div class="protocol-item"><small>response mode</small><code>{model.response_mode}</code></div>
+      <div class="protocol-item"><small>requested model</small><code>{evidence.requested_model_id}</code></div>
+      <div class="protocol-item"><small>resolved model</small><code>{evidence.resolved_model_id ?? "未记录"}</code></div>
+      <div class="protocol-item"><small>provider request id</small><code>{evidence.provider_request_id ?? "未提供"}</code></div>
+      <div class="protocol-item"><small>started</small><code>{formatDate(String(evidence.started_at ?? ""))}</code></div>
+      <div class="protocol-item"><small>finished</small><code>{formatDate(String(evidence.finished_at ?? ""))}</code></div>
+      <div class="protocol-item"><small>suite hash</small><code>{String(evidence.suite_content_hash ?? report.suite_content_hash)}</code></div>
+    </div>
+  </section>
+
+  <section class="section evidence-section">
+    <div class="section-heading">
+      <div><p class="eyebrow">FULL CONTEXT</p><h2>发送给模型的完整上下文</h2></div>
+      <p>这里不做摘要。系统指令、方言约束、数据库结构、语义层、问题与输出协议按实际 Prompt 原样展示。</p>
+    </div>
+    {evidence.prompt ? <pre class="evidence-code evidence-code-tall"><code>{evidence.prompt}</code></pre> : <p class="evidence-gap">该次历史记录没有保存 Prompt。</p>}
+  </section>
+
+  <section class="section evidence-section">
+    <div class="section-heading">
+      <div><p class="eyebrow">PROVIDER REQUESTS</p><h2>{requestEvents.length} 次模型调用请求</h2></div>
+      <p>按事件序号展示实际保存的请求数据。密钥和 Authorization 永不公开。</p>
+    </div>
+    {!hasCapturedEnvelope && <p class="evidence-gap"><strong>历史证据边界：</strong>完整 Prompt 已保存，但这次 <code>{model.adapter_kind}</code> 记录没有保存底层 HTTP 报文或 CLI 参数。本站不会把推测内容伪装成原始请求；未来运行会在 <code>provider.requested</code> 中记录脱敏后的完整调用信封。</p>}
+    <div class="event-ledger request-ledger">
+      {requestEvents.map((event, position) => <article class="event-record">
+        <div class="event-record-head"><b>请求 #{position + 1}</b><code>SEQ {event.seq}</code><time>{eventTime(event.created_at)} UTC</time></div>
+        <pre class="evidence-code"><code>{jsonText(event.payload)}</code></pre>
+      </article>)}
+      {!requestEvents.length && <p class="evidence-gap">该案例没有产生 <code>provider.requested</code> 事件，通常表示在调用模型前已经失败或取消。</p>}
+    </div>
+  </section>
+
+  <section class="section evidence-section">
+    <div class="section-heading">
+      <div><p class="eyebrow">MODEL RESPONSE</p><h2>模型原始响应与解析结果</h2></div>
+      <p>原始输出、结构化方案和 SQL 分开展示，避免格式化结果覆盖模型真实返回。</p>
+    </div>
+    <div class="evidence-stack">
+      <details open><summary>原始响应 raw_output</summary>{hasValue(evidence.raw_output) ? <pre class="evidence-code"><code>{evidence.raw_output}</code></pre> : <p class="evidence-gap">没有原始响应。</p>}</details>
+      <details open><summary>结构化查询方案 plan</summary>{hasValue(evidence.plan) ? <pre class="evidence-code"><code>{jsonText(evidence.plan)}</code></pre> : <p class="evidence-gap">没有可解析方案。</p>}</details>
+      <details open><summary>模型生成 SQL</summary>{hasValue(evidence.generated_sql) ? <pre class="evidence-code"><code>{evidence.generated_sql}</code></pre> : <p class="evidence-gap">没有生成 SQL。</p>}</details>
+      <details><summary>规范化 SQL</summary>{hasValue(evidence.formatted_sql) ? <pre class="evidence-code"><code>{evidence.formatted_sql}</code></pre> : <p class="evidence-gap">没有规范化 SQL。</p>}</details>
+      <details><summary>Token 与耗时</summary><pre class="evidence-code"><code>{jsonText({ token_usage: evidence.token_usage, generation_ms: evidence.generation_ms, execution_ms: evidence.execution_ms })}</code></pre></details>
+    </div>
+  </section>
+
+  <section class="section evidence-section">
+    <div class="section-heading">
+      <div><p class="eyebrow">EVALUATION PROOF</p><h2>评分过程与结果差异</h2></div>
+      <p>参考 SQL、结构要求、比较策略、期望结果、实际结果和评分明细都可逐项复核。</p>
+    </div>
+    <div class="evidence-stack">
+      <details open><summary>评分明细 score</summary><pre class="evidence-code"><code>{jsonText(evidence.score)}</code></pre></details>
+      <details><summary>参考 SQL</summary><pre class="evidence-code"><code>{evidence.reference_sql ?? "未公开或未生成"}</code></pre></details>
+      <details><summary>AST 结构要求</summary><pre class="evidence-code"><code>{jsonText(evidence.required_ast)}</code></pre></details>
+      <details><summary>结果比较规则</summary><pre class="evidence-code"><code>{jsonText(evidence.comparison)}</code></pre></details>
+      <details><summary>期望结果预览</summary><pre class="evidence-code evidence-code-tall"><code>{jsonText(evidence.expected_result_preview)}</code></pre></details>
+      <details><summary>实际结果预览</summary><pre class="evidence-code evidence-code-tall"><code>{jsonText(evidence.result_preview)}</code></pre></details>
+      <details><summary>摘要、错误与结果哈希</summary><pre class="evidence-code"><code>{jsonText({ visible_summary: evidence.visible_summary, error_code: evidence.error_code, error_message: evidence.error_message, expected_digest: evidence.expected_digest, actual_digest: evidence.actual_digest, assumptions: evidence.assumptions })}</code></pre></details>
+    </div>
+  </section>
+
+  <section class="section evidence-section">
+    <div class="section-heading">
+      <div><p class="eyebrow">EVENT TIMELINE</p><h2>{events.length} 条逐步运行日志</h2></div>
+      <p>按全局事件序号排列。每条记录保留时间、级别、类型、消息和完整 payload。</p>
+    </div>
+    <div class="event-ledger">
+      {events.map((event) => <article class="event-record">
+        <div class="event-record-head"><code>SEQ {event.seq}</code><b>{event.event_type}</b><span>{event.level}</span><time>{eventTime(event.created_at)} UTC</time></div>
+        {event.message && <p>{event.message}</p>}
+        <pre class="evidence-code"><code>{jsonText(event.payload)}</code></pre>
+      </article>)}
+    </div>
+  </section>
+
+  <section class="section evidence-section">
+    <div class="section-heading">
+      <div><p class="eyebrow">RAW RECORD</p><h2>未经页面裁剪的完整案例 JSON</h2></div>
+      <p>上面的结构化视图用于阅读；这里保留所有字段，便于确认页面没有遗漏证据。</p>
+    </div>
+    <details class="raw-record"><summary>展开全部原始字段</summary><pre class="evidence-code evidence-code-tall"><code>{jsonText(evidence)}</code></pre></details>
+    <div class="evidence-actions">
+      <a class="button-link primary" href={rawEvidenceUrl}>原始案例 JSON ↗</a>
+      <a class="button-link" href={rawEventsUrl}>完整运行事件 JSONL ↗</a>
+      <a class="button-link" href={runPath}>返回运行 #{report.id}</a>
+    </div>
+  </section>
+</SiteLayout>

@@ -30,15 +30,30 @@ const files = await filesUnder(dist);
 const htmlFiles = files.filter((file) => file.endsWith(".html"));
 const allHtml = (await Promise.all(htmlFiles.map((file) => readFile(file, "utf8")))).join("\n");
 const failures = [];
+let casePageCount = 0;
+const expectedCasePages = [];
+for (const run of index.runs) {
+  const runSlug = `run-${String(run.run_id).padStart(4, "0")}`;
+  const caseDirectory = path.join(root, "evidence", run.path, "cases");
+  const caseFiles = (await readdir(caseDirectory)).filter((file) => /^case-run-\d{5}\.json$/.test(file));
+  casePageCount += caseFiles.length;
+  expectedCasePages.push(...caseFiles.map((file) =>
+    path.join(dist, "runs", runSlug, "cases", file.replace(/\.json$/, ""), "index.html")
+  ));
+}
 
-if (htmlFiles.length !== index.run_count + 13) {
-  failures.push(`expected ${index.run_count + 13} HTML pages, found ${htmlFiles.length}`);
+if (htmlFiles.length !== index.run_count + casePageCount + 13) {
+  failures.push(`expected ${index.run_count + casePageCount + 13} HTML pages, found ${htmlFiles.length}`);
 }
 
 for (const run of index.runs) {
   const page = path.join(dist, "runs", `run-${String(run.run_id).padStart(4, "0")}`, "index.html");
   if (!files.includes(page)) failures.push(`missing run page: ${page}`);
   if (!allHtml.includes(run.bundle_sha256)) failures.push(`missing run digest: ${run.bundle_sha256}`);
+}
+
+for (const page of expectedCasePages) {
+  if (!files.includes(page)) failures.push(`missing case evidence page: ${page}`);
 }
 
 for (const suite of index.suites) {

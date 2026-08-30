@@ -14,6 +14,7 @@ from backend.app.adapters.base import (
     GenerationResponse,
     json_lines,
     parse_generation_output,
+    provider_request_payload,
     run_cli,
     safe_subprocess_env,
 )
@@ -146,7 +147,20 @@ class GeminiCliAdapter:
             await emit(
                 "provider.requested",
                 "info",
-                {"status": "running", "isolation_policy_hash": file_hash(GEMINI_POLICY)},
+                provider_request_payload(
+                    profile,
+                    request,
+                    transport="cli",
+                    invocation={
+                        "command": "gemini",
+                        "arguments": [
+                            "-p", request.prompt, "--output-format", "stream-json",
+                            "--approval-mode", "plan", "--policy", "<generated-policy.toml>",
+                            "-e", "none", "--model", profile.model_id,
+                        ],
+                        "isolation_policy_hash": file_hash(GEMINI_POLICY),
+                    },
+                ),
             )
             result = await run_cli(
                 command,
