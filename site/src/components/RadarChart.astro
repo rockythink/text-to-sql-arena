@@ -1,0 +1,43 @@
+---
+import type { ModelReport } from "../lib/evidence";
+
+interface Props {
+  models: ModelReport[];
+}
+
+const { models } = Astro.props;
+const categories = [...new Set(models.flatMap((model) => Object.keys(model.categories)))];
+const centerX = 180;
+const centerY = 170;
+const radius = 118;
+const colors = ["#f2c94c", "#63d8d2", "#ff796b", "#b6a4ff"];
+const angleFor = (index: number) => -Math.PI / 2 + (Math.PI * 2 * index) / categories.length;
+const pointFor = (index: number, value: number) => {
+  const angle = angleFor(index);
+  return `${centerX + Math.cos(angle) * radius * value},${centerY + Math.sin(angle) * radius * value}`;
+};
+const ringFor = (value: number) => categories.map((_, index) => pointFor(index, value)).join(" ");
+---
+<div class="radar-wrap">
+  <div class="radar-legend">
+    {models.map((model, index) => <span style={`--legend-color:${colors[index % colors.length]};--legend-style:${index === 0 ? "solid" : "dashed"}`}><i></i>{model.name}</span>)}
+  </div>
+  <svg class="radar" viewBox="0 0 360 340" role="img" aria-label="模型六维能力雷达图">
+    {[0.25, 0.5, 0.75, 1].map((value) => <polygon class="radar-ring" points={ringFor(value)} />)}
+    {categories.map((category, index) => {
+      const [outerX, outerY] = pointFor(index, 1).split(",");
+      const [labelX, labelY] = pointFor(index, 1.18).split(",");
+      return <>
+        <line class="radar-axis" x1={centerX} y1={centerY} x2={outerX} y2={outerY} />
+        <text x={labelX} y={labelY} text-anchor="middle">{category}</text>
+      </>;
+    })}
+    {models.map((model, modelIndex) => (
+      <polygon
+        class="radar-model"
+        style={`--radar-color:${colors[modelIndex % colors.length]};--radar-dash:${modelIndex === 0 ? "none" : "8 5"}`}
+        points={categories.map((category, index) => pointFor(index, (model.categories[category] ?? 0) / 100)).join(" ")}
+      />
+    ))}
+  </svg>
+</div>

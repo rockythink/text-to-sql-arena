@@ -85,6 +85,26 @@ uv run python -m backend.app.cli serve
 5. 在报告页查看总分、六维雷达、分类分数、热力图、失败案例和查询工作区。
 6. 对需要复核的运行执行“精确复跑”；它复用原运行快照，不读取已变化的模型配置。
 
+## 文档与证据站点
+
+GitHub Pages：<https://rockythink.github.io/text-to-sql-arena/>。
+
+站点从仓库内现有材料静态生成：
+
+- `docs/` 是方法、合同和审计文档的唯一正文源；
+- `evidence/` 是题库、运行报告和摘要的唯一数据源；
+- `site/` 只负责索引、可视化和导航，不复制或改写证据结论。
+
+本地预览：
+
+```bash
+cd site
+pnpm install --frozen-lockfile
+pnpm dev
+```
+
+执行 `pnpm check && pnpm build` 会先同步正文并从证据索引生成全部静态页面。推送相关文件到 `main` 后，`.github/workflows/docs.yml` 会重新校验并部署 GitHub Pages。
+
 ## 公开证据
 
 仓库内 `evidence/` 包含：
@@ -162,6 +182,7 @@ alembic/          SQLite 迁移
 tests/            后端合同与集成测试
 evidence/         脱敏、哈希锁定的公开历史证据
 docs/             方法、合同、审计和能力文档
+site/             Astro + Starlight 静态文档与证据展示层
 ```
 
 ## 结果解释警告

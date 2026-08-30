@@ -1,0 +1,39 @@
+---
+import { formatDate, runSlug, scoreText, statusLabel, type EvidenceIndexRun, type RunReport } from "../lib/evidence";
+
+interface Props {
+  index: EvidenceIndexRun;
+  report: RunReport;
+  compact?: boolean;
+}
+
+const { index, report, compact = false } = Astro.props;
+const base = import.meta.env.BASE_URL;
+const modelSearch = report.models
+  .map((model) => `${model.name} ${model.resolved_model_id ?? model.requested_model_id}`)
+  .join(" ");
+---
+<article
+  class:list={["run-card", { compact }]}
+  data-run-card
+  data-status={report.status}
+  data-search={`${report.id} ${modelSearch}`.toLowerCase()}
+>
+  <div class="run-card-index"><span>RUN</span><b>#{String(report.id).padStart(4, "0")}</b></div>
+  <div class="run-card-body">
+    <div class="run-card-meta">
+      <span class:list={["status-chip", `status-${report.status}`]}>{statusLabel(report.status)}</span>
+      <time datetime={report.created_at}>{formatDate(report.created_at)}</time>
+    </div>
+    <h2>{report.models.length ? report.models.map((model) => model.name).join(" / ") : "没有完成模型输出"}</h2>
+    <div class="score-line">
+      {report.models.map((model) => <div><span>{model.name}</span><b>{scoreText(model.official_score)}</b></div>)}
+      {!report.models.length && <div><span>运行状态</span><b>—</b></div>}
+    </div>
+    <div class="hash-line">
+      <span>SUITE</span><code>{report.suite_content_hash.slice(0, 14)}</code>
+      <span>SHA</span><code>{index.bundle_sha256.slice(0, 14)}</code>
+    </div>
+  </div>
+  <a class="run-card-link" href={`${base}runs/${runSlug(report.id)}/`} aria-label={`查看运行 ${report.id}`}>查看证据 <span>↗</span></a>
+</article>

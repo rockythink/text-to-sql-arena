@@ -1,0 +1,52 @@
+---
+import RunCard from "../../components/RunCard.astro";
+import SiteLayout from "../../layouts/SiteLayout.astro";
+import { getEvidenceIndex, getRuns } from "../../lib/evidence";
+
+const [index, runs] = await Promise.all([getEvidenceIndex(), getRuns()]);
+---
+<SiteLayout title="运行报告" description="浏览 SQL 擂台全部 18 次历史运行，包括失败、取消和中断记录。" current="runs">
+  <header class="page-frame">
+    <p class="eyebrow">PUBLIC RUN LEDGER / {index.schema_version}</p>
+    <h1 class="page-title">每一次运行，<em>都有原始凭证</em></h1>
+    <p class="page-lede">共 {index.run_count} 次运行。筛选只改变页面显示，不改变任何报告、评分或 bundle 摘要。</p>
+    <div class="run-toolbar" data-run-toolbar>
+      <label><span>搜索运行或模型</span><input type="search" name="query" placeholder="例如：18、Luna、Sol" autocomplete="off" /></label>
+      <label><span>运行状态</span><select name="status"><option value="all">全部状态</option><option value="completed">完成</option><option value="completed_with_errors">完成但有错误</option><option value="failed">失败</option><option value="cancelled">已取消</option><option value="interrupted">被中断</option></select></label>
+    </div>
+  </header>
+  <section class="section" style="padding-top:0">
+    <p class="eyebrow" data-result-count>{runs.length} RUNS VISIBLE</p>
+    <div class="run-list">
+      {runs.map(({ index: runIndex, report }) => <RunCard index={runIndex} report={report} />)}
+    </div>
+    <p class="empty-note" data-empty hidden>没有符合当前条件的运行。</p>
+  </section>
+</SiteLayout>
+
+<script>
+  const toolbar = document.querySelector<HTMLElement>("[data-run-toolbar]");
+  const cards = [...document.querySelectorAll<HTMLElement>("[data-run-card]")];
+  const count = document.querySelector<HTMLElement>("[data-result-count]");
+  const empty = document.querySelector<HTMLElement>("[data-empty]");
+
+  if (toolbar && count && empty) {
+    const query = toolbar.querySelector<HTMLInputElement>('input[name="query"]');
+    const status = toolbar.querySelector<HTMLSelectElement>('select[name="status"]');
+    const applyFilters = () => {
+      const needle = query?.value.trim().toLowerCase() ?? "";
+      const selectedStatus = status?.value ?? "all";
+      let visible = 0;
+      for (const card of cards) {
+        const matchesQuery = !needle || (card.dataset.search ?? "").includes(needle);
+        const matchesStatus = selectedStatus === "all" || card.dataset.status === selectedStatus;
+        card.hidden = !(matchesQuery && matchesStatus);
+        if (!card.hidden) visible += 1;
+      }
+      count.textContent = `${visible} RUNS VISIBLE`;
+      empty.hidden = visible !== 0;
+    };
+    query?.addEventListener("input", applyFilters);
+    status?.addEventListener("change", applyFilters);
+  }
+</script>

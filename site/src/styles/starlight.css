@@ -1,0 +1,102 @@
+@font-face {
+  font-family: "Smiley Sans";
+  src: url("../assets/fonts/smiley-sans.woff2") format("woff2");
+  font-display: swap;
+}
+
+@font-face {
+  font-family: "Noto Sans SC";
+  src: url("../assets/fonts/noto-sans-sc.woff2") format("woff2");
+  font-display: swap;
+}
+
+@font-face {
+  font-family: "Maple Mono";
+  src: url("../assets/fonts/maple-mono-cn.woff2") format("woff2");
+  font-display: swap;
+}
+
+:root {
+  --sl-font: "Noto Sans SC", sans-serif;
+  --sl-font-mono: "Maple Mono", monospace;
+  --sl-color-accent-low: #2d2916;
+  --sl-color-accent: #f2c94c;
+  --sl-color-accent-high: #fff4b5;
+  --sl-color-white: #f4f1e8;
+  --sl-color-gray-1: #d6dbdc;
+  --sl-color-gray-2: #aeb5b7;
+  --sl-color-gray-3: #747d80;
+  --sl-color-gray-4: #434a4d;
+  --sl-color-gray-5: #252a2c;
+  --sl-color-gray-6: #15191a;
+  --sl-color-black: #0a0c0d;
+  --sl-content-width: 56rem;
+}
+
+:root[data-theme="light"] {
+  --sl-color-accent-low: #fff4b5;
+  --sl-color-accent: #7b6412;
+  --sl-color-accent-high: #2d260c;
+  --sl-color-white: #111416;
+  --sl-color-gray-1: #252a2c;
+  --sl-color-gray-2: #434a4d;
+  --sl-color-gray-3: #747d80;
+  --sl-color-gray-4: #aeb5b7;
+  --sl-color-gray-5: #dfe2df;
+  --sl-color-gray-6: #f2efe6;
+  --sl-color-gray-7: #faf8f1;
+  --sl-color-black: #fffdf7;
+}
+
+.site-title {
+  font-family: "Smiley Sans", sans-serif;
+  letter-spacing: .04em;
+}
+
+header.header {
+  border-bottom-color: var(--sl-color-gray-5);
+  backdrop-filter: blur(18px);
+}
+
+.sidebar-pane {
+  border-inline-end-color: var(--sl-color-gray-5);
+}
+
+.content-panel + .content-panel {
+  border-top-color: var(--sl-color-gray-5);
+}
+
+.sl-markdown-content h1,
+.sl-markdown-content h2,
+.sl-markdown-content h3 {
+  font-family: "Smiley Sans", sans-serif;
+  font-weight: 400;
+  letter-spacing: -.015em;
+}
+
+.sl-markdown-content h1 { font-size: clamp(2.8rem, 7vw, 5.4rem); line-height: .96; }
+.sl-markdown-content h2 { font-size: clamp(1.8rem, 4vw, 2.8rem); }
+.sl-markdown-content p,
+.sl-markdown-content li { line-height: 1.85; }
+.sl-markdown-content code { border-radius: 0; }
+.sl-markdown-content table { font-size: .9rem; }
+.sl-markdown-content th { font-family: "Maple Mono", monospace; font-size: .72rem; letter-spacing: .04em; }
+
+.hero h1 {
+  font-family: "Smiley Sans", sans-serif;
+  font-weight: 400;
+  letter-spacing: -.04em;
+}
+
+.card {
+  border-radius: 0;
+  border-color: var(--sl-color-gray-5);
+}
+
+.pagination-links a {
+  border-radius: 0;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after { scroll-behavior: auto !important; transition-duration: .01ms !important; }
+}

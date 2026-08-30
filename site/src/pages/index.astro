@@ -1,0 +1,90 @@
+---
+import RunCard from "../components/RunCard.astro";
+import SiteLayout from "../layouts/SiteLayout.astro";
+import { formatDate, getEvidenceIndex, getRuns, getSuites, runSlug, scoreText } from "../lib/evidence";
+
+const [index, runs, suites] = await Promise.all([getEvidenceIndex(), getRuns(), getSuites()]);
+const latest = runs.find(({ report }) => report.models.some((model) => model.official_score != null)) ?? runs[0];
+const base = import.meta.env.BASE_URL;
+---
+<SiteLayout title="首页" description="固定题库、确定性执行、完整公开证据的 Text-to-SQL 模型评测。" current="home">
+  <section class="hero">
+    <div class="hero-copy">
+      <p class="eyebrow">TEXT-TO-SQL / OPEN RESEARCH</p>
+      <h1 class="hero-title"><span>SQL</span><span>ARENA</span></h1>
+      <p class="page-lede">不靠观感打分。每一个结论都能回到模型收到的 Prompt、生成的 SQL、固定金标和逐条事件。</p>
+      <div class="hero-actions">
+        <a class="button-link primary" href={`${base}runs/`}>浏览 18 次运行 <span>↗</span></a>
+        <a class="button-link" href={`${base}docs/methodology/`}>阅读评测方法</a>
+      </div>
+    </div>
+    <aside class="hero-rail" aria-label="公开证据统计">
+      <div class="rail-label">PUBLIC EVIDENCE INDEX / V1</div>
+      <div class="rail-stats">
+        <div class="rail-stat"><b>{index.run_count}</b><span>历史运行<br/>全部公开</span></div>
+        <div class="rail-stat"><b>{index.suite_count}</b><span>不可变题库<br/>哈希锁定</span></div>
+        <div class="rail-stat"><b>100</b><span>规则评分<br/>模型不裁判</span></div>
+      </div>
+      <div class="rail-proof">EVIDENCE VERIFIED<code>{index.schema_version}</code></div>
+    </aside>
+  </section>
+
+  {latest && <section class="section">
+    <div class="section-heading">
+      <div><p class="eyebrow">LATEST COMPLETE MATCH</p><h2>最近一次可复核对局</h2></div>
+      <p>不是排行榜截图，而是一条从配置快照到逐题结果都可以下钻的证据链。</p>
+    </div>
+    <div class="latest-match">
+      <div class="match-number"><span>RUN / {formatDate(latest.report.created_at)}</span><b>{String(latest.report.id).padStart(2, "0")}</b></div>
+      <div class="match-body">
+        <div class="match-meta"><span>{latest.report.fairness.comparison_mode.toUpperCase()}</span><code>{latest.report.suite_content_hash.slice(0, 18)}</code></div>
+        <div class="match-models">
+          {latest.report.models.map((model) => <article class="match-model">
+            <small>{model.resolved_model_id ?? model.requested_model_id}</small>
+            <h3>{model.name}</h3>
+            <strong>{scoreText(model.official_score)}</strong>
+          </article>)}
+        </div>
+        <div class="evidence-actions">
+          <a class="button-link primary" href={`${base}runs/${runSlug(latest.report.id)}/`}>打开完整报告 ↗</a>
+          <a class="button-link" href="https://github.com/rockythink/text-to-sql-arena/tree/main/evidence">查看原始证据</a>
+        </div>
+      </div>
+    </div>
+  </section>}
+
+  <section class="section">
+    <div class="section-heading">
+      <div><p class="eyebrow">METHODOLOGY</p><h2>从题目到结论，四层不跳步</h2></div>
+      <p>公开题库便于审查；公平性来自模型实际输入不含答案，而不是对本机作者隐藏金标。</p>
+    </div>
+    <div class="method-grid">
+      <article class="method-step"><small>01 / FREEZE</small><h3>冻结题库</h3><p>Schema、Seed、语义层、Prompt 和案例规范化后计算内容哈希。</p></article>
+      <article class="method-step"><small>02 / GENERATE</small><h3>单次生成</h3><p>模型只收到结构、语义、问题和输出合同，不接触 Reference SQL。</p></article>
+      <article class="method-step"><small>03 / EXECUTE</small><h3>安全执行</h3><p>SQLGlot 只读 AST 守卫，独立进程中的 DuckDB 按固定限制执行。</p></article>
+      <article class="method-step"><small>04 / PROVE</small><h3>结果留证</h3><p>列、行、顺序、AST 和协议按固定公式评分，全部事件写入证据包。</p></article>
+    </div>
+  </section>
+
+  <section class="section">
+    <div class="section-heading">
+      <div><p class="eyebrow">BROWSE THE RECORD</p><h2>不只展示赢家，也保留失败</h2></div>
+      <p>失败、取消和中断运行同样进入历史。缺失值保持缺失，不用后来信息伪造过去。</p>
+    </div>
+    <div class="run-list">
+      {runs.slice(0, 4).map(({ index: runIndex, report }) => <RunCard index={runIndex} report={report} compact />)}
+    </div>
+    <div class="evidence-actions"><a class="button-link" href={`${base}runs/`}>查看全部运行 →</a></div>
+  </section>
+
+  <section class="section">
+    <div class="section-heading">
+      <div><p class="eyebrow">IMMUTABLE SUITES</p><h2>{suites.length} 个版本，一条演进轨迹</h2></div>
+      <p>每个题库版本都有独立源文件、结构快照、金标结果和 bundle SHA-256。</p>
+    </div>
+    <div class="evidence-actions">
+      <a class="button-link primary" href={`${base}benchmarks/`}>查看题库构成 ↗</a>
+      <a class="button-link" href={`${base}docs/contracts/`}>阅读证据合同</a>
+    </div>
+  </section>
+</SiteLayout>

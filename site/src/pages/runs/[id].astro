@@ -1,0 +1,103 @@
+---
+import RadarChart from "../../components/RadarChart.astro";
+import SiteLayout from "../../layouts/SiteLayout.astro";
+import { formatDate, getRuns, githubEvidenceRoot, runSlug, scoreText, statusLabel, type CaseReport } from "../../lib/evidence";
+
+export async function getStaticPaths() {
+  const runs = await getRuns();
+  return runs.map((run) => ({ params: { id: runSlug(run.report.id) }, props: run }));
+}
+
+const { index, report } = Astro.props;
+const base = import.meta.env.BASE_URL;
+const categories = [...new Set(report.models.flatMap((model) => Object.keys(model.categories)))];
+const modelColors = ["#f2c94c", "#63d8d2", "#ff796b", "#b6a4ff"];
+const totalFailures = report.models.reduce((sum, model) => sum + model.failure_count, 0);
+const cases = report.selected_case_keys.map((stableKey) => ({
+  stableKey,
+  title: report.models.flatMap((model) => model.cases).find((item) => item.stable_key === stableKey)?.title ?? stableKey,
+  models: report.models.map((model) => ({ model, result: model.cases.find((item) => item.stable_key === stableKey) as CaseReport | undefined }))
+}));
+const evidenceUrl = `${githubEvidenceRoot}/${index.path}`;
+---
+<SiteLayout title={`运行 #${report.id}`} description={`SQL 擂台运行 #${report.id} 的模型、逐题分数、协议快照和公开证据。`} current="runs">
+  <header class="report-hero">
+    <div class="report-copy">
+      <p class="report-number"><span>RUN / #{String(report.id).padStart(4, "0")}</span><span class:list={["status-chip", `status-${report.status}`]}>{statusLabel(report.status)}</span></p>
+      <h1>{report.models.length ? report.models.map((model) => model.name).join(" / ") : "未完成运行"}</h1>
+      <p>{report.fairness.pure_model_comparison ? "纯模型对比：适配器、响应模式和参数控制一致。" : `比较模式：${report.fairness.comparison_mode}。差异字段：${report.fairness.differences.join("、") || "无"}。`} 创建于 {formatDate(report.created_at)}。</p>
+      {report.status === "completed_with_errors" && <p class="status-alert"><b>非全量成功 · 本场包含 {totalFailures} 个失败案例</b>失败已经按固定规则计入综合得分，具体影响可在逐题表和案例证据中复核。</p>}
+      <div class="evidence-actions">
+        <a class="button-link primary" href={`${evidenceUrl}/report.json`}>原始报告 JSON ↗</a>
+        <a class="button-link" href={`${evidenceUrl}/events.jsonl`}>完整事件 JSONL</a>
+        <a class="button-link" href={`${base}runs/`}>返回运行索引</a>
+      </div>
+    </div>
+    <div class="report-scores">
+      {report.models.map((model, modelIndex) => <article class="report-score" style={`--model-color:${modelColors[modelIndex % modelColors.length]}`}>
+        <div><small>{model.resolved_model_id ?? model.requested_model_id}</small><h2>{model.name}</h2><code>{model.adapter_kind} · {model.response_mode}</code><span class="score-context">综合得分 / 100 · 越高越好</span></div>
+        <strong>{scoreText(model.official_score)}</strong>
+      </article>)}
+      {!report.models.length && <article class="report-score"><div><small>NO COMPLETED MODEL</small><h2>{statusLabel(report.status)}</h2></div><strong>—</strong></article>}
+    </div>
+  </header>
+
+  {report.models.length > 0 && <section class="report-grid">
+    <article class="report-panel">
+      <div class="panel-title"><h2>能力维度</h2><span>WEIGHTED CATEGORY SCORE</span></div>
+      {categories.length > 2 ? <RadarChart models={report.models} /> : <p class="empty-note">该历史版本没有足够维度绘制雷达图。</p>}
+    </article>
+    <article class="report-panel">
+      <div class="panel-title"><h2>分类得分</h2><span>0—100</span></div>
+      <table class="category-table">
+        <thead><tr><th>能力维度</th>{report.models.map((model, index) => <th style={`color:${modelColors[index % modelColors.length]}`}>{model.name}</th>)}</tr></thead>
+        <tbody>{categories.map((category) => <tr><td>{category}</td>{report.models.map((model) => <td>{model.categories[category]?.toFixed(2) ?? "—"}</td>)}</tr>)}</tbody>
+      </table>
+    </article>
+  </section>}
+
+  <section class="section">
+    <div class="section-heading">
+      <div><p class="eyebrow">CASE LEDGER</p><h2>{cases.length} 道题，逐题对照</h2></div>
+      <p>总分只是入口。展开任一案例可查看模型摘要、SQL、错误和对应的完整案例 JSON。</p>
+    </div>
+    {cases.length ? <>
+      <div class="case-table-wrap">
+        <table class="case-table">
+          <thead><tr><th>案例</th>{report.models.map((model) => <th>{model.name}</th>)}</tr></thead>
+          <tbody>{cases.map((item) => <tr><td class="case-title"><b>{item.title}</b><br/><code>{item.stableKey}</code></td>{item.models.map(({ result }) => {
+            const score = result?.score?.total;
+            return <td class:list={["case-score", { low: typeof score === "number" && score < 60, high: typeof score === "number" && score >= 90 }]}>{typeof score === "number" ? score.toFixed(2) : "—"}</td>;
+          })}</tr>)}</tbody>
+        </table>
+      </div>
+      <div class="case-details">
+        {cases.map((item) => <details>
+          <summary><span>{item.title}</span><code>{item.stableKey}</code></summary>
+          <div class="case-model-output">
+            {item.models.map(({ model, result }) => <article>
+              <h4>{model.name}</h4>
+              {result ? <>
+                <p>{result.visible_summary ?? result.error_message ?? "没有可见摘要。"}</p>
+                {result.formatted_sql && <pre><code>{result.formatted_sql}</code></pre>}
+                <div class="hash-line"><span>STATUS</span><code>{result.status}</code><span>GEN</span><code>{result.generation_ms ?? "—"}ms</code><span>EXEC</span><code>{result.execution_ms ?? "—"}ms</code></div>
+                <a class="button-link" href={`${evidenceUrl}/cases/case-run-${String(result.id).padStart(5, "0")}.json`}>完整案例证据 ↗</a>
+              </> : <p>这个模型没有产生该案例记录。</p>}
+            </article>)}
+          </div>
+        </details>)}
+      </div>
+    </> : <p class="empty-note">该运行在案例开始前结束，没有逐题记录。</p>}
+  </section>
+
+  <section class="section">
+    <div class="section-heading"><div><p class="eyebrow">REPRODUCTION ANCHORS</p><h2>复现锚点与协议快照</h2></div><p>这些字段来自运行创建时冻结的快照，不读取后来修改的本地配置。</p></div>
+    <div class="protocol-grid">
+      {Object.entries(report.protocol).map(([key, value]) => <div class="protocol-item"><small>{key}</small><code>{String(value ?? "null")}</code></div>)}
+      <div class="protocol-item"><small>suite hash</small><code>{report.suite_content_hash}</code></div>
+      <div class="protocol-item"><small>bundle sha256</small><code>{index.bundle_sha256}</code></div>
+      <div class="protocol-item"><small>report schema</small><code>{report.report_schema_version}</code></div>
+      <div class="protocol-item"><small>attempts</small><code>{report.attempts}</code></div>
+    </div>
+  </section>
+</SiteLayout>

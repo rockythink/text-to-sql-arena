@@ -197,3 +197,25 @@ uv run pytest -q tests/test_retail_suite.py tests/test_result_compare.py tests/t
 - Provider 在同一公开模型名背后的服务端路由。
 
 精确复跑的“精确”指本应用冻结的输入和配置快照，不承诺外部模型确定性。
+
+## 10. 静态站点展示边界
+
+`site/` 在构建时直接读取 `evidence/index.json`、题库 manifest 和每次运行的 `report.json`，生成题库索引、历史运行索引和报告详情页。`docs/*.md` 在构建前同步为 Starlight 内容；生成副本不提交。
+
+站点是展示层，不是新的证据层：
+
+- 页面显示的分数、状态、模型名称、题库哈希和 bundle digest 必须来自已提交证据；
+- 页面路由使用稳定的 `run-XXXX` 目录名和 64 位题库 content hash；
+- 视觉图表不参与摘要计算，也不能代替 `verify-evidence`；
+- 证据变更后必须重新执行站点检查与构建，禁止手工维护第二份运行列表；
+- GitHub Pages 只发布静态产物，不接收模型密钥、用户输入或运行时数据库。
+
+本地站点验收：
+
+```bash
+cd site
+pnpm check
+pnpm build
+```
+
+完整证据验真仍以第 7 节命令为准。

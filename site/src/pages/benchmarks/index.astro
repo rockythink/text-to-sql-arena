@@ -1,0 +1,45 @@
+---
+import SiteLayout from "../../layouts/SiteLayout.astro";
+import { formatDate, getSuites, githubEvidenceRoot } from "../../lib/evidence";
+
+const suites = (await getSuites()).sort((a, b) => b.version - a.version);
+---
+<SiteLayout title="基准题库" description="浏览 SQL 擂台公开、不可变、哈希锁定的 Text-to-SQL 基准题库版本。" current="benchmarks">
+  <header class="page-frame">
+    <p class="eyebrow">IMMUTABLE BENCHMARK SUITES</p>
+    <h1 class="page-title">题库公开，<em>评测依然可审计</em></h1>
+    <p class="page-lede">每个版本由 Schema、Seed、语义层、Prompt 和案例规范化后计算内容哈希。发布后不修改，只能复制形成下一版本。</p>
+  </header>
+  <section class="section" style="padding-top:0">
+    <div class="suite-list">
+      {suites.map((suite) => <article class="suite-card">
+        <div class="suite-card-head">
+          <div><span class="suite-version">SUITE VERSION / {String(suite.version).padStart(2, "0")}</span><h2>{suite.name}</h2><p>{suite.description}</p></div>
+          <div class="evidence-actions"><a class="button-link primary" href={`${githubEvidenceRoot}/${suite.path}`}>浏览源与金标 ↗</a></div>
+        </div>
+        <div class="suite-facts">
+          <div><span>CASES</span><b>{suite.gold_count}</b></div>
+          <div><span>GOLD ROWS</span><b>{suite.row_count}</b></div>
+          <div><span>DIALECT</span><b>{suite.dialect}</b></div>
+        </div>
+        <div class="protocol-grid">
+          <div class="protocol-item"><small>DuckDB</small><code>{suite.duckdb_version}</code></div>
+          <div class="protocol-item"><small>SQLGlot</small><code>{suite.sqlglot_version}</code></div>
+          <div class="protocol-item"><small>Scorer</small><code>{suite.scorer_version}</code></div>
+          <div class="protocol-item"><small>Published</small><code>{formatDate(suite.published_at)}</code></div>
+        </div>
+        <div class="suite-hash">CONTENT SHA-256<br/>{suite.content_hash}<br/><br/>BUNDLE SHA-256<br/>{suite.bundle_sha256}</div>
+      </article>)}
+    </div>
+  </section>
+
+  <section class="section">
+    <div class="section-heading"><div><p class="eyebrow">TRUST BOUNDARY</p><h2>公开答案，不等于泄题给模型</h2></div><p>网站和 GitHub 面向审查者公开；实际运行时构建的模型 Prompt 不包含 Reference SQL、金标结果或 AST 评分规则。</p></div>
+    <div class="method-grid">
+      <article class="method-step"><small>AUTHOR SIDE</small><h3>完整题库</h3><p>作者界面需要 Reference SQL 和金标，用于构建、验证和解释评分。</p></article>
+      <article class="method-step"><small>MODEL INPUT</small><h3>只给问题</h3><p>模型只收到结构、语义、业务问题、Dialect 规则和输出合同。</p></article>
+      <article class="method-step"><small>EXECUTION</small><h3>结果对照</h3><p>模型 SQL 与固定 DuckDB 金标在标准化后进行确定性比较。</p></article>
+      <article class="method-step"><small>PUBLICATION</small><h3>全部留证</h3><p>发布 Prompt 和模型输出，让外部审查者确认运行时没有注入答案。</p></article>
+    </div>
+  </section>
+</SiteLayout>

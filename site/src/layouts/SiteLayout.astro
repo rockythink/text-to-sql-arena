@@ -1,0 +1,51 @@
+---
+interface Props {
+  title: string;
+  description: string;
+  current?: "home" | "runs" | "benchmarks" | "docs";
+}
+
+const { title, description, current = "home" } = Astro.props;
+const canonical = new URL(Astro.url.pathname, Astro.site);
+const base = import.meta.env.BASE_URL;
+---
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width" />
+    <meta name="description" content={description} />
+    <meta name="theme-color" content="#0a0c0d" />
+    <link rel="icon" href={`${base}favicon.svg`} />
+    <link rel="canonical" href={canonical} />
+    <meta property="og:type" content="website" />
+    <meta property="og:title" content={`${title} · SQL 擂台`} />
+    <meta property="og:description" content={description} />
+    <meta property="og:url" content={canonical} />
+    <title>{title} · SQL 擂台</title>
+  </head>
+  <body>
+    <a class="skip-link" href="#main">跳到主要内容</a>
+    <div class="site-shell">
+      <header class="masthead">
+        <a class="wordmark" href={base} aria-label="SQL 擂台首页">
+          <span class="wordmark-mark">S/A</span>
+          <span><b>SQL 擂台</b><small>VERIFIABLE MODEL BENCHMARK</small></span>
+        </a>
+        <nav aria-label="主导航">
+          <a class:list={[{ active: current === "runs" }]} href={`${base}runs/`}>运行报告</a>
+          <a class:list={[{ active: current === "benchmarks" }]} href={`${base}benchmarks/`}>基准题库</a>
+          <a class:list={[{ active: current === "docs" }]} href={`${base}docs/`}>方法与文档</a>
+          <a href="https://github.com/rockythink/text-to-sql-arena">GitHub ↗</a>
+        </nav>
+      </header>
+      <main id="main"><slot /></main>
+      <footer class="site-footer">
+        <div><span class="signal-dot"></span>PUBLIC EVIDENCE · MPL-2.0</div>
+        <p>固定题库。确定性执行。模型不当裁判。</p>
+        <a href="https://github.com/rockythink/text-to-sql-arena">rockythink/text-to-sql-arena ↗</a>
+      </footer>
+    </div>
+  </body>
+</html>
+<style is:global>@import "../styles/site.css";</style>
