@@ -1,4 +1,5 @@
 ---
+import ModelIdentity from "../../../../components/ModelIdentity.astro";
 import SiteLayout from "../../../../layouts/SiteLayout.astro";
 import {
   caseRunSlug,
@@ -57,7 +58,7 @@ const eventTime = (value: string) => new Intl.DateTimeFormat("zh-CN", {
       <p class="page-lede">{evidence.question}</p>
     </div>
     <aside class="case-verdict">
-      <small>{displayModelName(evidence.model_name)}</small>
+      <small><ModelIdentity name={evidence.model_name} modelId={evidence.resolved_model_id ?? evidence.requested_model_id} adapterKind={model.adapter_kind}/></small>
       <strong>{scoreText(typeof evidence.score?.total === "number" ? evidence.score.total : null)}</strong>
       <span>{statusLabel(evidence.status)}</span>
     </aside>

@@ -264,3 +264,33 @@ body{background-image:none;background:#0d0f0e}
 .log-filters select{width:130px;min-width:120px}
 .log-filters>label{width:140px;min-width:120px}
 .log-filters>button{flex:0 0 auto}
+/* Recording theme: opaque surfaces, stable exposure, high-contrast text. */
+:root{--ink:#101418;--panel:#171d23;--panel-2:#1d252d;--line:#35404a;--muted:#aab5be;--lime:#d6e764;--blue:#72b7e8;--orange:#df8669;--radius:10px}
+body{color:#f3f6f8;background:#101418;background-image:none}
+.app-shell,.main-stage{background:#101418}
+.sidebar{padding-top:22px;border-color:#303942;background:#151b21;box-shadow:none;backdrop-filter:none}
+.studio-brand{display:flex;align-items:center;gap:10px;padding:0 8px 18px;border-bottom:1px solid #303942}.studio-logo{display:grid;place-items:center;width:38px;height:38px;border-radius:8px;background:#d6e764;color:#11161a;font:800 19px "Smiley Sans"}.studio-brand div{display:grid;gap:2px}.studio-brand b{color:#f6f8f9;font-size:14px}.studio-brand small{color:#aab5be;font:8px "Maple Mono CN";letter-spacing:.08em}.product-name{display:grid;gap:2px;margin:15px 8px 20px}.product-name b{color:#e9edf0;font-size:13px}.product-name small{color:#8f9aa3;font:8px "Maple Mono CN";letter-spacing:.08em}
+.nav-item{border-color:#242c33;background:#1a2128;color:#c8d0d6}.nav-item:hover{border-color:#44515c;background:#222b33;color:#fff}.nav-item.active{border-color:#58664a;background:#293126;color:#f5f7f0;box-shadow:inset 3px 0 0 #d6e764}.nav-item svg{color:#aeb9c1}.sidebar-foot{border-color:#303942;background:#1a2128}
+.setup-band,.section-block,.launch-deck,.scoreboard,.model-lane,.log-panel,.chart-card,.profile-row,.suite-card,.profile-form,.model-receipts article,.source-editor,.preview-rail>section,.fairness-contract,.run-history,.fairness-verdict,.repro-proof,.process-evidence,.sql-evidence,.result-evidence,.efficiency-board,.efficiency-models article,.verdict-strip{border-color:#35404a;background:#171d23;background-image:none;box-shadow:none}
+.section-block,.fairness-contract,.run-history,.profile-form,.suite-card,.chart-card,.efficiency-board,.model-receipts article{color:#edf1f3}
+.model-card{border-color:#3a4650;background:#1b232a;background-image:none;box-shadow:none}.model-card:hover{border-color:#687681;background:#222b33;transform:none}.model-card.selected{border-color:#aebe58;background:#273025;box-shadow:inset 0 0 0 1px #aebe58}.model-card:after{color:#b6c0c7}.model-card.selected:after{color:#d6e764}
+.button,.icon-button,.row-actions button,.icon-only,.editor-tabs button,.segments button,.case-tile,.log-filters button{border:1px solid #46535e;background:#232c34;color:#f0f3f5;box-shadow:none;opacity:1}.button:hover,.icon-button:hover,.row-actions button:hover,.icon-only:hover,.editor-tabs button:hover,.segments button:hover,.case-tile:hover{border-color:#687681;background:#2b3540;transform:none}.button.primary,.button.launch,.segments button.active,.icon-button.active{border-color:#d6e764;background:#d6e764;color:#11161a}.button.ghost{border-color:#46535e;background:#232c34;color:#f0f3f5}.button.danger,.row-actions .danger{border-color:#774b46;background:#3a2523;color:#ffb5aa}.button:disabled,.icon-button:disabled,.row-actions button:disabled{border-color:#303942;background:#1a2026;color:#89949c;opacity:1}
+input,select,textarea,.setup-band select,.workspace-toolbar select,.log-filters select,.profile-form select,.multi-filter summary{border-color:#46535e;background:#10161b;color:#f4f6f7;box-shadow:none}input::placeholder,textarea::placeholder{color:#89949c}.multi-filter>div{border-color:#46535e;background:#1b232a;color:#eef2f4}
+.scoreboard{background:#171d23}.score-chip,.hash-stamp,.fairness-grid article,.process-evidence details,.plan-grain,.plan-groups>div,.assumption-list,.result-table-card{border-color:#35404a;background:#11171c}.score-chip b,.scoreboard-title strong,.section-title h2,.page-header h1,.profile-main h3,.model-card h3,.model-lane h3{color:#f6f8f9}.score-chip small,.page-description,.launch-deck p,.fairness-contract p,.profile-main p{color:#b6c0c7}
+.status-pill{border:1px solid #46535e;background:#222a31;color:#dce2e6}.status-pill>span{opacity:1}
+.model-logo{display:inline-grid;place-items:center;flex:0 0 auto;width:30px;height:30px;border:1px solid #46535e;border-radius:7px;background:#10161b}.model-logo img{display:block;width:18px;height:18px;object-fit:contain}.model-logo.brand-generic b{color:#e9eef1;font:700 12px "Maple Mono CN"}.model-identity{display:inline-flex;align-items:center;gap:9px;min-width:0;color:inherit}.model-identity>span:last-child{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}.model-identity.compact{gap:7px}.model-identity.compact .model-logo{width:23px;height:23px;border-radius:5px}.model-identity.compact .model-logo img{width:14px;height:14px}.profile-icon .model-logo{width:36px;height:36px;border:0;background:#10161b}.model-card>.model-logo{width:36px;height:36px}.model-lane>header .model-logo{width:34px;height:34px}.run-models{display:flex;align-items:center;gap:12px;min-width:0}.run-models .model-identity{font-size:11px}
+.log-panel,.virtual-log{background:#0e1317}.log-panel>header,.log-columns{border-color:#35404a;background:#171d23}.log-row,.log-row:nth-child(even){background:#11171c}.log-row:hover{background:#1b232a}.log-level,.log-payload summary{background:#171d23}.log-row p{color:#e1e6e9}.log-event-type{color:#d4dbe0}.log-source{color:#eef2f4}
+/* Recording legibility refinements */
+.model-grid{grid-template-columns:repeat(auto-fill,minmax(290px,360px))}.model-card{display:grid;grid-template-columns:20px 42px minmax(0,1fr);grid-template-rows:auto auto;column-gap:12px;row-gap:9px;align-items:center;min-height:124px;text-align:left;transform:none}
+.model-card:hover,.model-card.selected{transform:none}
+.model-select-box{position:static;grid-column:1;grid-row:1;align-self:start;margin-top:3px}
+.model-card>.model-logo{grid-column:2;grid-row:1;width:42px;height:42px;align-self:start}
+.model-card-copy{grid-column:3;grid-row:1;min-width:0}
+.model-card-copy h3{margin:0 0 5px}
+.model-card-copy code{display:block;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;color:#d1dae0;font-size:12px}
+.model-card-foot{position:static;grid-column:2/4;grid-row:2;display:flex;align-items:center;gap:10px;margin:0}
+.model-card-foot>span:last-child{color:#c8d2d9;font-size:11px}
+.model-card:after{display:none}
+.studio-brand small{font-size:9px;color:#aebcc7;letter-spacing:1.4px}
+.page-header p,.run-history small,.suite-proof small{color:#bdc8d0}
+.run-history .model-logo{width:20px;height:20px}

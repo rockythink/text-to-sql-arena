@@ -1,4 +1,5 @@
 ---
+import ModelIdentity from "../../components/ModelIdentity.astro";
 import RadarChart from "../../components/RadarChart.astro";
 import SiteLayout from "../../layouts/SiteLayout.astro";
 import { displayModelName, formatDate, getRuns, githubEvidenceRoot, modelEfficiency, runSlug, scoreText, statusLabel, type CaseReport } from "../../lib/evidence";
@@ -38,7 +39,7 @@ const compactTime = (value: number | null) => value == null ? "—" : value >= 1
   </div>
   <div class="report-scores">
     {report.models.map((model, modelIndex) => <article class="report-score" style={`--model-color:${modelColors[modelIndex % modelColors.length]}`}>
-      <div><small>{model.resolved_model_id ?? model.requested_model_id}</small><h2>{displayModelName(model.name)}</h2><code>{model.adapter_kind} · {model.response_mode}</code><span class="score-context">综合得分 / 100 · 越高越好</span></div>
+      <div><small>{model.resolved_model_id ?? model.requested_model_id}</small><h2><ModelIdentity name={model.name} modelId={model.resolved_model_id ?? model.requested_model_id} adapterKind={model.adapter_kind}/></h2><code>{model.adapter_kind} · {model.response_mode}</code><span class="score-context">综合得分 / 100 · 越高越好</span></div>
       <strong>{scoreText(model.official_score)}</strong>
     </article>)}
     {!report.models.length && <article class="report-score"><div><small>无完成模型</small><h2>{statusLabel(report.status)}</h2></div><strong>—</strong></article>}
@@ -78,7 +79,7 @@ const compactTime = (value: number | null) => value == null ? "—" : value >= 1
           <summary><span>{item.title}</span><code>{item.stableKey}</code></summary>
           <div class="case-model-output">
             {item.models.map(({ model, result }) => <article>
-              <h4>{displayModelName(model.name)}</h4>
+              <h4><ModelIdentity compact name={model.name} modelId={model.resolved_model_id ?? model.requested_model_id} adapterKind={model.adapter_kind}/></h4>
               {result ? <>
                 <p>{result.visible_summary ?? result.error_message ?? "没有可见摘要。"}</p>
                 {result.formatted_sql && <pre><code>{result.formatted_sql}</code></pre>}

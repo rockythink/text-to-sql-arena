@@ -5,6 +5,7 @@ import { useEffect, useMemo, useState } from "react";
 import { toast } from "sonner";
 import { api } from "../api/client";
 import type { CaseRun, CaseRunDetail, ModelRun, QueryPlan, ResultPreview, ScoreBreakdown } from "../types";
+import { displayModelName } from "../lib/modelIdentity";
 
 type EligibleRun = { model: ModelRun; run: CaseRun };
 
@@ -77,13 +78,13 @@ export function SqlWorkspace({ open, onOpenChange, models, selectedCase }: { ope
   return <Dialog.Root open={open} onOpenChange={onOpenChange}><Dialog.Portal><Dialog.Overlay className="sheet-overlay"/><Dialog.Content className="sql-sheet">
     <div className="sheet-head"><div><Dialog.Title>查询规划 / SQL / 结果证据</Dialog.Title><Dialog.Description>{detail?.title ?? selectedCase ?? "请选择题目"} · {detail?.question ?? "全过程证据随运行持久化"}</Dialog.Description></div><Dialog.Close className="icon-only"><X/></Dialog.Close></div>
     <div className="workspace-toolbar">
-      <label>模型作答<select value={selectedRunId ?? ""} onChange={(event) => setSelectedRunId(Number(event.target.value))}>{eligible.map(({ model, run }) => <option key={run.id} value={run.id}>{model.name} · A{run.attempt}</option>)}</select><ChevronDown/></label>
+      <label>模型作答<select value={selectedRunId ?? ""} onChange={(event) => setSelectedRunId(Number(event.target.value))}>{eligible.map(({ model, run }) => <option key={run.id} value={run.id}>{displayModelName(model.name)} · A{run.attempt}</option>)}</select><ChevronDown/></label>
       {availableAttempts.length > 1 && <div className="attempt-switch" aria-label="选择作答轮次">{availableAttempts.map((value) => <button className={attempt === value ? "active" : ""} key={value} onClick={() => setAttempt(value)}>A{value}</button>)}</div>}
       <span className="evidence-status"><ListTree/>{selected?.run.status ?? "queued"}</span>
       <button className="button ghost" disabled={!detail || detail.status !== "completed"} onClick={revealReference}>{showReference ? <EyeOff/> : <Eye/>}{showReference ? "隐藏 Reference" : "揭晓 Reference"}</button>
     </div>
     <section className="process-evidence"><header><small>01 / PLAN</small><h3>模型显式查询规划</h3></header><PlanEvidence plan={detail?.plan} assumptions={detail?.assumptions}/><details><summary>查看模型实际收到的 Prompt</summary><pre>{detail?.prompt ?? "等待 Prompt 构建"}</pre></details><details><summary>查看模型原始结构化输出</summary><pre>{detail?.raw_output ?? "暂无原始输出"}</pre></details></section>
-    <section className="sql-evidence"><header><small>02 / SQL</small><h3>{selected?.model.name ?? "模型"} SQL {showReference ? "对比 Reference" : "（Reference 未揭晓）"}</h3></header><div className="diff-frame"><DiffEditor original={detail?.formatted_sql ?? "-- 等待模型作答"} modified={showReference ? detail?.reference_sql ?? "-- Reference 不可用" : "-- Reference 默认隐藏"} language="sql" theme="vs-dark" options={{ readOnly: true, renderSideBySide: true, minimap: { enabled: false }, fontFamily: "Maple Mono CN", fontSize: 14, lineNumbersMinChars: 3, padding: { top: 16 } }}/></div></section>
-    <section className="result-evidence"><header><small>03 / RESULT</small><h3>固定金标与实际执行结果</h3></header><div className="result-tables"><ResultTable preview={showReference ? detail?.expected_result_preview : null} label="固定金标结果" legend="expected"/><ResultTable preview={detail?.result_preview} label={(selected?.model.name ?? "模型") + " 实际结果"} legend="actual" score={detail?.score} error={detail?.error_message}/></div><div className="breakdown">{Object.entries(detail?.score ?? {}).filter(([key, value]) => key !== "total" && typeof value === "number").slice(0, 8).map(([key, value]) => <span key={key}>{key}<b>{String(value)}</b></span>)}</div></section>
+    <section className="sql-evidence"><header><small>02 / SQL</small><h3>{displayModelName(selected?.model.name ?? "模型")} SQL {showReference ? "对比 Reference" : "（Reference 未揭晓）"}</h3></header><div className="diff-frame"><DiffEditor original={detail?.formatted_sql ?? "-- 等待模型作答"} modified={showReference ? detail?.reference_sql ?? "-- Reference 不可用" : "-- Reference 默认隐藏"} language="sql" theme="vs-dark" options={{ readOnly: true, renderSideBySide: true, minimap: { enabled: false }, fontFamily: "Maple Mono CN", fontSize: 14, lineNumbersMinChars: 3, padding: { top: 16 } }}/></div></section>
+    <section className="result-evidence"><header><small>03 / RESULT</small><h3>固定金标与实际执行结果</h3></header><div className="result-tables"><ResultTable preview={showReference ? detail?.expected_result_preview : null} label="固定金标结果" legend="expected"/><ResultTable preview={detail?.result_preview} label={displayModelName(selected?.model.name ?? "模型") + " 实际结果"} legend="actual" score={detail?.score} error={detail?.error_message}/></div><div className="breakdown">{Object.entries(detail?.score ?? {}).filter(([key, value]) => key !== "total" && typeof value === "number").slice(0, 8).map(([key, value]) => <span key={key}>{key}<b>{String(value)}</b></span>)}</div></section>
   </Dialog.Content></Dialog.Portal></Dialog.Root>;
 }

@@ -316,3 +316,17 @@ code { font-family: var(--mono); }
   html { scroll-behavior: auto; }
   *, *::before, *::after { transition-duration: .01ms !important; }
 }
+
+/* Opaque brand and model identity surfaces */
+.run-card { background: var(--panel); }
+.model-identity { display: inline-flex; align-items: center; gap: .48em; min-width: 0; vertical-align: middle; }
+.model-identity.compact { gap: .38em; }
+.model-logo { width: 1.45em; height: 1.45em; flex: 0 0 auto; display: inline-grid; place-items: center; overflow: hidden; border: 1px solid var(--line-bright); border-radius: .3em; background: #f4f1e9; color: #111; }
+.model-logo img { width: 72%; height: 72%; display: block; object-fit: contain; }
+.model-logo.brand-openai { background: #fff; }
+.model-logo.brand-anthropic { background: #d8c6ae; }
+.model-logo.brand-gemini { background: #fff; }
+.model-logo.brand-generic { background: var(--panel-raised); color: var(--paper); font: 600 .68em var(--mono); }
+.model-name-list { display: flex; flex-wrap: wrap; gap: .5em 1em; }
+.score-line .model-identity { color: #d8ddde; }
+.case-verdict .model-identity { justify-content: flex-end; }

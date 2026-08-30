@@ -3,6 +3,7 @@ import type { PropsWithChildren, ReactNode } from "react";
 import { NavLink } from "react-router-dom";
 import { Toaster } from "sonner";
 import { useArenaStore } from "../store";
+import { ModelIdentity } from "./ModelIdentity";
 
 const nav = [
   { to: "/runs/new", label: "新建评测", icon: FlaskConical },
@@ -14,8 +15,8 @@ export function AppShell({ children }: PropsWithChildren) {
   const demo = useArenaStore((state) => state.demoMode);
   return <div className={`app-shell ${demo ? "is-demo" : ""}`}>
     <aside className="sidebar">
-      <div className="brand-mark"><span>SQL</span><b>评测台</b></div>
-      <p className="brand-caption">LOCAL BENCHMARK</p>
+      <div className="studio-brand"><span className="studio-logo">拾</span><div><b>拾穗数据工作室</b><small>SHISUI DATA STUDIO</small></div></div>
+      <div className="product-name"><b>SQL 模型评测台</b><small>LOCAL BENCHMARK</small></div>
       <nav>{nav.map(({ to, label, icon: Icon }) => <NavLink key={to} to={to} className={({ isActive }) => isActive ? "nav-item active" : "nav-item"}><Icon size={17}/><span>{label}</span></NavLink>)}</nav>
       <div className="sidebar-foot"><span className="pulse-dot"/><div><b>本地服务</b><small>127.0.0.1 · 运行中</small></div></div>
     </aside>
@@ -42,10 +43,10 @@ export function EmptyState({ icon = <Menu/>, title, body, action }: { icon?: Rea
   return <div className="empty-state"><div className="empty-icon">{icon}</div><h2>{title}</h2><p>{body}</p>{action}</div>;
 }
 
-export function Scoreboard({ models, suiteHash }: { models: Array<{ id: number; name: string; score: number | null; status: string }>; suiteHash: string }) {
+export function Scoreboard({ models, suiteHash }: { models: Array<{ id: number; name: string; modelId?: string | null; adapterKind?: string | null; score: number | null; status: string }>; suiteHash: string }) {
   return <section className="scoreboard">
     <div className="scoreboard-title"><Activity size={18}/><div><small>运行结果</small><strong>综合得分</strong></div></div>
-    <div className="score-list">{models.map((model, index) => <div className="score-chip" key={model.id}><span className="rank">{String(index + 1).padStart(2, "0")}</span><div><b>{model.name}</b><small><StatusPill status={model.status}/></small></div><em>{model.score == null ? "—" : model.score.toFixed(2)}</em></div>)}</div>
+    <div className="score-list">{models.map((model, index) => <div className="score-chip" key={model.id}><span className="rank">{String(index + 1).padStart(2, "0")}</span><div><b><ModelIdentity name={model.name} modelId={model.modelId} adapterKind={model.adapterKind} compact/></b><small><StatusPill status={model.status}/></small></div><em>{model.score == null ? "—" : model.score.toFixed(2)}</em></div>)}</div>
     <div className="hash-stamp"><small>题库哈希</small><code>{suiteHash ? suiteHash.slice(0, 12) : "等待生成"}</code></div>
   </section>;
 }

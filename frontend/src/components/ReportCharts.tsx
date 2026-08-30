@@ -5,6 +5,7 @@ import type { EChartsOption } from "echarts";
 import { SVGRenderer } from "echarts/renderers";
 import { useEffect, useRef } from "react";
 import type { RunSnapshot } from "../types";
+import { displayModelName } from "../lib/modelIdentity";
 
 echarts.use([BarChart, HeatmapSeries, RadarSeries, GridComponent, LegendComponent, RadarComponent, TooltipComponent, VisualMapComponent, SVGRenderer]);
 
@@ -31,20 +32,20 @@ const base = { backgroundColor: "transparent", textStyle: { color: "#F5F7FA", fo
 
 export function RankingChart({ report }: { report: RunSnapshot }) {
   const models = [...report.models].sort((a, b) => (b.official_score ?? 0) - (a.official_score ?? 0));
-  const ref = useChart({ ...base, grid: { left: 112, right: 28, top: 16, bottom: 26 }, xAxis: { type: "value", min: 0, max: 100, axisLabel: { color: "#91A4B6" }, splitLine: { lineStyle: { color: "#ffffff10" } } }, yAxis: { type: "category", inverse: true, data: models.map((m) => m.name), axisLabel: { color: "#F5F7FA", width: 96, overflow: "truncate" }, axisLine: { show: false }, axisTick: { show: false } }, series: [{ type: "bar", data: models.map((model, index) => ({ value: Number((model.official_score ?? 0).toFixed(2)), itemStyle: { color: palette[index] } })), barWidth: 22, label: { show: true, position: "right", color: "#F5F7FA", formatter: "{c}" } }] });
+  const ref = useChart({ ...base, grid: { left: 112, right: 28, top: 16, bottom: 26 }, xAxis: { type: "value", min: 0, max: 100, axisLabel: { color: "#AAB5BE" }, splitLine: { lineStyle: { color: "#303841" } } }, yAxis: { type: "category", inverse: true, data: models.map((m) => displayModelName(m.name)), axisLabel: { color: "#F5F7FA", width: 96, overflow: "truncate" }, axisLine: { show: false }, axisTick: { show: false } }, series: [{ type: "bar", data: models.map((model, index) => ({ value: Number((model.official_score ?? 0).toFixed(2)), itemStyle: { color: palette[index] } })), barWidth: 22, label: { show: true, position: "right", color: "#F5F7FA", formatter: "{c}" } }] });
   return <div ref={ref} className="chart"/>;
 }
 
 export function RadarChart({ report }: { report: RunSnapshot }) {
   const dimensions = Array.from(new Set(report.models.flatMap((model) => Object.keys(model.categories ?? {}))));
   const activeDimensions = dimensions.length ? dimensions : fallbackDimensions;
-  const ref = useChart({ ...base, color: palette, legend: { bottom: 0, textStyle: { color: "#B8C6D3" } }, radar: { radius: "64%", center: ["50%", "47%"], indicator: activeDimensions.map((name) => ({ name, max: 100 })), axisName: { color: "#DCE6EF" }, splitLine: { lineStyle: { color: "#ffffff1a" } }, splitArea: { areaStyle: { color: ["#ffffff02", "#ffffff06"] } }, axisLine: { lineStyle: { color: "#ffffff1a" } } }, series: [{ type: "radar", data: report.models.map((model) => ({ name: model.name, value: activeDimensions.map((dimension) => Number(model.categories?.[dimension] ?? 0)), areaStyle: { opacity: .08 } })) }] });
+  const ref = useChart({ ...base, color: palette, legend: { bottom: 0, textStyle: { color: "#C4CDD4" } }, radar: { radius: "64%", center: ["50%", "47%"], indicator: activeDimensions.map((name) => ({ name, max: 100 })), axisName: { color: "#DCE6EF" }, splitLine: { lineStyle: { color: "#35404A" } }, splitArea: { areaStyle: { color: ["#171D23", "#1B232B"] } }, axisLine: { lineStyle: { color: "#35404A" } } }, series: [{ type: "radar", data: report.models.map((model) => ({ name: displayModelName(model.name), value: activeDimensions.map((dimension) => Number(model.categories?.[dimension] ?? 0)), areaStyle: { opacity: .14 } })) }] });
   return <div ref={ref} className="chart"/>;
 }
 
 export function HeatmapChart({ report }: { report: RunSnapshot }) {
   const cases = report.models[0]?.cases.filter((item, index, all) => all.findIndex((other) => other.stable_key === item.stable_key) === index).map((item) => item.stable_key) ?? [];
   const data = report.models.flatMap((model, y) => cases.map((key, x) => [x, y, Number(([...model.cases].reverse().find((item) => item.stable_key === key)?.score?.total ?? 0).toFixed(2))]));
-  const ref = useChart({ ...base, grid: { left: 140, right: 36, top: 24, bottom: 96 }, xAxis: { type: "category", data: cases.map((_, index) => String(index + 1).padStart(2, "0")), axisLabel: { color: "#91A4B6", interval: 0 } }, yAxis: { type: "category", data: report.models.map((m) => m.name), axisLabel: { color: "#F5F7FA", width: 120, overflow: "truncate" } }, visualMap: { min: 0, max: 100, orient: "horizontal", left: "center", bottom: 4, inRange: { color: ["#172333", "#FF9B71", "#5EEAD4"] }, textStyle: { color: "#91A4B6" } }, series: [{ type: "heatmap", data, label: { show: true, color: "#08111B", formatter: ({ value }) => Array.isArray(value) ? String(value[2]) : "" }, itemStyle: { borderColor: "#08111B", borderWidth: 3 } }] });
+  const ref = useChart({ ...base, grid: { left: 140, right: 36, top: 24, bottom: 96 }, xAxis: { type: "category", data: cases.map((_, index) => String(index + 1).padStart(2, "0")), axisLabel: { color: "#AAB5BE", interval: 0 } }, yAxis: { type: "category", data: report.models.map((m) => displayModelName(m.name)), axisLabel: { color: "#F5F7FA", width: 120, overflow: "truncate" } }, visualMap: { min: 0, max: 100, orient: "horizontal", left: "center", bottom: 4, inRange: { color: ["#222A33", "#D97B5F", "#73C8BD"] }, textStyle: { color: "#AAB5BE" } }, series: [{ type: "heatmap", data, label: { show: true, color: "#0F1419", formatter: ({ value }) => Array.isArray(value) ? String(value[2]) : "" }, itemStyle: { borderColor: "#0F1419", borderWidth: 3 } }] });
   return <div ref={ref} className="chart wide"/>;
 }
