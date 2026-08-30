@@ -27,8 +27,8 @@ const compactTime = (value: number | null) => value == null ? "—" : value >= 1
 <SiteLayout title={`运行 #${report.id}`} description={`SQL 擂台运行 #${report.id} 的模型、逐题分数、协议快照和公开证据。`} current="runs">
   <><header class="report-hero"><div class="report-copy">
     <p class="report-number"><span>RUN / #{String(report.id).padStart(4, "0")}</span><span class:list={["status-chip", `status-${report.status}`]}>{statusLabel(report.status)}</span></p>
-    <h1>{report.models.length ? report.models.map((model) => displayModelName(model.name)).join(" / ") : "未完成运行"}</h1>
-    <p>{report.fairness.pure_model_comparison ? "纯模型对比：适配器、响应模式和参数控制一致。" : `比较模式：${report.fairness.comparison_mode}。差异字段：${report.fairness.differences.join("、") || "无"}。`} 创建于 {formatDate(report.created_at)}。</p>
+    <h1>运行 #{report.id}</h1>
+    <p>模型：{report.models.length ? report.models.map((model) => displayModelName(model.name)).join("、") : "无完成记录"}。{report.fairness.pure_model_comparison ? "适配器、响应模式和参数一致。" : "比较模式：" + report.fairness.comparison_mode + "；差异字段：" + (report.fairness.differences.join("、") || "无") + "。"}创建于 {formatDate(report.created_at)}。</p>
     {report.status === "completed_with_errors" && <p class="status-alert"><b>非全量成功 · 本场包含 {totalFailures} 个失败案例</b>失败已经按固定规则计入综合得分，具体影响可在逐题表和案例证据中复核。</p>}
     <div class="evidence-actions">
       <a class="button-link primary" href={`${evidenceUrl}/report.json`}>原始报告 JSON ↗</a>
@@ -41,12 +41,12 @@ const compactTime = (value: number | null) => value == null ? "—" : value >= 1
       <div><small>{model.resolved_model_id ?? model.requested_model_id}</small><h2>{displayModelName(model.name)}</h2><code>{model.adapter_kind} · {model.response_mode}</code><span class="score-context">综合得分 / 100 · 越高越好</span></div>
       <strong>{scoreText(model.official_score)}</strong>
     </article>)}
-    {!report.models.length && <article class="report-score"><div><small>NO COMPLETED MODEL</small><h2>{statusLabel(report.status)}</h2></div><strong>—</strong></article>}
-  </div></header>{report.models.length > 0 && <section class="section efficiency-report"><div class="section-heading"><div><p class="eyebrow">QUALITY-ADJUSTED EFFICIENCY</p><h2>干对一题，需要多少资源</h2></div><p>准确率不与成本混成一个总分。Token、费用和生成时长按“正确等价题”归一化，越低越好；费用仅采用运行时冻结的价格快照。</p></div><div class="case-table-wrap"><table class="case-table efficiency-table"><thead><tr><th>指标</th>{efficiency.map(({ model }) => <th>{displayModelName(model.name)}</th>)}</tr></thead><tbody><tr><td class="case-title"><b>准确率</b><br/><code>越高越好</code></td>{efficiency.map(({ model }) => <td>{scoreText(model.official_score)}</td>)}</tr><tr><td class="case-title"><b>Token / 正确等价题</b><br/><code>越低越好</code></td>{efficiency.map(({ metrics }) => <td>{compactNumber(metrics.per_correct_case_equivalent.tokens)}</td>)}</tr><tr><td class="case-title"><b>费用 / 正确等价题</b><br/><code>USD · 估算</code></td>{efficiency.map(({ metrics }) => <td>{compactUsd(metrics.per_correct_case_equivalent.estimated_cost_usd)}</td>)}</tr><tr><td class="case-title"><b>模型生成耗时 P95</b><br/><code>越低越好</code></td>{efficiency.map(({ metrics }) => <td>{compactTime(metrics.generation_ms.p95)}</td>)}</tr><tr><td class="case-title"><b>累计 Token</b><br/><code>覆盖率随证据披露</code></td>{efficiency.map(({ metrics }) => <td>{compactNumber(metrics.tokens?.total ?? null)}<small>{metrics.coverage.tokens.measured}/{metrics.coverage.tokens.total} 题</small></td>)}</tr></tbody></table></div></section>}</>
+    {!report.models.length && <article class="report-score"><div><small>无完成模型</small><h2>{statusLabel(report.status)}</h2></div><strong>—</strong></article>}
+  </div></header>{report.models.length > 0 && <section class="section efficiency-report"><div class="section-heading"><div><h2>资源效率</h2></div><p>分别列出准确率、每正确等价题 Token、估算费用和生成耗时。费用采用运行时冻结的价格快照。</p></div><div class="case-table-wrap"><table class="case-table efficiency-table"><thead><tr><th>指标</th>{efficiency.map(({ model }) => <th>{displayModelName(model.name)}</th>)}</tr></thead><tbody><tr><td class="case-title"><b>准确率</b><br/><code>越高越好</code></td>{efficiency.map(({ model }) => <td>{scoreText(model.official_score)}</td>)}</tr><tr><td class="case-title"><b>Token / 正确等价题</b><br/><code>越低越好</code></td>{efficiency.map(({ metrics }) => <td>{compactNumber(metrics.per_correct_case_equivalent.tokens)}</td>)}</tr><tr><td class="case-title"><b>费用 / 正确等价题</b><br/><code>USD · 估算</code></td>{efficiency.map(({ metrics }) => <td>{compactUsd(metrics.per_correct_case_equivalent.estimated_cost_usd)}</td>)}</tr><tr><td class="case-title"><b>模型生成耗时 P95</b><br/><code>越低越好</code></td>{efficiency.map(({ metrics }) => <td>{compactTime(metrics.generation_ms.p95)}</td>)}</tr><tr><td class="case-title"><b>累计 Token</b><br/><code>已记录题数</code></td>{efficiency.map(({ metrics }) => <td>{compactNumber(metrics.tokens?.total ?? null)}<small>{metrics.coverage.tokens.measured}/{metrics.coverage.tokens.total} 题</small></td>)}</tr></tbody></table></div></section>}</>
 
   {report.models.length > 0 && <section class="report-grid">
     <article class="report-panel">
-      <div class="panel-title"><h2>能力维度</h2><span>WEIGHTED CATEGORY SCORE</span></div>
+      <div class="panel-title"><h2>能力维度</h2><span>加权得分</span></div>
       {categories.length > 2 ? <RadarChart models={report.models} /> : <p class="empty-note">该历史版本没有足够维度绘制雷达图。</p>}
     </article>
     <article class="report-panel">
@@ -60,8 +60,8 @@ const compactTime = (value: number | null) => value == null ? "—" : value >= 1
 
   <section class="section">
     <div class="section-heading">
-      <div><p class="eyebrow">CASE LEDGER</p><h2>{cases.length} 道题，逐题对照</h2></div>
-      <p>总分只是入口。展开任一案例可查看模型摘要、SQL、错误和对应的完整案例 JSON。</p>
+      <div><h2>逐题结果（{cases.length}）</h2></div>
+      <p>展开案例可查看模型摘要、SQL、错误和原始案例 JSON。</p>
     </div>
     {cases.length ? <>
       <div class="case-table-wrap">
@@ -96,7 +96,7 @@ const compactTime = (value: number | null) => value == null ? "—" : value >= 1
   </section>
 
   <section class="section">
-    <div class="section-heading"><div><p class="eyebrow">REPRODUCTION ANCHORS</p><h2>复现锚点与协议快照</h2></div><p>这些字段来自运行创建时冻结的快照，不读取后来修改的本地配置。</p></div>
+    <div class="section-heading"><div><h2>运行配置</h2></div><p>字段来自运行创建时冻结的快照。</p></div>
     <div class="protocol-grid">
       {Object.entries(report.protocol).map(([key, value]) => <div class="protocol-item"><small>{key}</small><code>{String(value ?? "null")}</code></div>)}
       <div class="protocol-item"><small>suite hash</small><code>{report.suite_content_hash}</code></div>

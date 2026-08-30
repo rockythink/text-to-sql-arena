@@ -7,16 +7,15 @@ const [index, runs] = await Promise.all([getEvidenceIndex(), getRuns()]);
 ---
 <SiteLayout title="运行报告" description="浏览 SQL 擂台全部 18 次历史运行，包括失败、取消和中断记录。" current="runs">
   <header class="page-frame">
-    <p class="eyebrow">PUBLIC RUN LEDGER / {index.schema_version}</p>
-    <h1 class="page-title">每一次运行，<em>都有原始凭证</em></h1>
-    <p class="page-lede">共 {index.run_count} 次运行。筛选只改变页面显示，不改变任何报告、评分或 bundle 摘要。</p>
+    <h1 class="page-title">运行记录</h1>
+    <p class="page-lede">共 {index.run_count} 次运行，包括完成、失败、取消和中断状态。筛选仅改变当前列表。</p>
     <div class="run-toolbar" data-run-toolbar>
       <label><span>搜索运行或模型</span><input type="search" name="query" placeholder="例如：18、Luna、Sol" autocomplete="off" /></label>
       <label><span>运行状态</span><select name="status"><option value="all">全部状态</option><option value="completed">完成</option><option value="completed_with_errors">完成但有错误</option><option value="failed">失败</option><option value="cancelled">已取消</option><option value="interrupted">被中断</option></select></label>
     </div>
   </header>
   <section class="section" style="padding-top:0">
-    <p class="eyebrow" data-result-count>{runs.length} RUNS VISIBLE</p>
+    <p class="eyebrow" data-result-count>显示 {runs.length} 条</p>
     <div class="run-list">
       {runs.map(({ index: runIndex, report }) => <RunCard index={runIndex} report={report} />)}
     </div>
@@ -43,7 +42,7 @@ const [index, runs] = await Promise.all([getEvidenceIndex(), getRuns()]);
         card.hidden = !(matchesQuery && matchesStatus);
         if (!card.hidden) visible += 1;
       }
-      count.textContent = `${visible} RUNS VISIBLE`;
+      count.textContent = `显示 ${visible} 条`;
       empty.hidden = visible !== 0;
     };
     query?.addEventListener("input", applyFilters);

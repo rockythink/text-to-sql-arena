@@ -51,7 +51,7 @@ const eventTime = (value: string) => new Intl.DateTimeFormat("zh-CN", {
 >
   <header class="case-evidence-hero">
     <div>
-      <p class="eyebrow">CASE EVIDENCE / {caseRunSlug(evidence.id).toUpperCase()}</p>
+      <p class="eyebrow">案例记录 {caseRunSlug(evidence.id)}</p>
       <p class="case-breadcrumb"><a href={runPath}>运行 #{report.id}</a><span>/</span><code>{evidence.stable_key}</code></p>
       <h1>{evidence.title}</h1>
       <p class="page-lede">{evidence.question}</p>
@@ -65,8 +65,8 @@ const eventTime = (value: string) => new Intl.DateTimeFormat("zh-CN", {
 
   <section class="section evidence-section">
     <div class="section-heading">
-      <div><p class="eyebrow">EXECUTION IDENTITY</p><h2>这一次具体测了什么</h2></div>
-      <p>案例、模型、尝试次数和证据标识全部来自本次冻结记录，不读取当前配置。</p>
+      <div><h2>运行信息</h2></div>
+      <p>以下字段来自本次运行的冻结记录。</p>
     </div>
     <div class="protocol-grid">
       <div class="protocol-item"><small>run</small><code>#{report.id}</code></div>
@@ -86,16 +86,16 @@ const eventTime = (value: string) => new Intl.DateTimeFormat("zh-CN", {
 
   <section class="section evidence-section">
     <div class="section-heading">
-      <div><p class="eyebrow">FULL CONTEXT</p><h2>发送给模型的完整上下文</h2></div>
-      <p>这里不做摘要。系统指令、方言约束、数据库结构、语义层、问题与输出协议按实际 Prompt 原样展示。</p>
+      <div><h2>模型输入</h2></div>
+      <p>显示本次实际保存的完整 Prompt。</p>
     </div>
     {evidence.prompt ? <pre class="evidence-code evidence-code-tall"><code>{evidence.prompt}</code></pre> : <p class="evidence-gap">该次历史记录没有保存 Prompt。</p>}
   </section>
 
   <section class="section evidence-section">
     <div class="section-heading">
-      <div><p class="eyebrow">PROVIDER REQUESTS</p><h2>{requestEvents.length} 次模型调用请求</h2></div>
-      <p>按事件序号展示实际保存的请求数据。密钥和 Authorization 永不公开。</p>
+      <div><h2>调用请求（{requestEvents.length}）</h2></div>
+      <p>按事件序号排列；密钥和 Authorization 已移除。</p>
     </div>
     {!hasCapturedEnvelope && <p class="evidence-gap"><strong>历史证据边界：</strong>完整 Prompt 已保存，但这次 <code>{model.adapter_kind}</code> 记录没有保存底层 HTTP 报文或 CLI 参数。本站不会把推测内容伪装成原始请求；未来运行会在 <code>provider.requested</code> 中记录脱敏后的完整调用信封。</p>}
     <div class="event-ledger request-ledger">
@@ -109,8 +109,8 @@ const eventTime = (value: string) => new Intl.DateTimeFormat("zh-CN", {
 
   <section class="section evidence-section">
     <div class="section-heading">
-      <div><p class="eyebrow">MODEL RESPONSE</p><h2>模型原始响应与解析结果</h2></div>
-      <p>原始输出、结构化方案和 SQL 分开展示，避免格式化结果覆盖模型真实返回。</p>
+      <div><h2>模型输出</h2></div>
+      <p>分别显示原始响应、解析结果和 SQL。</p>
     </div>
     <div class="evidence-stack">
       <details open><summary>原始响应 raw_output</summary>{hasValue(evidence.raw_output) ? <pre class="evidence-code"><code>{evidence.raw_output}</code></pre> : <p class="evidence-gap">没有原始响应。</p>}</details>
@@ -123,8 +123,8 @@ const eventTime = (value: string) => new Intl.DateTimeFormat("zh-CN", {
 
   <section class="section evidence-section">
     <div class="section-heading">
-      <div><p class="eyebrow">EVALUATION PROOF</p><h2>评分过程与结果差异</h2></div>
-      <p>参考 SQL、结构要求、比较策略、期望结果、实际结果和评分明细都可逐项复核。</p>
+      <div><h2>评分结果</h2></div>
+      <p>包含评分明细、参考 SQL、结构要求、比较规则和结果差异。</p>
     </div>
     <div class="evidence-stack">
       <details open><summary>评分明细 score</summary><pre class="evidence-code"><code>{jsonText(evidence.score)}</code></pre></details>
@@ -139,8 +139,8 @@ const eventTime = (value: string) => new Intl.DateTimeFormat("zh-CN", {
 
   <section class="section evidence-section">
     <div class="section-heading">
-      <div><p class="eyebrow">EVENT TIMELINE</p><h2>{events.length} 条逐步运行日志</h2></div>
-      <p>按全局事件序号排列。每条记录保留时间、级别、类型、消息和完整 payload。</p>
+      <div><h2>事件记录（{events.length}）</h2></div>
+      <p>按全局事件序号排列，保留时间、级别、类型、消息和 payload。</p>
     </div>
     <div class="event-ledger">
       {events.map((event) => <article class="event-record">
@@ -153,8 +153,8 @@ const eventTime = (value: string) => new Intl.DateTimeFormat("zh-CN", {
 
   <section class="section evidence-section">
     <div class="section-heading">
-      <div><p class="eyebrow">RAW RECORD</p><h2>未经页面裁剪的完整案例 JSON</h2></div>
-      <p>上面的结构化视图用于阅读；这里保留所有字段，便于确认页面没有遗漏证据。</p>
+      <div><h2>原始案例数据</h2></div>
+      <p>完整 JSON 字段，不经过页面裁剪。</p>
     </div>
     <details class="raw-record"><summary>展开全部原始字段</summary><pre class="evidence-code evidence-code-tall"><code>{jsonText(evidence)}</code></pre></details>
     <div class="evidence-actions">
