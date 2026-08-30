@@ -1,4 +1,4 @@
-import { cp, mkdir, readFile, rm, writeFile } from "node:fs/promises";
+import { mkdir, readFile, rm, writeFile } from "node:fs/promises";
 import { dirname, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 
@@ -49,11 +49,4 @@ for (const [file, title, description, order] of docs) {
   body = body.replace(/\]\((?:\.\/)?([a-z0-9-]+)\.md(#[^)]*)?\)/gi, (_, slug, anchor = "") => `](../${slug}/${anchor})`);
   const frontmatter = `---\ntitle: ${title}\ndescription: ${description}\nsidebar:\n  order: ${order}\n---\n\n`;
   await writeFile(resolve(docsTarget, file), frontmatter + body);
-}
-
-const fontTarget = resolve(siteRoot, "src/assets/fonts");
-await rm(fontTarget, { recursive: true, force: true });
-await mkdir(fontTarget, { recursive: true });
-for (const file of ["maple-mono-cn.woff2", "noto-sans-sc.woff2", "smiley-sans.woff2"]) {
-  await cp(resolve(repoRoot, "frontend/public/fonts", file), resolve(fontTarget, file));
 }

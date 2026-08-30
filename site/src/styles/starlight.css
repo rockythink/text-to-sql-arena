@@ -1,24 +1,4 @@
-@font-face {
-  font-family: "Smiley Sans";
-  src: url("../assets/fonts/smiley-sans.woff2") format("woff2");
-  font-display: swap;
-}
-
-@font-face {
-  font-family: "Noto Sans SC";
-  src: url("../assets/fonts/noto-sans-sc.woff2") format("woff2");
-  font-display: swap;
-}
-
-@font-face {
-  font-family: "Maple Mono";
-  src: url("../assets/fonts/maple-mono-cn.woff2") format("woff2");
-  font-display: swap;
-}
-
 :root {
-  --sl-font: "Noto Sans SC", sans-serif;
-  --sl-font-mono: "Maple Mono", monospace;
   --sl-color-accent-low: #2d2916;
   --sl-color-accent: #f2c94c;
   --sl-color-accent-high: #fff4b5;
@@ -49,7 +29,6 @@
 }
 
 .site-title {
-  font-family: "Smiley Sans", sans-serif;
   letter-spacing: .04em;
 }
 
@@ -69,7 +48,6 @@ header.header {
 .sl-markdown-content h1,
 .sl-markdown-content h2,
 .sl-markdown-content h3 {
-  font-family: "Smiley Sans", sans-serif;
   font-weight: 400;
   letter-spacing: -.015em;
 }
@@ -80,10 +58,9 @@ header.header {
 .sl-markdown-content li { line-height: 1.85; }
 .sl-markdown-content code { border-radius: 0; }
 .sl-markdown-content table { font-size: .9rem; }
-.sl-markdown-content th { font-family: "Maple Mono", monospace; font-size: .72rem; letter-spacing: .04em; }
+.sl-markdown-content th { font-size: .72rem; letter-spacing: .04em; }
 
 .hero h1 {
-  font-family: "Smiley Sans", sans-serif;
   font-weight: 400;
   letter-spacing: -.04em;
 }

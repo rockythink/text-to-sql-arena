@@ -1,21 +1,3 @@
-@font-face {
-  font-family: "Smiley Sans";
-  src: url("../assets/fonts/smiley-sans.woff2") format("woff2");
-  font-display: swap;
-}
-
-@font-face {
-  font-family: "Noto Sans SC";
-  src: url("../assets/fonts/noto-sans-sc.woff2") format("woff2");
-  font-display: swap;
-}
-
-@font-face {
-  font-family: "Maple Mono";
-  src: url("../assets/fonts/maple-mono-cn.woff2") format("woff2");
-  font-display: swap;
-}
-
 :root {
   color-scheme: dark;
   --ink: #0a0c0d;
@@ -28,9 +10,9 @@
   --signal: #f2c94c;
   --aqua: #63d8d2;
   --danger: #ff796b;
-  --display: "Smiley Sans", sans-serif;
-  --body: "Noto Sans SC", sans-serif;
-  --mono: "Maple Mono", monospace;
+  --display: system-ui, sans-serif;
+  --body: system-ui, sans-serif;
+  --mono: ui-monospace, monospace;
 }
 
 * { box-sizing: border-box; }

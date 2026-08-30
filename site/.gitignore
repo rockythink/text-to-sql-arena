@@ -2,7 +2,6 @@ dist/
 .astro/
 node_modules/
 src/content/docs/
-src/assets/fonts/
 .env
 .env.production
 *.log
