@@ -4,9 +4,9 @@ import { formatDate, getSuites, githubEvidenceRoot } from "../../lib/evidence";
 
 const suites = (await getSuites()).sort((a, b) => b.version - a.version);
 ---
-<SiteLayout title="基准题库" description="浏览 SQL 擂台公开、不可变、哈希锁定的 Text-to-SQL 基准题库版本。" current="benchmarks">
+<SiteLayout title="测试用例" description="浏览报告实际采用、不可变且哈希锁定的 Text-to-SQL 测试用例版本。" current="benchmarks">
   <header class="page-frame">
-    <h1 class="page-title">题库版本</h1>
+    <h1 class="page-title">测试用例版本</h1>
     <p class="page-lede">每个版本包含 Schema、Seed、语义层、Prompt 和案例。内容规范化后计算哈希，发布后不再修改。</p>
   </header>
   <section class="section" style="padding-top:0">

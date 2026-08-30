@@ -7,11 +7,11 @@ const [index, runs] = await Promise.all([getEvidenceIndex(), getRuns()]);
 const latest = runs.find(({ report }) => report.models.some((model) => model.official_score != null)) ?? runs[0];
 const base = import.meta.env.BASE_URL;
 ---
-<SiteLayout title="首页" description="固定题库、确定性执行、完整公开证据的 Text-to-SQL 模型评测。" current="home">
+<SiteLayout title="首页" description="Text-to-SQL 评测报告、报告证据、测试用例与评测方法。" current="home">
   <section class="hero">
     <div class="hero-copy">
       <h1 class="hero-title">Text-to-SQL 评测记录</h1>
-      <p class="page-lede">公开展示题库版本、模型输出、SQL 执行结果、评分和资源消耗。当前收录 {index.run_count} 次运行。</p>
+      <p class="page-lede">只公开经选择的评测报告、支持结论的报告证据、实际测试用例与评测方法。当前收录 {index.run_count} 次已发布运行。</p>
     </div>
     <aside class="hero-rail" aria-label="公开证据统计">
       <div class="rail-label">数据概况</div>

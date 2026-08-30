@@ -20,20 +20,20 @@ function Wrapper({ children }: PropsWithChildren) {
   return <QueryClientProvider client={client}><MemoryRouter>{children}</MemoryRouter></QueryClientProvider>;
 }
 
-describe("新建对局门禁与公平性合同", () => {
-  it("未选模型时禁用并随选手显示公平性和成本", async () => {
+describe("新建评测门禁与比较条件", () => {
+  it("未选模型时禁用并随参评模型更新运行摘要", async () => {
     vi.spyOn(api, "profiles").mockResolvedValue([healthy(1, "Alpha"), healthy(2, "Beta")]);
     vi.spyOn(api, "suites").mockResolvedValue([suite]);
     vi.spyOn(api, "runs").mockResolvedValue({ runs: [] });
     render(<RunNewPage/>, { wrapper: Wrapper });
-    const launch = await screen.findByRole("button", { name: "开始单测" });
+    const launch = await screen.findByRole("button", { name: "开始评测" });
     expect(launch).toBeDisabled();
     fireEvent.click(screen.getByRole("button", { name: /Alpha/ }));
-    expect(screen.getByRole("button", { name: "开始单测" })).toBeEnabled();
+    expect(screen.getByRole("button", { name: "开始评测" })).toBeEnabled();
     expect(screen.getByText("单模型评测")).toBeInTheDocument();
     expect(screen.getByText("1 次")).toBeInTheDocument();
     fireEvent.click(screen.getByRole("button", { name: /Beta/ }));
-    expect(screen.getByRole("button", { name: "开始对比" })).toBeEnabled();
+    expect(screen.getByRole("button", { name: "开始评测" })).toBeEnabled();
     expect(screen.getByText("纯模型对比")).toBeInTheDocument();
   });
 });
@@ -113,6 +113,6 @@ it("持久化事件缺少 payload 时实时页仍可渲染", async () => {
   vi.spyOn(api, "history").mockResolvedValue({ events: [{ ...event(1), payload: undefined } as unknown as RunEvent], total: 1 });
   vi.stubGlobal("EventSource", FakeEventSource);
   render(<QueryClientProvider client={new QueryClient({ defaultOptions: { queries: { retry: false } } })}><MemoryRouter initialEntries={["/runs/4/live"]}><Routes><Route path="/runs/:id/live" element={<RunLivePage/>}/></Routes></MemoryRouter></QueryClientProvider>);
-  expect(await screen.findByText("事件直播台")).toBeInTheDocument();
+  expect(await screen.findByText("运行日志")).toBeInTheDocument();
   vi.unstubAllGlobals();
 });

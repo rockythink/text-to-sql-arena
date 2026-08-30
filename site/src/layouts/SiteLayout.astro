@@ -33,16 +33,16 @@ const base = import.meta.env.BASE_URL;
           <span><b>SQL 擂台</b><small>TEXT-TO-SQL BENCHMARK</small></span>
         </a>
         <nav aria-label="主导航">
-          <a class:list={[{ active: current === "runs" }]} href={`${base}runs/`}>运行报告</a>
-          <a class:list={[{ active: current === "benchmarks" }]} href={`${base}benchmarks/`}>基准题库</a>
-          <a class:list={[{ active: current === "docs" }]} href={`${base}docs/`}>方法与文档</a>
+          <a class:list={[{ active: current === "runs" }]} href={`${base}runs/`}>评测报告</a>
+          <a class:list={[{ active: current === "benchmarks" }]} href={`${base}benchmarks/`}>测试用例</a>
+          <a class:list={[{ active: current === "docs" }]} href={`${base}docs/`}>评测方法</a>
           <a href="https://github.com/rockythink/text-to-sql-arena">GitHub ↗</a>
         </nav>
       </header>
       <main id="main"><slot /></main>
       <footer class="site-footer">
         <div><span class="signal-dot"></span>静态证据站点 · MPL-2.0</div>
-        <p>数据来源：仓库内 evidence/ 目录</p>
+        <p>仅公开报告、报告证据、测试用例与评测方法</p>
         <a href="https://github.com/rockythink/text-to-sql-arena">GitHub 仓库 ↗</a>
       </footer>
     </div>

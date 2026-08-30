@@ -86,25 +86,35 @@ uv run python -m backend.app.cli serve
 5. 在报告页查看正确性、Token/正确等价题、估算费用/正确等价题、生成时长 P95、六维能力和逐题证据。
 6. 对需要复核的运行执行“精确复跑”；它复用原运行快照，不读取已变化的模型配置。
 
-## 文档与证据站点
+## 公开证据站点
 
 Cloudflare Pages：<https://arena.ss-data.cc/>。
 
-站点从仓库内现有材料静态生成：
+公开站点与本地 Web App 是两个独立产品。本地 Web App 用于实际评测操作和录屏；公开站点只用于发布经过明确选择的证据材料。新增本地运行不会自动同步或发布，只有明确指定某次报告后才更新公开内容。
 
-- `docs/` 是方法、合同和审计文档的唯一正文源；
-- `evidence/` 是题库、运行报告和摘要的唯一数据源；
+对外内容严格限定为：
+
+- 评测报告；
+- 支持报告结论的原始证据与校验摘要；
+- 报告实际使用的测试用例及不可变版本；
+- 评测方法、评分公式和结果解释边界。
+
+不对外发布本地工作台的操作手册、模型接入配置、系统架构、内部 API/事件合同、运维流程或实现清单。
+
+站点内容来源：
+
+- `docs/methodology.md` 与 `docs/evidence.md` 提供评测方法和证据验真正文；
+- `evidence/` 提供被明确选中发布的测试用例、运行报告和报告证据；
 - `site/` 只负责索引、可视化和导航，不复制或改写证据结论。
 
 本地预览：
-
 ```bash
 cd site
 pnpm install --frozen-lockfile
 pnpm dev
 ```
 
-执行 `pnpm check && pnpm build && pnpm verify:build` 会先同步正文、从证据索引生成全部静态页面并检查内部链接。`.github/workflows/docs.yml` 只负责持续验证；公开站点由 Cloudflare Pages 托管。
+执行 `pnpm check && pnpm build && pnpm verify:build` 会生成公开边界内的正文与证据页面并检查内部链接。该命令只构建本地静态产物，不部署站点。
 
 ## 公开证据
 

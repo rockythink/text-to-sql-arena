@@ -61,21 +61,21 @@ export function BenchmarkEditPage() {
   }));
 
   return <div className="page edit-page">
-    <PageHeader eyebrow={`SUITE / V${located.version.version}`} title={located.suite.name} description="五区源文件共同决定发布内容哈希；右侧展示模型真正收到的结构和最终 Prompt。" actions={<><StatusPill status={located.version.status}/>{editable ? <><button className="button ghost" onClick={() => save.mutate()} disabled={save.isPending}><Save/>保存 Draft</button><button className="button primary" onClick={() => publish.mutate()} disabled={publish.isPending}><CheckCircle2/>校验并发布</button></> : <button className="button primary" onClick={() => clone.mutate()}><CopyPlus/>复制后编辑</button>}</>}/>
+    <PageHeader eyebrow={`题库版本 V${located.version.version}`} title={located.suite.name} description="编辑题库源文件，并检查结构快照与模型实际输入。" actions={<><StatusPill status={located.version.status}/>{editable ? <><button className="button ghost" onClick={() => save.mutate()} disabled={save.isPending}><Save/>保存草稿</button><button className="button primary" onClick={() => publish.mutate()} disabled={publish.isPending}><CheckCircle2/>校验并发布</button></> : <button className="button primary" onClick={() => clone.mutate()}><CopyPlus/>复制为草稿</button>}</>}/>
     <div className="editor-tabs">{tabs.map(([key, label]) => <button className={tab === key ? "active" : ""} key={key} onClick={() => setTab(key)}>{key === "semantic" || key === "cases" ? <Braces/> : <FileCode2/>}{label}</button>)}</div>
     <div className="editor-layout">
       <section className="source-editor">
-        <header><div><small>SOURCE / {current[1].toUpperCase()}</small><b>{editable ? "可编辑 Draft" : "发布快照（只读）"}</b></div><span>{current[2]}</span></header>
+        <header><div><small>{current[1]}</small><b>{editable ? "可编辑草稿" : "已发布快照（只读）"}</b></div><span>{current[2]}</span></header>
         <Editor value={source} onChange={setSource} language={current[2]} theme="vs-dark" options={{ readOnly: !editable, minimap: { enabled: false }, fontFamily: "Maple Mono CN", fontSize: 14, wordWrap: "on", padding: { top: 16 }, automaticLayout: true }}/>
       </section>
       <aside className="preview-rail">
         <section className="structure-preview">
-          <header><GitFork/><div><small>STRUCTURE SNAPSHOT</small><b>真实外键关系图</b></div></header>
+          <header><GitFork/><div><small>结构快照</small><b>外键关系</b></div></header>
           <div className="er-flow">{tableNodes.length ? <ReactFlow nodes={tableNodes} edges={edges} fitView fitViewOptions={{ padding: 0.12, maxZoom: 1.05 }} minZoom={0.45} nodesDraggable={false} nodesConnectable={false}><Background gap={18}/></ReactFlow> : <div className="result-empty">发布后生成结构快照</div>}</div>
           <div className="er-relationships">{relationships.map(({ table, foreignKey, index }) => <code key={table.name + "-" + index}>{table.name}.{foreignKey.columns.join(",")} → {foreignKey.referenced_table}.{foreignKey.referenced_columns.join(",")}</code>)}</div>
         </section>
         <section className="prompt-preview">
-          <header><Eye/><div><small>RUNTIME PROMPT</small><b>最终模型输入</b></div></header>
+          <header><Eye/><div><small>运行时输入</small><b>模型实际 Prompt</b></div></header>
           <label className="preview-case-select">题目<select value={previewCaseId ?? ""} onChange={(event) => setPreviewCaseId(Number(event.target.value))}>{located.version.cases.map((item) => <option value={item.id} key={item.id}>{String(item.sort_order).padStart(2, "0")} · {item.title}</option>)}</select></label>
           <pre>{promptPreview.isLoading ? "正在渲染实际 Prompt…" : promptPreview.data?.prompt ?? (promptPreview.error instanceof Error ? promptPreview.error.message : "当前版本没有可用结构快照")}</pre>
         </section>
