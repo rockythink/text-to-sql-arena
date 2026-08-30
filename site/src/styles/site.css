@@ -323,7 +323,7 @@ code { font-family: var(--mono); }
 .model-identity.compact { gap: .38em; }
 .model-logo { width: 1.45em; height: 1.45em; flex: 0 0 auto; display: inline-grid; place-items: center; overflow: hidden; border: 1px solid var(--line-bright); border-radius: .3em; background: #f4f1e9; color: #111; }
 .model-logo img { width: 72%; height: 72%; display: block; object-fit: contain; }
-.model-logo.brand-openai { background: #fff; }
+.model-logo.brand-openai { background: #10161b; }
 .model-logo.brand-anthropic { background: #d8c6ae; }
 .model-logo.brand-gemini { background: #fff; }
 .model-logo.brand-generic { background: var(--panel-raised); color: var(--paper); font: 600 .68em var(--mono); }
