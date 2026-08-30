@@ -1,5 +1,5 @@
 ---
-import type { ModelReport } from "../lib/evidence";
+import { displayModelName, type ModelReport } from "../lib/evidence";
 
 interface Props {
   models: ModelReport[];
@@ -20,7 +20,7 @@ const ringFor = (value: number) => categories.map((_, index) => pointFor(index, 
 ---
 <div class="radar-wrap">
   <div class="radar-legend">
-    {models.map((model, index) => <span style={`--legend-color:${colors[index % colors.length]};--legend-style:${index === 0 ? "solid" : "dashed"}`}><i></i>{model.name}</span>)}
+    {models.map((model, index) => <span style={`--legend-color:${colors[index % colors.length]};--legend-style:${index === 0 ? "solid" : "dashed"}`}><i></i>{displayModelName(model.name)}</span>)}
   </div>
   <svg class="radar" viewBox="0 0 360 340" role="img" aria-label="模型六维能力雷达图">
     {[0.25, 0.5, 0.75, 1].map((value) => <polygon class="radar-ring" points={ringFor(value)} />)}

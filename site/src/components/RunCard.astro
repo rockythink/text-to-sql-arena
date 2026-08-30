@@ -1,5 +1,5 @@
 ---
-import { formatDate, runSlug, scoreText, statusLabel, type EvidenceIndexRun, type RunReport } from "../lib/evidence";
+import { displayModelName, formatDate, runSlug, scoreText, statusLabel, type EvidenceIndexRun, type RunReport } from "../lib/evidence";
 
 interface Props {
   index: EvidenceIndexRun;
@@ -25,9 +25,9 @@ const modelSearch = report.models
       <span class:list={["status-chip", `status-${report.status}`]}>{statusLabel(report.status)}</span>
       <time datetime={report.created_at}>{formatDate(report.created_at)}</time>
     </div>
-    <h2>{report.models.length ? report.models.map((model) => model.name).join(" / ") : "没有完成模型输出"}</h2>
+    <h2>{report.models.length ? report.models.map((model) => displayModelName(model.name)).join(" / ") : "没有完成模型输出"}</h2>
     <div class="score-line">
-      {report.models.map((model) => <div><span>{model.name}</span><b>{scoreText(model.official_score)}</b></div>)}
+      {report.models.map((model) => <div><span>{displayModelName(model.name)}</span><b>{scoreText(model.official_score)}</b></div>)}
       {!report.models.length && <div><span>运行状态</span><b>—</b></div>}
     </div>
     <div class="hash-line">

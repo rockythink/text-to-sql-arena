@@ -174,3 +174,7 @@ export function scoreText(score: number | null): string {
 export function runSlug(id: number): string {
   return `run-${String(id).padStart(4, "0")}`;
 }
+
+export function displayModelName(name: string): string {
+  return name.replace(/\s*本机实测\s*$/, "");
+}

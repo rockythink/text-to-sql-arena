@@ -1,7 +1,7 @@
 ---
 import RunCard from "../components/RunCard.astro";
 import SiteLayout from "../layouts/SiteLayout.astro";
-import { formatDate, getEvidenceIndex, getRuns, getSuites, runSlug, scoreText } from "../lib/evidence";
+import { displayModelName, formatDate, getEvidenceIndex, getRuns, getSuites, runSlug, scoreText } from "../lib/evidence";
 
 const [index, runs, suites] = await Promise.all([getEvidenceIndex(), getRuns(), getSuites()]);
 const latest = runs.find(({ report }) => report.models.some((model) => model.official_score != null)) ?? runs[0];
@@ -41,7 +41,7 @@ const base = import.meta.env.BASE_URL;
         <div class="match-models">
           {latest.report.models.map((model) => <article class="match-model">
             <small>{model.resolved_model_id ?? model.requested_model_id}</small>
-            <h3>{model.name}</h3>
+            <h3>{displayModelName(model.name)}</h3>
             <strong>{scoreText(model.official_score)}</strong>
           </article>)}
         </div>

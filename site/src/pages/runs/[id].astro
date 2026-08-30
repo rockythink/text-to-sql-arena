@@ -1,7 +1,7 @@
 ---
 import RadarChart from "../../components/RadarChart.astro";
 import SiteLayout from "../../layouts/SiteLayout.astro";
-import { formatDate, getRuns, githubEvidenceRoot, runSlug, scoreText, statusLabel, type CaseReport } from "../../lib/evidence";
+import { displayModelName, formatDate, getRuns, githubEvidenceRoot, runSlug, scoreText, statusLabel, type CaseReport } from "../../lib/evidence";
 
 export async function getStaticPaths() {
   const runs = await getRuns();
@@ -24,7 +24,7 @@ const evidenceUrl = `${githubEvidenceRoot}/${index.path}`;
   <header class="report-hero">
     <div class="report-copy">
       <p class="report-number"><span>RUN / #{String(report.id).padStart(4, "0")}</span><span class:list={["status-chip", `status-${report.status}`]}>{statusLabel(report.status)}</span></p>
-      <h1>{report.models.length ? report.models.map((model) => model.name).join(" / ") : "未完成运行"}</h1>
+      <h1>{report.models.length ? report.models.map((model) => displayModelName(model.name)).join(" / ") : "未完成运行"}</h1>
       <p>{report.fairness.pure_model_comparison ? "纯模型对比：适配器、响应模式和参数控制一致。" : `比较模式：${report.fairness.comparison_mode}。差异字段：${report.fairness.differences.join("、") || "无"}。`} 创建于 {formatDate(report.created_at)}。</p>
       {report.status === "completed_with_errors" && <p class="status-alert"><b>非全量成功 · 本场包含 {totalFailures} 个失败案例</b>失败已经按固定规则计入综合得分，具体影响可在逐题表和案例证据中复核。</p>}
       <div class="evidence-actions">
@@ -35,7 +35,7 @@ const evidenceUrl = `${githubEvidenceRoot}/${index.path}`;
     </div>
     <div class="report-scores">
       {report.models.map((model, modelIndex) => <article class="report-score" style={`--model-color:${modelColors[modelIndex % modelColors.length]}`}>
-        <div><small>{model.resolved_model_id ?? model.requested_model_id}</small><h2>{model.name}</h2><code>{model.adapter_kind} · {model.response_mode}</code><span class="score-context">综合得分 / 100 · 越高越好</span></div>
+        <div><small>{model.resolved_model_id ?? model.requested_model_id}</small><h2>{displayModelName(model.name)}</h2><code>{model.adapter_kind} · {model.response_mode}</code><span class="score-context">综合得分 / 100 · 越高越好</span></div>
         <strong>{scoreText(model.official_score)}</strong>
       </article>)}
       {!report.models.length && <article class="report-score"><div><small>NO COMPLETED MODEL</small><h2>{statusLabel(report.status)}</h2></div><strong>—</strong></article>}
@@ -50,7 +50,7 @@ const evidenceUrl = `${githubEvidenceRoot}/${index.path}`;
     <article class="report-panel">
       <div class="panel-title"><h2>分类得分</h2><span>0—100</span></div>
       <table class="category-table">
-        <thead><tr><th>能力维度</th>{report.models.map((model, index) => <th style={`color:${modelColors[index % modelColors.length]}`}>{model.name}</th>)}</tr></thead>
+        <thead><tr><th>能力维度</th>{report.models.map((model, index) => <th style={`color:${modelColors[index % modelColors.length]}`}>{displayModelName(model.name)}</th>)}</tr></thead>
         <tbody>{categories.map((category) => <tr><td>{category}</td>{report.models.map((model) => <td>{model.categories[category]?.toFixed(2) ?? "—"}</td>)}</tr>)}</tbody>
       </table>
     </article>
@@ -64,7 +64,7 @@ const evidenceUrl = `${githubEvidenceRoot}/${index.path}`;
     {cases.length ? <>
       <div class="case-table-wrap">
         <table class="case-table">
-          <thead><tr><th>案例</th>{report.models.map((model) => <th>{model.name}</th>)}</tr></thead>
+          <thead><tr><th>案例</th>{report.models.map((model) => <th>{displayModelName(model.name)}</th>)}</tr></thead>
           <tbody>{cases.map((item) => <tr><td class="case-title"><b>{item.title}</b><br/><code>{item.stableKey}</code></td>{item.models.map(({ result }) => {
             const score = result?.score?.total;
             return <td class:list={["case-score", { low: typeof score === "number" && score < 60, high: typeof score === "number" && score >= 90 }]}>{typeof score === "number" ? score.toFixed(2) : "—"}</td>;
@@ -76,7 +76,7 @@ const evidenceUrl = `${githubEvidenceRoot}/${index.path}`;
           <summary><span>{item.title}</span><code>{item.stableKey}</code></summary>
           <div class="case-model-output">
             {item.models.map(({ model, result }) => <article>
-              <h4>{model.name}</h4>
+              <h4>{displayModelName(model.name)}</h4>
               {result ? <>
                 <p>{result.visible_summary ?? result.error_message ?? "没有可见摘要。"}</p>
                 {result.formatted_sql && <pre><code>{result.formatted_sql}</code></pre>}

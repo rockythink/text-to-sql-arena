@@ -13,23 +13,23 @@
 
 | Run | 题库 | 运行状态 | 模型结果 | 报告 | 日志 |
 | ---: | --- | --- | --- | --- | --- |
-| 1 | v1 | failed | Sol 本机实测 0.00（failed） | [report](../evidence/runs/run-0001/report.json) | [events](../evidence/runs/run-0001/events.jsonl) |
-| 2 | v1 | failed | Gemini 本机实测 0.00（failed） | [report](../evidence/runs/run-0002/report.json) | [events](../evidence/runs/run-0002/events.jsonl) |
-| 3 | v1 | failed | Sol 本机实测 0.00（failed） | [report](../evidence/runs/run-0003/report.json) | [events](../evidence/runs/run-0003/events.jsonl) |
-| 4 | v1 | failed | Gemini 本机实测 0.00（failed） | [report](../evidence/runs/run-0004/report.json) | [events](../evidence/runs/run-0004/events.jsonl) |
-| 5 | v1 | failed | Sol 本机实测 0.00（failed） | [report](../evidence/runs/run-0005/report.json) | [events](../evidence/runs/run-0005/events.jsonl) |
-| 6 | v1 | failed | Sol 本机实测 0.00（failed） | [report](../evidence/runs/run-0006/report.json) | [events](../evidence/runs/run-0006/events.jsonl) |
-| 7 | v1 | failed | Sol 本机实测 0.00（failed） | [report](../evidence/runs/run-0007/report.json) | [events](../evidence/runs/run-0007/events.jsonl) |
-| 8 | v1 | failed | Sol 本机实测 0.00（failed） | [report](../evidence/runs/run-0008/report.json) | [events](../evidence/runs/run-0008/events.jsonl) |
-| 9 | v1 | completed | Sol 本机实测 100.00 | [report](../evidence/runs/run-0009/report.json) | [events](../evidence/runs/run-0009/events.jsonl) |
-| 10 | v1 | completed | Sol 本机实测 100.00 | [report](../evidence/runs/run-0010/report.json) | [events](../evidence/runs/run-0010/events.jsonl) |
+| 1 | v1 | failed | Sol 0.00（failed） | [report](../evidence/runs/run-0001/report.json) | [events](../evidence/runs/run-0001/events.jsonl) |
+| 2 | v1 | failed | Gemini 0.00（failed） | [report](../evidence/runs/run-0002/report.json) | [events](../evidence/runs/run-0002/events.jsonl) |
+| 3 | v1 | failed | Sol 0.00（failed） | [report](../evidence/runs/run-0003/report.json) | [events](../evidence/runs/run-0003/events.jsonl) |
+| 4 | v1 | failed | Gemini 0.00（failed） | [report](../evidence/runs/run-0004/report.json) | [events](../evidence/runs/run-0004/events.jsonl) |
+| 5 | v1 | failed | Sol 0.00（failed） | [report](../evidence/runs/run-0005/report.json) | [events](../evidence/runs/run-0005/events.jsonl) |
+| 6 | v1 | failed | Sol 0.00（failed） | [report](../evidence/runs/run-0006/report.json) | [events](../evidence/runs/run-0006/events.jsonl) |
+| 7 | v1 | failed | Sol 0.00（failed） | [report](../evidence/runs/run-0007/report.json) | [events](../evidence/runs/run-0007/events.jsonl) |
+| 8 | v1 | failed | Sol 0.00（failed） | [report](../evidence/runs/run-0008/report.json) | [events](../evidence/runs/run-0008/events.jsonl) |
+| 9 | v1 | completed | Sol 100.00 | [report](../evidence/runs/run-0009/report.json) | [events](../evidence/runs/run-0009/events.jsonl) |
+| 10 | v1 | completed | Sol 100.00 | [report](../evidence/runs/run-0010/report.json) | [events](../evidence/runs/run-0010/events.jsonl) |
 | 11 | v1 | completed_with_errors | Sol 89.79；Gemini 0.00（failed） | [report](../evidence/runs/run-0011/report.json) | [events](../evidence/runs/run-0011/events.jsonl) |
 | 12 | v1 | completed_with_errors | Sol 98.12；Gemini 0.00（failed） | [report](../evidence/runs/run-0012/report.json) | [events](../evidence/runs/run-0012/events.jsonl) |
 | 13 | v1 | cancelled | Sol 50.00（cancelled）；Gemini 0.00（failed） | [report](../evidence/runs/run-0013/report.json) | [events](../evidence/runs/run-0013/events.jsonl) |
-| 14 | v1 | completed | Sol 本机实测 98.12 | [report](../evidence/runs/run-0014/report.json) | [events](../evidence/runs/run-0014/events.jsonl) |
-| 15 | v1 | cancelled | Sol 本机实测 8.33（cancelled） | [report](../evidence/runs/run-0015/report.json) | [events](../evidence/runs/run-0015/events.jsonl) |
+| 14 | v1 | completed | Sol 98.12 | [report](../evidence/runs/run-0014/report.json) | [events](../evidence/runs/run-0014/events.jsonl) |
+| 15 | v1 | cancelled | Sol 8.33（cancelled） | [report](../evidence/runs/run-0015/report.json) | [events](../evidence/runs/run-0015/events.jsonl) |
 | 16 | v2 | completed_with_errors | GPT 当前会话桥接（流程验收）87.31 | [report](../evidence/runs/run-0016/report.json) | [events](../evidence/runs/run-0016/events.jsonl) |
-| 17 | v2 | completed | Luna 本机实测 100.00 | [report](../evidence/runs/run-0017/report.json) | [events](../evidence/runs/run-0017/events.jsonl) |
+| 17 | v2 | completed | Luna 100.00 | [report](../evidence/runs/run-0017/report.json) | [events](../evidence/runs/run-0017/events.jsonl) |
 | 18 | v2 | completed_with_errors | Luna 95.09；Sol 92.04 | [report](../evidence/runs/run-0018/report.json) | [events](../evidence/runs/run-0018/events.jsonl) |
 
 每个 Run 目录还包含：
@@ -49,7 +49,7 @@
 - Luna：95.09，模型状态 completed；
 - Sol：92.04，模型状态 completed_with_errors；
 - 顶层运行状态：completed_with_errors；
-- 报告结论冠军：Luna 本机实测。
+- 报告结论冠军：Luna。
 
 这仍是一次尝试的观察值，不是统计显著性结论。逐案例得分、错误、Prompt、原始输出、SQL 和结果差异以 [Run 18 报告](../evidence/runs/run-0018/report.json) 与 `cases/` 为准。
 
