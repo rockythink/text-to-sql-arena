@@ -1,0 +1,82 @@
+{
+  "bundle_sha256": "b8f72f4f616f4077a37a7a180dc1dab0c2e9522dde02b1b42f1738b53c0abb99",
+  "case_run_count": 12,
+  "event_count": 88,
+  "files": [
+    {
+      "bytes": 43914,
+      "path": "cases/case-run-00085.json",
+      "sha256": "a6f85a1bfb3873db7bd9cf6ab62faece81453c1da98976c2252b1d47d6c998fa"
+    },
+    {
+      "bytes": 16067,
+      "path": "cases/case-run-00086.json",
+      "sha256": "a11975230d74f8700d8487c083cb741d6c55cc34dfc475a7906439e21123c8b1"
+    },
+    {
+      "bytes": 29691,
+      "path": "cases/case-run-00087.json",
+      "sha256": "805518b964eef494cab9bb62427277fd7a52c90896a21d71390139d7e68d542b"
+    },
+    {
+      "bytes": 56227,
+      "path": "cases/case-run-00088.json",
+      "sha256": "8571c91d49c132a978c06580017a2c1b402d010cf24bf71065976b1340e36400"
+    },
+    {
+      "bytes": 15401,
+      "path": "cases/case-run-00089.json",
+      "sha256": "40f8ffd673a1aa00b4ea438fbd6ff5e7f366b8c43bfdca05f4aacae2db3e667d"
+    },
+    {
+      "bytes": 21178,
+      "path": "cases/case-run-00090.json",
+      "sha256": "780d568dd7983aacbb58c2e2162dd8aa43200318431be64b63add14153d6ae54"
+    },
+    {
+      "bytes": 17926,
+      "path": "cases/case-run-00091.json",
+      "sha256": "05c65c3778a70b32fa4ebb8ce69450d3cabf4351b558e2dd439b7dba375ac3ba"
+    },
+    {
+      "bytes": 18529,
+      "path": "cases/case-run-00092.json",
+      "sha256": "b9e9f918ec6c309098a4754ce9c77074679004a7214e17b531cea5b4b7eba2f5"
+    },
+    {
+      "bytes": 24105,
+      "path": "cases/case-run-00093.json",
+      "sha256": "8a4bed3f3cc4169956393adfe39b3de78ef38f9a1b2aa209a33f39259c3105bb"
+    },
+    {
+      "bytes": 16443,
+      "path": "cases/case-run-00094.json",
+      "sha256": "efb8296e4d0f98ae877fe6834c44c66488d063d95d0ea9671adb0a12a668f046"
+    },
+    {
+      "bytes": 19595,
+      "path": "cases/case-run-00095.json",
+      "sha256": "26e11253acc4ef46d979a4a60ccd342badb86cb60b561bfe121979de395abe1b"
+    },
+    {
+      "bytes": 53830,
+      "path": "cases/case-run-00096.json",
+      "sha256": "632ef6199d81ba586c247111f3c0c2902f2ff6fbdb1967926702c4f42cf873b1"
+    },
+    {
+      "bytes": 29146,
+      "path": "events.jsonl",
+      "sha256": "b8821689818187603aad494d3430a6e7c9e21975be0cac872463b6dfc978dfbb"
+    },
+    {
+      "bytes": 29559,
+      "path": "report.json",
+      "sha256": "55f4eb64bb7a4e1a98cdf6c9a81201e14fe3379c81f5aabcdfe3deb4976d7980"
+    }
+  ],
+  "kind": "run",
+  "run_id": 14,
+  "schema_version": "text-to-sql-evidence-v1",
+  "status": "completed",
+  "suite_content_hash": "0a4a18b4374f510f5eff18b06272c30c3375e1f082ae405adc8ead7dd9c81556"
+}

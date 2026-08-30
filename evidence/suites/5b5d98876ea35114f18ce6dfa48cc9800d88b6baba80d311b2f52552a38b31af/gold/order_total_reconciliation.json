@@ -1,0 +1,1 @@
+{"columns":[{"name":"order_id","type":"BIGINT"},{"name":"stored_total","type":"DECIMAL(14,2)"},{"name":"calculated_total","type":"DECIMAL(38,2)"},{"name":"difference","type":"DECIMAL(38,2)"}],"digest":"375e58234a18c2c3ff105d25ef0bb1f4b523b6f6b6b502a45f98abc6a6f6a1ca","rows":[[900004,"100.00","90.00","10.00"]]}

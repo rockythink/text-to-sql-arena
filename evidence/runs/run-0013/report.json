@@ -1,0 +1,903 @@
+{
+  "app_version": "0.1.0",
+  "attempts": 1,
+  "conclusion": {
+    "champions": [],
+    "models": [],
+    "status": "incomplete"
+  },
+  "created_at": "2026-08-29T16:43:31",
+  "duckdb_version": "1.5.5",
+  "fairness": {
+    "comparison_mode": "access_path",
+    "controlled_fields": [
+      "base_url",
+      "response_mode",
+      "parameters"
+    ],
+    "differences": [
+      "adapter_kind",
+      "cli_version"
+    ],
+    "exact_rerun_default": true,
+    "model_variable": [
+      "gpt-5.6-sol",
+      "gemini-2.5-pro"
+    ],
+    "pure_model_comparison": false
+  },
+  "finished_at": "2026-08-29T16:45:41.990495",
+  "id": 13,
+  "models": [
+    {
+      "adapter_kind": "codex_cli",
+      "attempt_statistics": {
+        "above_average_customer_spend": {
+          "mean": 0.0,
+          "stddev": 0.0,
+          "success_rate": 0.0
+        },
+        "basic_filter_sort": {
+          "mean": 100.0,
+          "stddev": 0.0,
+          "success_rate": 1.0
+        },
+        "category_return_rate": {
+          "mean": 0.0,
+          "stddev": 0.0,
+          "success_rate": 0.0
+        },
+        "correlated_segment_average": {
+          "mean": 100.0,
+          "stddev": 0.0,
+          "success_rate": 1.0
+        },
+        "latest_successful_payment": {
+          "mean": 0.0,
+          "stddev": 0.0,
+          "success_rate": 0.0
+        },
+        "left_join_zero_orders": {
+          "mean": 100.0,
+          "stddev": 0.0,
+          "success_rate": 1.0
+        },
+        "monthly_mom_growth": {
+          "mean": 0.0,
+          "stddev": 0.0,
+          "success_rate": 0.0
+        },
+        "monthly_running_revenue": {
+          "mean": 0.0,
+          "stddev": 0.0,
+          "success_rate": 0.0
+        },
+        "multi_join_category_revenue": {
+          "mean": 100.0,
+          "stddev": 0.0,
+          "success_rate": 1.0
+        },
+        "not_exists_customers": {
+          "mean": 100.0,
+          "stddev": 0.0,
+          "success_rate": 1.0
+        },
+        "payment_status_by_channel": {
+          "mean": 0.0,
+          "stddev": 0.0,
+          "success_rate": 0.0
+        },
+        "top3_products_per_category": {
+          "mean": 100.0,
+          "stddev": 0.0,
+          "success_rate": 1.0
+        }
+      },
+      "cases": [
+        {
+          "attempt": 1,
+          "case_id": 1,
+          "category": "filter",
+          "error_code": null,
+          "error_message": null,
+          "execution_ms": 234.1956670024956,
+          "formatted_sql": "SELECT\n  o.order_id,\n  c.customer_name,\n  o.order_date,\n  o.total_amount\nFROM fact_orders AS o\nJOIN dim_customers AS c\n  ON o.customer_id = c.customer_id\nWHERE\n  o.status = 'completed' AND o.order_date >= CAST('2026-01-01' AS DATE)\nORDER BY\n  o.total_amount DESC,\n  o.order_id ASC",
+          "generation_ms": null,
+          "id": 61,
+          "provider_request_id": null,
+          "radar_dimension": "基础查询",
+          "score": {
+            "ast_rules": [],
+            "column_count": 5.0,
+            "column_names": 5.0,
+            "execution": 10.0,
+            "ordering": 10.0,
+            "protocol": 5.0,
+            "read_only_ast": 5.0,
+            "row_f1": 45.0,
+            "sql_capability": 15.0,
+            "total": 100.0
+          },
+          "stable_key": "basic_filter_sort",
+          "status": "completed",
+          "title": "基础筛选与排序",
+          "token_usage": {
+            "cache_write_input_tokens": 0,
+            "cached_input_tokens": 0,
+            "input_tokens": 19123,
+            "output_tokens": 156,
+            "reasoning_output_tokens": 0
+          },
+          "visible_summary": "查询 2026-01-01 起的已完成订单及客户名称，按订单金额降序、订单 ID 升序排列。"
+        },
+        {
+          "attempt": 1,
+          "case_id": 2,
+          "category": "multi_join",
+          "error_code": null,
+          "error_message": null,
+          "execution_ms": 293.5409579986299,
+          "formatted_sql": "SELECT\n  p.category AS category,\n  COUNT(DISTINCT o.order_id) AS order_count,\n  SUM(oi.quantity * oi.unit_price - oi.discount_amount) AS net_revenue\nFROM fact_orders AS o\nJOIN fact_order_items AS oi\n  ON oi.order_id = o.order_id\nJOIN dim_products AS p\n  ON p.product_id = oi.product_id\nWHERE\n  o.status = 'completed'\nGROUP BY\n  p.category\nORDER BY\n  net_revenue DESC,\n  category ASC",
+          "generation_ms": null,
+          "id": 62,
+          "provider_request_id": null,
+          "radar_dimension": "连接语义",
+          "score": {
+            "ast_rules": [
+              {
+                "details": {
+                  "actual": 2,
+                  "required": 2
+                },
+                "id": "join-2",
+                "kind": "min_node_count",
+                "passed": true
+              }
+            ],
+            "column_count": 5.0,
+            "column_names": 5.0,
+            "execution": 10.0,
+            "ordering": 10.0,
+            "protocol": 5.0,
+            "read_only_ast": 5.0,
+            "row_f1": 45.0,
+            "sql_capability": 15.0,
+            "total": 100.0
+          },
+          "stable_key": "multi_join_category_revenue",
+          "status": "completed",
+          "title": "多表连接品类收入",
+          "token_usage": {
+            "cache_write_input_tokens": 0,
+            "cached_input_tokens": 9984,
+            "input_tokens": 19151,
+            "output_tokens": 159,
+            "reasoning_output_tokens": 0
+          },
+          "visible_summary": "按商品品类汇总已完成订单的去重订单数和订单行净销售额，并按净销售额降序、品类升序排列。"
+        },
+        {
+          "attempt": 1,
+          "case_id": 3,
+          "category": "join_semantics",
+          "error_code": null,
+          "error_message": null,
+          "execution_ms": 222.6438750003581,
+          "formatted_sql": "SELECT\n  c.customer_id,\n  c.customer_name,\n  COUNT(DISTINCT o.order_id) AS completed_order_count\nFROM dim_customers AS c\nLEFT JOIN fact_orders AS o\n  ON c.customer_id = o.customer_id AND o.status = 'completed'\nGROUP BY\n  c.customer_id,\n  c.customer_name\nORDER BY\n  completed_order_count DESC,\n  c.customer_id ASC",
+          "generation_ms": null,
+          "id": 63,
+          "provider_request_id": null,
+          "radar_dimension": "连接语义",
+          "score": {
+            "ast_rules": [
+              {
+                "details": {
+                  "actual": 1,
+                  "required": 1
+                },
+                "id": "left-join",
+                "kind": "join_type",
+                "passed": true
+              }
+            ],
+            "column_count": 5.0,
+            "column_names": 5.0,
+            "execution": 10.0,
+            "ordering": 10.0,
+            "protocol": 5.0,
+            "read_only_ast": 5.0,
+            "row_f1": 45.0,
+            "sql_capability": 15.0,
+            "total": 100.0
+          },
+          "stable_key": "left_join_zero_orders",
+          "status": "completed",
+          "title": "保留零订单客户",
+          "token_usage": {
+            "cache_write_input_tokens": 0,
+            "cached_input_tokens": 0,
+            "input_tokens": 19124,
+            "output_tokens": 146,
+            "reasoning_output_tokens": 0
+          },
+          "visible_summary": "列出所有客户及其已完成订单数，通过 LEFT JOIN 保留零订单客户，并按完成订单数降序、客户 ID 升序排列。"
+        },
+        {
+          "attempt": 1,
+          "case_id": 4,
+          "category": "subquery",
+          "error_code": null,
+          "error_message": null,
+          "execution_ms": 234.37312500027474,
+          "formatted_sql": "SELECT\n  o.order_id,\n  o.customer_id,\n  c.segment,\n  o.total_amount,\n  (\n    SELECT\n      AVG(o2.total_amount)\n    FROM fact_orders AS o2\n    JOIN dim_customers AS c2\n      ON o2.customer_id = c2.customer_id\n    WHERE\n      o2.status = 'completed' AND c2.segment = c.segment\n  ) AS segment_avg_amount\nFROM fact_orders AS o\nJOIN dim_customers AS c\n  ON o.customer_id = c.customer_id\nWHERE\n  o.status = 'completed'\n  AND o.total_amount > (\n    SELECT\n      AVG(o3.total_amount)\n    FROM fact_orders AS o3\n    JOIN dim_customers AS c3\n      ON o3.customer_id = c3.customer_id\n    WHERE\n      o3.status = 'completed' AND c3.segment = c.segment\n  )\nORDER BY\n  o.total_amount DESC,\n  o.order_id ASC",
+          "generation_ms": null,
+          "id": 64,
+          "provider_request_id": null,
+          "radar_dimension": "子查询",
+          "score": {
+            "ast_rules": [
+              {
+                "details": {
+                  "actual": 2,
+                  "required": 1
+                },
+                "id": "correlated",
+                "kind": "correlated_subquery",
+                "passed": true
+              }
+            ],
+            "column_count": 5.0,
+            "column_names": 5.0,
+            "execution": 10.0,
+            "ordering": 10.0,
+            "protocol": 5.0,
+            "read_only_ast": 5.0,
+            "row_f1": 45.0,
+            "sql_capability": 15.0,
+            "total": 100.0
+          },
+          "stable_key": "correlated_segment_average",
+          "status": "completed",
+          "title": "相关子查询分群均值",
+          "token_usage": {
+            "cache_write_input_tokens": 0,
+            "cached_input_tokens": 0,
+            "input_tokens": 19149,
+            "output_tokens": 285,
+            "reasoning_output_tokens": 0
+          },
+          "visible_summary": "返回金额高于其客户分群已完成订单平均金额的已完成订单，并按订单金额降序、订单 ID 升序排列。"
+        },
+        {
+          "attempt": 1,
+          "case_id": 5,
+          "category": "anti_join",
+          "error_code": null,
+          "error_message": null,
+          "execution_ms": 201.70074999987264,
+          "formatted_sql": "SELECT\n  c.customer_id,\n  c.customer_name\nFROM dim_customers AS c\nWHERE\n  NOT EXISTS(\n    SELECT\n      1\n    FROM fact_orders AS o\n    WHERE\n      o.customer_id = c.customer_id AND o.status = 'completed'\n  )\nORDER BY\n  c.customer_id ASC",
+          "generation_ms": null,
+          "id": 65,
+          "provider_request_id": null,
+          "radar_dimension": "子查询",
+          "score": {
+            "ast_rules": [
+              {
+                "details": {
+                  "actual": 1,
+                  "required": 1
+                },
+                "id": "not-exists",
+                "kind": "not_exists",
+                "passed": true
+              }
+            ],
+            "column_count": 5.0,
+            "column_names": 5.0,
+            "execution": 10.0,
+            "ordering": 10.0,
+            "protocol": 5.0,
+            "read_only_ast": 5.0,
+            "row_f1": 45.0,
+            "sql_capability": 15.0,
+            "total": 100.0
+          },
+          "stable_key": "not_exists_customers",
+          "status": "completed",
+          "title": "从未完成订单客户",
+          "token_usage": {
+            "cache_write_input_tokens": 0,
+            "cached_input_tokens": 9984,
+            "input_tokens": 19121,
+            "output_tokens": 105,
+            "reasoning_output_tokens": 0
+          },
+          "visible_summary": "返回从未有已完成订单的客户，并按 customer_id 升序排列。"
+        },
+        {
+          "attempt": 1,
+          "case_id": 6,
+          "category": "window_rank",
+          "error_code": null,
+          "error_message": null,
+          "execution_ms": 204.5372499997029,
+          "formatted_sql": "WITH product_revenue AS (\n  SELECT\n    p.category,\n    p.product_id,\n    p.product_name,\n    SUM(oi.quantity * oi.unit_price - oi.discount_amount) AS net_revenue\n  FROM fact_order_items AS oi\n  JOIN fact_orders AS o\n    ON oi.order_id = o.order_id\n  JOIN dim_products AS p\n    ON oi.product_id = p.product_id\n  WHERE\n    o.status = 'completed'\n  GROUP BY\n    p.category,\n    p.product_id,\n    p.product_name\n), ranked_products AS (\n  SELECT\n    category,\n    product_id,\n    product_name,\n    net_revenue,\n    ROW_NUMBER() OVER (PARTITION BY category ORDER BY net_revenue DESC, product_id ASC) AS rank_no\n  FROM product_revenue\n)\nSELECT\n  category,\n  product_id,\n  product_name,\n  net_revenue,\n  rank_no\nFROM ranked_products\nWHERE\n  rank_no <= 3\nORDER BY\n  category ASC,\n  rank_no ASC",
+          "generation_ms": null,
+          "id": 66,
+          "provider_request_id": null,
+          "radar_dimension": "窗口函数",
+          "score": {
+            "ast_rules": [
+              {
+                "details": {
+                  "actual": 1,
+                  "required": 1
+                },
+                "id": "top3-row-number",
+                "kind": "window_function",
+                "passed": true
+              }
+            ],
+            "column_count": 5.0,
+            "column_names": 5.0,
+            "execution": 10.0,
+            "ordering": 10.0,
+            "protocol": 5.0,
+            "read_only_ast": 5.0,
+            "row_f1": 45.0,
+            "sql_capability": 15.0,
+            "total": 100.0
+          },
+          "stable_key": "top3_products_per_category",
+          "status": "completed",
+          "title": "每品类收入前三商品",
+          "token_usage": {
+            "cache_write_input_tokens": 0,
+            "cached_input_tokens": 9984,
+            "input_tokens": 19152,
+            "output_tokens": 313,
+            "reasoning_output_tokens": 0
+          },
+          "visible_summary": "统计完成订单中各商品的净销售额，并用 ROW_NUMBER 选出每个品类净销售额最高的恰好前三个商品；同额时按 product_id 升序排名。"
+        },
+        {
+          "attempt": 1,
+          "case_id": 7,
+          "category": "window_aggregate",
+          "error_code": null,
+          "error_message": null,
+          "execution_ms": null,
+          "formatted_sql": null,
+          "generation_ms": null,
+          "id": 67,
+          "provider_request_id": null,
+          "radar_dimension": "窗口函数",
+          "score": null,
+          "stable_key": "monthly_running_revenue",
+          "status": "cancelled",
+          "title": "月收入与累计收入",
+          "token_usage": null,
+          "visible_summary": null
+        },
+        {
+          "attempt": 1,
+          "case_id": 8,
+          "category": "window_offset",
+          "error_code": null,
+          "error_message": null,
+          "execution_ms": null,
+          "formatted_sql": null,
+          "generation_ms": null,
+          "id": 68,
+          "provider_request_id": null,
+          "radar_dimension": "窗口函数",
+          "score": null,
+          "stable_key": "monthly_mom_growth",
+          "status": "cancelled",
+          "title": "月收入环比增长",
+          "token_usage": null,
+          "visible_summary": null
+        },
+        {
+          "attempt": 1,
+          "case_id": 9,
+          "category": "nested_query",
+          "error_code": null,
+          "error_message": null,
+          "execution_ms": null,
+          "formatted_sql": null,
+          "generation_ms": null,
+          "id": 69,
+          "provider_request_id": null,
+          "radar_dimension": "复杂管道",
+          "score": null,
+          "stable_key": "above_average_customer_spend",
+          "status": "cancelled",
+          "title": "高于平均累计消费客户",
+          "token_usage": null,
+          "visible_summary": null
+        },
+        {
+          "attempt": 1,
+          "case_id": 10,
+          "category": "conditional_aggregation",
+          "error_code": null,
+          "error_message": null,
+          "execution_ms": null,
+          "formatted_sql": null,
+          "generation_ms": null,
+          "id": 70,
+          "provider_request_id": null,
+          "radar_dimension": "聚合分析",
+          "score": null,
+          "stable_key": "payment_status_by_channel",
+          "status": "cancelled",
+          "title": "渠道支付状态金额",
+          "token_usage": null,
+          "visible_summary": null
+        },
+        {
+          "attempt": 1,
+          "case_id": 11,
+          "category": "multi_stage_cte",
+          "error_code": null,
+          "error_message": null,
+          "execution_ms": null,
+          "formatted_sql": null,
+          "generation_ms": null,
+          "id": 71,
+          "provider_request_id": null,
+          "radar_dimension": "复杂管道",
+          "score": null,
+          "stable_key": "category_return_rate",
+          "status": "cancelled",
+          "title": "品类退货率",
+          "token_usage": null,
+          "visible_summary": null
+        },
+        {
+          "attempt": 1,
+          "case_id": 12,
+          "category": "latest_per_group",
+          "error_code": null,
+          "error_message": null,
+          "execution_ms": null,
+          "formatted_sql": null,
+          "generation_ms": null,
+          "id": 72,
+          "provider_request_id": null,
+          "radar_dimension": "窗口函数",
+          "score": null,
+          "stable_key": "latest_successful_payment",
+          "status": "cancelled",
+          "title": "每单最新成功支付",
+          "token_usage": null,
+          "visible_summary": null
+        }
+      ],
+      "categories": {
+        "基础查询": 100.0,
+        "复杂管道": 0.0,
+        "子查询": 100.0,
+        "窗口函数": 25.0,
+        "聚合分析": 0.0,
+        "连接语义": 100.0
+      },
+      "cli_version": "codex-cli 0.147.0",
+      "failure_count": 0,
+      "id": 15,
+      "isolation": {
+        "auth_allowlisted": true,
+        "executable": "$HOME/.nvm/versions/node/v24.4.1/bin/codex",
+        "message": "CLI 与隔离参数可用",
+        "native_executable": "$HOME/.nvm/versions/node/v24.4.1/lib/node_modules/@openai/codex/node_modules/@openai/codex-darwin-arm64/vendor/aarch64-apple-darwin/bin/codex",
+        "required_flags": [
+          "--json",
+          "--ephemeral",
+          "--ignore-user-config",
+          "--ignore-rules",
+          "--sandbox",
+          "--skip-git-repo-check",
+          "--output-schema"
+        ],
+        "resolved_model_id": "gpt-5.6-sol",
+        "sandbox_exec": "/usr/bin/sandbox-exec",
+        "version": "codex-cli 0.147.0"
+      },
+      "name": "Sol 本机实测",
+      "official_score": 50.0,
+      "parameters": {
+        "timeout_seconds": 180
+      },
+      "requested_model_id": "gpt-5.6-sol",
+      "resolved_model_id": "gpt-5.6-sol",
+      "response_mode": "text",
+      "status": "cancelled"
+    },
+    {
+      "adapter_kind": "gemini_cli",
+      "attempt_statistics": {
+        "above_average_customer_spend": {
+          "mean": 0.0,
+          "stddev": 0.0,
+          "success_rate": 0.0
+        },
+        "basic_filter_sort": {
+          "mean": 0.0,
+          "stddev": 0.0,
+          "success_rate": 0.0
+        },
+        "category_return_rate": {
+          "mean": 0.0,
+          "stddev": 0.0,
+          "success_rate": 0.0
+        },
+        "correlated_segment_average": {
+          "mean": 0.0,
+          "stddev": 0.0,
+          "success_rate": 0.0
+        },
+        "latest_successful_payment": {
+          "mean": 0.0,
+          "stddev": 0.0,
+          "success_rate": 0.0
+        },
+        "left_join_zero_orders": {
+          "mean": 0.0,
+          "stddev": 0.0,
+          "success_rate": 0.0
+        },
+        "monthly_mom_growth": {
+          "mean": 0.0,
+          "stddev": 0.0,
+          "success_rate": 0.0
+        },
+        "monthly_running_revenue": {
+          "mean": 0.0,
+          "stddev": 0.0,
+          "success_rate": 0.0
+        },
+        "multi_join_category_revenue": {
+          "mean": 0.0,
+          "stddev": 0.0,
+          "success_rate": 0.0
+        },
+        "not_exists_customers": {
+          "mean": 0.0,
+          "stddev": 0.0,
+          "success_rate": 0.0
+        },
+        "payment_status_by_channel": {
+          "mean": 0.0,
+          "stddev": 0.0,
+          "success_rate": 0.0
+        },
+        "top3_products_per_category": {
+          "mean": 0.0,
+          "stddev": 0.0,
+          "success_rate": 0.0
+        }
+      },
+      "cases": [
+        {
+          "attempt": 1,
+          "case_id": 1,
+          "category": "filter",
+          "error_code": "provider_auth_error",
+          "error_message": "Gemini 退出码 41: Please set an Auth method in your $PROJECT_ROOT/var/cli-homes/gemini/3/.gemini/settings.json or specify one of the following environment variables before running: GEMINI_API_KEY, GOOGLE_GENAI_USE_VERTEXAI, GOOGLE_GENAI_USE_GCA\n",
+          "execution_ms": null,
+          "formatted_sql": null,
+          "generation_ms": null,
+          "id": 73,
+          "provider_request_id": null,
+          "radar_dimension": "基础查询",
+          "score": {
+            "total": 0.0
+          },
+          "stable_key": "basic_filter_sort",
+          "status": "failed",
+          "title": "基础筛选与排序",
+          "token_usage": null,
+          "visible_summary": null
+        },
+        {
+          "attempt": 1,
+          "case_id": 2,
+          "category": "multi_join",
+          "error_code": "provider_auth_error",
+          "error_message": "Gemini 退出码 41: Please set an Auth method in your $PROJECT_ROOT/var/cli-homes/gemini/3/.gemini/settings.json or specify one of the following environment variables before running: GEMINI_API_KEY, GOOGLE_GENAI_USE_VERTEXAI, GOOGLE_GENAI_USE_GCA\n",
+          "execution_ms": null,
+          "formatted_sql": null,
+          "generation_ms": null,
+          "id": 74,
+          "provider_request_id": null,
+          "radar_dimension": "连接语义",
+          "score": {
+            "total": 0.0
+          },
+          "stable_key": "multi_join_category_revenue",
+          "status": "failed",
+          "title": "多表连接品类收入",
+          "token_usage": null,
+          "visible_summary": null
+        },
+        {
+          "attempt": 1,
+          "case_id": 3,
+          "category": "join_semantics",
+          "error_code": "provider_auth_error",
+          "error_message": "Gemini 退出码 41: Please set an Auth method in your $PROJECT_ROOT/var/cli-homes/gemini/3/.gemini/settings.json or specify one of the following environment variables before running: GEMINI_API_KEY, GOOGLE_GENAI_USE_VERTEXAI, GOOGLE_GENAI_USE_GCA\n",
+          "execution_ms": null,
+          "formatted_sql": null,
+          "generation_ms": null,
+          "id": 75,
+          "provider_request_id": null,
+          "radar_dimension": "连接语义",
+          "score": {
+            "total": 0.0
+          },
+          "stable_key": "left_join_zero_orders",
+          "status": "failed",
+          "title": "保留零订单客户",
+          "token_usage": null,
+          "visible_summary": null
+        },
+        {
+          "attempt": 1,
+          "case_id": 4,
+          "category": "subquery",
+          "error_code": "provider_auth_error",
+          "error_message": "Gemini 退出码 41: Please set an Auth method in your $PROJECT_ROOT/var/cli-homes/gemini/3/.gemini/settings.json or specify one of the following environment variables before running: GEMINI_API_KEY, GOOGLE_GENAI_USE_VERTEXAI, GOOGLE_GENAI_USE_GCA\n",
+          "execution_ms": null,
+          "formatted_sql": null,
+          "generation_ms": null,
+          "id": 76,
+          "provider_request_id": null,
+          "radar_dimension": "子查询",
+          "score": {
+            "total": 0.0
+          },
+          "stable_key": "correlated_segment_average",
+          "status": "failed",
+          "title": "相关子查询分群均值",
+          "token_usage": null,
+          "visible_summary": null
+        },
+        {
+          "attempt": 1,
+          "case_id": 5,
+          "category": "anti_join",
+          "error_code": "provider_auth_error",
+          "error_message": "Gemini 退出码 41: Please set an Auth method in your $PROJECT_ROOT/var/cli-homes/gemini/3/.gemini/settings.json or specify one of the following environment variables before running: GEMINI_API_KEY, GOOGLE_GENAI_USE_VERTEXAI, GOOGLE_GENAI_USE_GCA\n",
+          "execution_ms": null,
+          "formatted_sql": null,
+          "generation_ms": null,
+          "id": 77,
+          "provider_request_id": null,
+          "radar_dimension": "子查询",
+          "score": {
+            "total": 0.0
+          },
+          "stable_key": "not_exists_customers",
+          "status": "failed",
+          "title": "从未完成订单客户",
+          "token_usage": null,
+          "visible_summary": null
+        },
+        {
+          "attempt": 1,
+          "case_id": 6,
+          "category": "window_rank",
+          "error_code": "provider_auth_error",
+          "error_message": "Gemini 退出码 41: Please set an Auth method in your $PROJECT_ROOT/var/cli-homes/gemini/3/.gemini/settings.json or specify one of the following environment variables before running: GEMINI_API_KEY, GOOGLE_GENAI_USE_VERTEXAI, GOOGLE_GENAI_USE_GCA\n",
+          "execution_ms": null,
+          "formatted_sql": null,
+          "generation_ms": null,
+          "id": 78,
+          "provider_request_id": null,
+          "radar_dimension": "窗口函数",
+          "score": {
+            "total": 0.0
+          },
+          "stable_key": "top3_products_per_category",
+          "status": "failed",
+          "title": "每品类收入前三商品",
+          "token_usage": null,
+          "visible_summary": null
+        },
+        {
+          "attempt": 1,
+          "case_id": 7,
+          "category": "window_aggregate",
+          "error_code": "provider_auth_error",
+          "error_message": "Gemini 退出码 41: Please set an Auth method in your $PROJECT_ROOT/var/cli-homes/gemini/3/.gemini/settings.json or specify one of the following environment variables before running: GEMINI_API_KEY, GOOGLE_GENAI_USE_VERTEXAI, GOOGLE_GENAI_USE_GCA\n",
+          "execution_ms": null,
+          "formatted_sql": null,
+          "generation_ms": null,
+          "id": 79,
+          "provider_request_id": null,
+          "radar_dimension": "窗口函数",
+          "score": {
+            "total": 0.0
+          },
+          "stable_key": "monthly_running_revenue",
+          "status": "failed",
+          "title": "月收入与累计收入",
+          "token_usage": null,
+          "visible_summary": null
+        },
+        {
+          "attempt": 1,
+          "case_id": 8,
+          "category": "window_offset",
+          "error_code": "provider_auth_error",
+          "error_message": "Gemini 退出码 41: Please set an Auth method in your $PROJECT_ROOT/var/cli-homes/gemini/3/.gemini/settings.json or specify one of the following environment variables before running: GEMINI_API_KEY, GOOGLE_GENAI_USE_VERTEXAI, GOOGLE_GENAI_USE_GCA\n",
+          "execution_ms": null,
+          "formatted_sql": null,
+          "generation_ms": null,
+          "id": 80,
+          "provider_request_id": null,
+          "radar_dimension": "窗口函数",
+          "score": {
+            "total": 0.0
+          },
+          "stable_key": "monthly_mom_growth",
+          "status": "failed",
+          "title": "月收入环比增长",
+          "token_usage": null,
+          "visible_summary": null
+        },
+        {
+          "attempt": 1,
+          "case_id": 9,
+          "category": "nested_query",
+          "error_code": "provider_auth_error",
+          "error_message": "Gemini 退出码 41: Please set an Auth method in your $PROJECT_ROOT/var/cli-homes/gemini/3/.gemini/settings.json or specify one of the following environment variables before running: GEMINI_API_KEY, GOOGLE_GENAI_USE_VERTEXAI, GOOGLE_GENAI_USE_GCA\n",
+          "execution_ms": null,
+          "formatted_sql": null,
+          "generation_ms": null,
+          "id": 81,
+          "provider_request_id": null,
+          "radar_dimension": "复杂管道",
+          "score": {
+            "total": 0.0
+          },
+          "stable_key": "above_average_customer_spend",
+          "status": "failed",
+          "title": "高于平均累计消费客户",
+          "token_usage": null,
+          "visible_summary": null
+        },
+        {
+          "attempt": 1,
+          "case_id": 10,
+          "category": "conditional_aggregation",
+          "error_code": "provider_auth_error",
+          "error_message": "Gemini 退出码 41: Please set an Auth method in your $PROJECT_ROOT/var/cli-homes/gemini/3/.gemini/settings.json or specify one of the following environment variables before running: GEMINI_API_KEY, GOOGLE_GENAI_USE_VERTEXAI, GOOGLE_GENAI_USE_GCA\n",
+          "execution_ms": null,
+          "formatted_sql": null,
+          "generation_ms": null,
+          "id": 82,
+          "provider_request_id": null,
+          "radar_dimension": "聚合分析",
+          "score": {
+            "total": 0.0
+          },
+          "stable_key": "payment_status_by_channel",
+          "status": "failed",
+          "title": "渠道支付状态金额",
+          "token_usage": null,
+          "visible_summary": null
+        },
+        {
+          "attempt": 1,
+          "case_id": 11,
+          "category": "multi_stage_cte",
+          "error_code": "provider_auth_error",
+          "error_message": "Gemini 退出码 41: Please set an Auth method in your $PROJECT_ROOT/var/cli-homes/gemini/3/.gemini/settings.json or specify one of the following environment variables before running: GEMINI_API_KEY, GOOGLE_GENAI_USE_VERTEXAI, GOOGLE_GENAI_USE_GCA\n",
+          "execution_ms": null,
+          "formatted_sql": null,
+          "generation_ms": null,
+          "id": 83,
+          "provider_request_id": null,
+          "radar_dimension": "复杂管道",
+          "score": {
+            "total": 0.0
+          },
+          "stable_key": "category_return_rate",
+          "status": "failed",
+          "title": "品类退货率",
+          "token_usage": null,
+          "visible_summary": null
+        },
+        {
+          "attempt": 1,
+          "case_id": 12,
+          "category": "latest_per_group",
+          "error_code": "provider_auth_error",
+          "error_message": "Gemini 退出码 41: Please set an Auth method in your $PROJECT_ROOT/var/cli-homes/gemini/3/.gemini/settings.json or specify one of the following environment variables before running: GEMINI_API_KEY, GOOGLE_GENAI_USE_VERTEXAI, GOOGLE_GENAI_USE_GCA\n",
+          "execution_ms": null,
+          "formatted_sql": null,
+          "generation_ms": null,
+          "id": 84,
+          "provider_request_id": null,
+          "radar_dimension": "窗口函数",
+          "score": {
+            "total": 0.0
+          },
+          "stable_key": "latest_successful_payment",
+          "status": "failed",
+          "title": "每单最新成功支付",
+          "token_usage": null,
+          "visible_summary": null
+        }
+      ],
+      "categories": {
+        "基础查询": 0.0,
+        "复杂管道": 0.0,
+        "子查询": 0.0,
+        "窗口函数": 0.0,
+        "聚合分析": 0.0,
+        "连接语义": 0.0
+      },
+      "cli_version": "0.35.3",
+      "failure_count": 12,
+      "id": 16,
+      "isolation": {
+        "executable": "$HOME/.nvm/versions/node/v24.4.1/bin/gemini",
+        "extensions": "none",
+        "message": "CLI 与隔离参数可用",
+        "policy_hash": "bbe90ffc3d0e278d68f49a79d0b897430a08c3e41bd303fae96b56deabb072c5",
+        "required_flags": [
+          "--output-format",
+          "--approval-mode",
+          "--policy",
+          "-e",
+          "--model"
+        ],
+        "resolved_model_id": "gemini-2.5-pro",
+        "version": "0.35.3"
+      },
+      "name": "Gemini 本机实测",
+      "official_score": 0.0,
+      "parameters": {
+        "timeout_seconds": 180
+      },
+      "requested_model_id": "gemini-2.5-pro",
+      "resolved_model_id": "gemini-2.5-pro",
+      "response_mode": "text",
+      "status": "failed"
+    }
+  ],
+  "protocol": {
+    "app_version": "0.1.0",
+    "attempts": 1,
+    "case_count": 12,
+    "duckdb_version": "1.5.5",
+    "output_contract": "query-plan-v1",
+    "scorer_version": "1.0.0",
+    "sqlglot_version": "30.17.0"
+  },
+  "report_schema_version": "run-report-v1",
+  "scorer_version": "1.0.0",
+  "selected_case_keys": [
+    "basic_filter_sort",
+    "multi_join_category_revenue",
+    "left_join_zero_orders",
+    "correlated_segment_average",
+    "not_exists_customers",
+    "top3_products_per_category",
+    "monthly_running_revenue",
+    "monthly_mom_growth",
+    "above_average_customer_spend",
+    "payment_status_by_channel",
+    "category_return_rate",
+    "latest_successful_payment"
+  ],
+  "source_run_id": null,
+  "sqlglot_version": "30.17.0",
+  "started_at": "2026-08-29T16:43:31.883594",
+  "status": "cancelled",
+  "suite_content_hash": "0a4a18b4374f510f5eff18b06272c30c3375e1f082ae405adc8ead7dd9c81556",
+  "suite_version_id": 1
+}

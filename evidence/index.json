@@ -1,0 +1,151 @@
+{
+  "exported_at": "2026-08-29T23:48:10.160005+00:00",
+  "run_count": 18,
+  "runs": [
+    {
+      "bundle_sha256": "c0dd567925e265cefc2c0143342d8c4257c5eeb2740edbef13f19e4a57449553",
+      "path": "runs/run-0001",
+      "run_id": 1,
+      "status": "failed",
+      "suite_content_hash": "0a4a18b4374f510f5eff18b06272c30c3375e1f082ae405adc8ead7dd9c81556"
+    },
+    {
+      "bundle_sha256": "f3d3f5b933e1245f1772f420fef422fc6d17e308afffa00fe783d8dc0dfed368",
+      "path": "runs/run-0002",
+      "run_id": 2,
+      "status": "failed",
+      "suite_content_hash": "0a4a18b4374f510f5eff18b06272c30c3375e1f082ae405adc8ead7dd9c81556"
+    },
+    {
+      "bundle_sha256": "f24ddb71727d2ef7827d77f9970a87115d57407d3d6d9e1e835c8cfc977b6bba",
+      "path": "runs/run-0003",
+      "run_id": 3,
+      "status": "failed",
+      "suite_content_hash": "0a4a18b4374f510f5eff18b06272c30c3375e1f082ae405adc8ead7dd9c81556"
+    },
+    {
+      "bundle_sha256": "372fdfcf2fb9f8a9516e05758b99a70642fc56f901e846e495e84011005b4afe",
+      "path": "runs/run-0004",
+      "run_id": 4,
+      "status": "failed",
+      "suite_content_hash": "0a4a18b4374f510f5eff18b06272c30c3375e1f082ae405adc8ead7dd9c81556"
+    },
+    {
+      "bundle_sha256": "5b9ed87c1e5ae62027b98a051d81580949a4bbb071f7da06619474a486cd020b",
+      "path": "runs/run-0005",
+      "run_id": 5,
+      "status": "failed",
+      "suite_content_hash": "0a4a18b4374f510f5eff18b06272c30c3375e1f082ae405adc8ead7dd9c81556"
+    },
+    {
+      "bundle_sha256": "d5e3202b6a937fa6dea104e04a0ec3da192376301656a4feceaa954fefbe18ea",
+      "path": "runs/run-0006",
+      "run_id": 6,
+      "status": "failed",
+      "suite_content_hash": "0a4a18b4374f510f5eff18b06272c30c3375e1f082ae405adc8ead7dd9c81556"
+    },
+    {
+      "bundle_sha256": "fc8ea107d073560471c54e468c124086bb777e549c721711fb916bc0b7bddf6f",
+      "path": "runs/run-0007",
+      "run_id": 7,
+      "status": "failed",
+      "suite_content_hash": "0a4a18b4374f510f5eff18b06272c30c3375e1f082ae405adc8ead7dd9c81556"
+    },
+    {
+      "bundle_sha256": "d532ff1bc1c93e8ce7dda33370193c3cee65edb3cadd23c8e1fb310d72cd5f00",
+      "path": "runs/run-0008",
+      "run_id": 8,
+      "status": "failed",
+      "suite_content_hash": "0a4a18b4374f510f5eff18b06272c30c3375e1f082ae405adc8ead7dd9c81556"
+    },
+    {
+      "bundle_sha256": "9f768a88dd91cd32b8e0e057b49e31a3bdb0acd3477a2cfdba9466ebd1cf4ab5",
+      "path": "runs/run-0009",
+      "run_id": 9,
+      "status": "completed",
+      "suite_content_hash": "0a4a18b4374f510f5eff18b06272c30c3375e1f082ae405adc8ead7dd9c81556"
+    },
+    {
+      "bundle_sha256": "6b0cb87b71f71f0cf02c9f87ec4d0caf8c2916b9bad6e26e7b6cd0fdb4eaf793",
+      "path": "runs/run-0010",
+      "run_id": 10,
+      "status": "completed",
+      "suite_content_hash": "0a4a18b4374f510f5eff18b06272c30c3375e1f082ae405adc8ead7dd9c81556"
+    },
+    {
+      "bundle_sha256": "23fad9bb883f167a6c0f4cfbc8b78190708e3cd4243ca075ffbf9479fb2935a0",
+      "path": "runs/run-0011",
+      "run_id": 11,
+      "status": "completed_with_errors",
+      "suite_content_hash": "0a4a18b4374f510f5eff18b06272c30c3375e1f082ae405adc8ead7dd9c81556"
+    },
+    {
+      "bundle_sha256": "d5da861e367c46b599d2894f89652f8bac573e3b8b9deee1f34169a65ad8501e",
+      "path": "runs/run-0012",
+      "run_id": 12,
+      "status": "completed_with_errors",
+      "suite_content_hash": "0a4a18b4374f510f5eff18b06272c30c3375e1f082ae405adc8ead7dd9c81556"
+    },
+    {
+      "bundle_sha256": "70edf38add6526d12da760c4c62e6c6ff3d028636845367c13931a8915762252",
+      "path": "runs/run-0013",
+      "run_id": 13,
+      "status": "cancelled",
+      "suite_content_hash": "0a4a18b4374f510f5eff18b06272c30c3375e1f082ae405adc8ead7dd9c81556"
+    },
+    {
+      "bundle_sha256": "b8f72f4f616f4077a37a7a180dc1dab0c2e9522dde02b1b42f1738b53c0abb99",
+      "path": "runs/run-0014",
+      "run_id": 14,
+      "status": "completed",
+      "suite_content_hash": "0a4a18b4374f510f5eff18b06272c30c3375e1f082ae405adc8ead7dd9c81556"
+    },
+    {
+      "bundle_sha256": "70342e65b34276c8f338518d9f5803707e4da8591dd44641c0b7139d9c72da1d",
+      "path": "runs/run-0015",
+      "run_id": 15,
+      "status": "cancelled",
+      "suite_content_hash": "0a4a18b4374f510f5eff18b06272c30c3375e1f082ae405adc8ead7dd9c81556"
+    },
+    {
+      "bundle_sha256": "d9058da24c959b3562efdcef6263fa9e5ce1deee644f2ae14ad6853ad3b4d724",
+      "path": "runs/run-0016",
+      "run_id": 16,
+      "status": "completed_with_errors",
+      "suite_content_hash": "5b5d98876ea35114f18ce6dfa48cc9800d88b6baba80d311b2f52552a38b31af"
+    },
+    {
+      "bundle_sha256": "586063078b3fc8093c739306187c9fe7cef71a1c4e2eeff7348b03edb77d446f",
+      "path": "runs/run-0017",
+      "run_id": 17,
+      "status": "completed",
+      "suite_content_hash": "5b5d98876ea35114f18ce6dfa48cc9800d88b6baba80d311b2f52552a38b31af"
+    },
+    {
+      "bundle_sha256": "3a37189e0b3d028250f1dfe5b32cceeee21cab5350807f6d127800a4f2289755",
+      "path": "runs/run-0018",
+      "run_id": 18,
+      "status": "completed_with_errors",
+      "suite_content_hash": "5b5d98876ea35114f18ce6dfa48cc9800d88b6baba80d311b2f52552a38b31af"
+    }
+  ],
+  "schema_version": "text-to-sql-evidence-v1",
+  "scope": "all published suite versions and all persisted runs",
+  "suite_count": 2,
+  "suites": [
+    {
+      "bundle_sha256": "3480015062ea555127daae99d83e16f29fae77a467d5516ccac3c1349232d913",
+      "content_hash": "0a4a18b4374f510f5eff18b06272c30c3375e1f082ae405adc8ead7dd9c81556",
+      "path": "suites/0a4a18b4374f510f5eff18b06272c30c3375e1f082ae405adc8ead7dd9c81556",
+      "suite_version_id": 1,
+      "version": 1
+    },
+    {
+      "bundle_sha256": "955abdf3b158dd0db0e6db364eb8b5e30c78cefee58f0e12b1dc366adf0ad97a",
+      "content_hash": "5b5d98876ea35114f18ce6dfa48cc9800d88b6baba80d311b2f52552a38b31af",
+      "path": "suites/5b5d98876ea35114f18ce6dfa48cc9800d88b6baba80d311b2f52552a38b31af",
+      "suite_version_id": 2,
+      "version": 2
+    }
+  ]
+}

@@ -1,0 +1,18 @@
+* text=auto eol=lf
+LICENSE -whitespace
+
+*.woff binary
+*.woff2 binary
+*.ttf binary
+*.otf binary
+*.png binary
+*.jpg binary
+*.jpeg binary
+*.gif binary
+*.ico binary
+
+frontend/pnpm-lock.yaml linguist-generated=true
+backend/app/static/assets/* linguist-generated=true
+backend/app/static/assets/*.js -whitespace
+evidence/**/*.json linguist-generated=true
+evidence/**/*.jsonl linguist-generated=true

@@ -1,0 +1,1 @@
+{"columns":[{"name":"category","type":"VARCHAR"},{"name":"order_count","type":"BIGINT"},{"name":"net_revenue","type":"DECIMAL(38,2)"}],"digest":"af1c067cbde5d3ebb464d460874772eec42c667b9ddfa0ec87ec9ae60b1bf25d","rows":[["品类-6",186,"173783.50"],["品类-5",160,"115932.75"],["品类-4",160,"103119.00"],["品类-3",167,"81588.75"],["品类-2",175,"56692.25"],["品类-1",172,"27742.00"]]}

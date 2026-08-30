@@ -1,0 +1,134 @@
+{
+  "bundle_sha256": "955abdf3b158dd0db0e6db364eb8b5e30c78cefee58f0e12b1dc366adf0ad97a",
+  "content_hash": "5b5d98876ea35114f18ce6dfa48cc9800d88b6baba80d311b2f52552a38b31af",
+  "files": [
+    {
+      "bytes": 3234,
+      "path": "artifact-manifest.json",
+      "sha256": "4ae8708c68b3667fc92c117d2e5797d6873ea4d1269a61ee27a75c0b7ff30158"
+    },
+    {
+      "bytes": 1717,
+      "path": "gold/above_average_customer_spend.json",
+      "sha256": "ae76e0f2c5984013135fa83d141e6eea555c9401347cd51d3ee062352f795b0b"
+    },
+    {
+      "bytes": 440,
+      "path": "gold/all_channel_performance.json",
+      "sha256": "16413233bec77e1fa68630138c838d4160928d8276bb445b9b028a506665870e"
+    },
+    {
+      "bytes": 6966,
+      "path": "gold/basic_filter_sort.json",
+      "sha256": "e53da287aba5a21ade0eae665139f145aa6a5b878263835eef3f02dd66109739"
+    },
+    {
+      "bytes": 425,
+      "path": "gold/category_return_rate.json",
+      "sha256": "187ef55719fb7679f6f7994600680370bb9a7799f1f5ab49eb4e7c2ab22279f1"
+    },
+    {
+      "bytes": 419,
+      "path": "gold/category_revenue_share.json",
+      "sha256": "2de69031f9e0a4b332b2d676569e7500521c684cf2fc220ffd3d93a1be1f455a"
+    },
+    {
+      "bytes": 3901,
+      "path": "gold/completed_order_amount_band.json",
+      "sha256": "2a516da3ea5f8c113a9832802d0636420975ba4408bcfa79cba3597df02b0bed"
+    },
+    {
+      "bytes": 8657,
+      "path": "gold/correlated_segment_average.json",
+      "sha256": "0827c2b0464cc0dac29e0d04dde05f56095c5e94bd55c33a568c9d60df459960"
+    },
+    {
+      "bytes": 21162,
+      "path": "gold/latest_successful_payment.json",
+      "sha256": "cb38225302fcafebfb66b6dc0849e5a96a4d5fa7937a33409070d3489d8e5879"
+    },
+    {
+      "bytes": 2643,
+      "path": "gold/left_join_zero_orders.json",
+      "sha256": "a1c437a40c3e0510a45824cb901bacd01a7ab42d7c7a0e3a03762e83cd9e2e76"
+    },
+    {
+      "bytes": 589,
+      "path": "gold/monthly_mom_growth.json",
+      "sha256": "c1800c7874f45c23139a288e44fabab94d22f51409727e0f07ba7f923ca9c2a6"
+    },
+    {
+      "bytes": 653,
+      "path": "gold/monthly_running_revenue.json",
+      "sha256": "aec6f90d13d72f9bfb360ce610c706cfd46142cc75ae5759284a5383e343b036"
+    },
+    {
+      "bytes": 391,
+      "path": "gold/multi_join_category_revenue.json",
+      "sha256": "7b2d11e516e93fe11fb768f0e853c936f6f64b55cc7f2872f5327cd834db7cb4"
+    },
+    {
+      "bytes": 406,
+      "path": "gold/not_exists_customers.json",
+      "sha256": "589894d5670782b5ceb557721d810ba95f63a0d334e33f937d321bfd1df3bc34"
+    },
+    {
+      "bytes": 545,
+      "path": "gold/null_city_label.json",
+      "sha256": "7fd1ad3c1f082ef5ef6f6c9c3ea4be02338104bdf2b52979a09c9bbb4b058c18"
+    },
+    {
+      "bytes": 311,
+      "path": "gold/order_total_reconciliation.json",
+      "sha256": "7040ab76fcdb7cb71528720d4918cefa8049e686e7bfb764468edddae0338365"
+    },
+    {
+      "bytes": 469,
+      "path": "gold/payment_status_by_channel.json",
+      "sha256": "ff9b93bd0926ec5531050b5dd7b9c33bf7c0c3dfc346843af7eac860ffbe81a3"
+    },
+    {
+      "bytes": 670,
+      "path": "gold/semantic_channel_kpis.json",
+      "sha256": "96c125f96b7e6f266d08765619f663237cd0ad627584d51be19d0faca5f7ec44"
+    },
+    {
+      "bytes": 1026,
+      "path": "gold/top3_products_per_category.json",
+      "sha256": "4a10a556e905f61f8ef42b2c208733930ccee0e0687e1549660bd2de238d0f70"
+    },
+    {
+      "bytes": 21606,
+      "path": "source/cases.yaml",
+      "sha256": "ae05a5d6f6a3c9c4c39c0b6456f62c222cc3da4f55a06061000b4065bae1954f"
+    },
+    {
+      "bytes": 680,
+      "path": "source/prompt.md",
+      "sha256": "a085bb4d43f5d24233e9ff870f8d166c8c2388b32473955f330762af0969d9d6"
+    },
+    {
+      "bytes": 2017,
+      "path": "source/schema.sql",
+      "sha256": "548daf085b8998b2a033d30196477fb6f3b173e8acb5f229d0a7b7c2c5b8673c"
+    },
+    {
+      "bytes": 6134,
+      "path": "source/seed.sql",
+      "sha256": "38fbea8356504cec3c16f8e3f128a78f5b73198aeb10327737d8d7a026ab295f"
+    },
+    {
+      "bytes": 5378,
+      "path": "source/semantic.json",
+      "sha256": "a5cdc803aa56a33043c2b1fe5cd4d0859bb8bff6853f84df490bc8affb221381"
+    },
+    {
+      "bytes": 9059,
+      "path": "suite.json",
+      "sha256": "03c7d6f5432bb5f56dce0f31528aec96a95d7f3f03dec29f9862f1536679224a"
+    }
+  ],
+  "kind": "suite",
+  "schema_version": "text-to-sql-evidence-v1",
+  "suite_version_id": 2
+}

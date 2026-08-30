@@ -1,0 +1,32 @@
+{
+  "bundle_sha256": "f24ddb71727d2ef7827d77f9970a87115d57407d3d6d9e1e835c8cfc977b6bba",
+  "case_run_count": 2,
+  "event_count": 12,
+  "files": [
+    {
+      "bytes": 11956,
+      "path": "cases/case-run-00004.json",
+      "sha256": "97dd23e0cfaea7552f6d3bf6d86e1d7d42beb0ddca996d651143cea09c22d486"
+    },
+    {
+      "bytes": 12545,
+      "path": "cases/case-run-00005.json",
+      "sha256": "6296e144089e5be76c7d78a49f5fdae993e772cd144044a5f16a7632d9f88d84"
+    },
+    {
+      "bytes": 2853,
+      "path": "events.jsonl",
+      "sha256": "84be68d3764307320a69eeda07203fc847ce0a401707748771eb8d829a5d06c9"
+    },
+    {
+      "bytes": 4507,
+      "path": "report.json",
+      "sha256": "7688cd1c23d1e896dacd5721d117ae3f142360183b981981e6bbb803fd40e4e7"
+    }
+  ],
+  "kind": "run",
+  "run_id": 3,
+  "schema_version": "text-to-sql-evidence-v1",
+  "status": "failed",
+  "suite_content_hash": "0a4a18b4374f510f5eff18b06272c30c3375e1f082ae405adc8ead7dd9c81556"
+}

@@ -1,0 +1,348 @@
+- stable_key: basic_filter_sort
+  title: 基础筛选与排序
+  category: filter
+  radar_dimension: 基础查询
+  difficulty: easy
+  question: 查询 2026-01-01 起已完成订单，输出 order_id、customer_name、order_date、total_amount，并按
+    total_amount 降序、order_id 升序。
+  reference_sql: SELECT o.order_id, c.customer_name, o.order_date, o.total_amount
+    FROM fact_orders o JOIN dim_customers c ON c.customer_id = o.customer_id WHERE
+    o.status = 'completed' AND o.order_date >= DATE '2026-01-01' ORDER BY o.total_amount
+    DESC, o.order_id ASC
+  required_ast: []
+  comparison:
+    row_order_significant: true
+    duplicate_policy: multiset
+    decimal_scale: 2
+    abs_tolerance: '0.005'
+    rel_tolerance: '0'
+    max_rows: 10000
+  weight: 1.0
+  sort_order: 1
+- stable_key: multi_join_category_revenue
+  title: 多表连接品类收入
+  category: multi_join
+  radar_dimension: 连接语义
+  difficulty: medium
+  question: 按品类统计已完成订单的 distinct 订单数和净销售额 quantity * unit_price - discount_amount，输出
+    category、order_count、net_revenue，并按 net_revenue 降序、category 升序；至少使用三表 JOIN。
+  reference_sql: SELECT p.category, COUNT(DISTINCT o.order_id) AS order_count, SUM(i.quantity
+    * i.unit_price - i.discount_amount) AS net_revenue FROM fact_order_items i JOIN
+    fact_orders o ON o.order_id = i.order_id JOIN dim_products p ON p.product_id =
+    i.product_id WHERE o.status = 'completed' GROUP BY p.category ORDER BY net_revenue
+    DESC, p.category ASC
+  required_ast:
+  - id: join-2
+    kind: min_node_count
+    node: Join
+    min: 2
+  comparison:
+    row_order_significant: true
+    duplicate_policy: multiset
+    decimal_scale: 2
+    abs_tolerance: '0.005'
+    rel_tolerance: '0'
+    max_rows: 10000
+  weight: 1.0
+  sort_order: 2
+- stable_key: left_join_zero_orders
+  title: 保留零订单客户
+  category: join_semantics
+  radar_dimension: 连接语义
+  difficulty: medium
+  question: 列出所有客户及已完成订单数，必须保留零订单客户；输出 customer_id、customer_name、completed_order_count，并按
+    completed_order_count 降序、customer_id 升序；必须使用 LEFT JOIN。
+  reference_sql: SELECT c.customer_id, c.customer_name, COUNT(o.order_id) AS completed_order_count
+    FROM dim_customers c LEFT JOIN fact_orders o ON o.customer_id = c.customer_id
+    AND o.status = 'completed' GROUP BY c.customer_id, c.customer_name ORDER BY completed_order_count
+    DESC, c.customer_id ASC
+  required_ast:
+  - id: left-join
+    kind: join_type
+    join_type: LEFT
+    min: 1
+  comparison:
+    row_order_significant: true
+    duplicate_policy: multiset
+    decimal_scale: 0
+    abs_tolerance: '0'
+    rel_tolerance: '0'
+    max_rows: 10000
+  weight: 1.0
+  sort_order: 3
+- stable_key: correlated_segment_average
+  title: 相关子查询分群均值
+  category: subquery
+  radar_dimension: 子查询
+  difficulty: hard
+  question: 找出金额高于同客户分群已完成订单平均金额的已完成订单，输出 order_id、customer_id、segment、total_amount、segment_avg_amount，并按
+    total_amount 降序、order_id 升序；必须使用外层引用的相关子查询。
+  reference_sql: SELECT o.order_id, o.customer_id, c.segment, o.total_amount, a.segment_avg_amount
+    FROM fact_orders o JOIN dim_customers c ON c.customer_id = o.customer_id JOIN
+    LATERAL (SELECT ROUND(AVG(o2.total_amount), 2) AS segment_avg_amount FROM fact_orders
+    o2 JOIN dim_customers c2 ON c2.customer_id = o2.customer_id WHERE o2.status =
+    'completed' AND c2.segment = c.segment) a ON TRUE WHERE o.status = 'completed'
+    AND o.total_amount > a.segment_avg_amount ORDER BY o.total_amount DESC, o.order_id
+    ASC
+  required_ast:
+  - id: correlated
+    kind: correlated_subquery
+    min: 1
+  comparison:
+    row_order_significant: true
+    duplicate_policy: multiset
+    decimal_scale: 2
+    abs_tolerance: '0.005'
+    rel_tolerance: '0'
+    max_rows: 10000
+  weight: 1.0
+  sort_order: 4
+- stable_key: not_exists_customers
+  title: 从未完成订单客户
+  category: anti_join
+  radar_dimension: 子查询
+  difficulty: medium
+  question: 找出从未有已完成订单的客户，输出 customer_id、customer_name，并按 customer_id 升序；必须使用 NOT
+    EXISTS。
+  reference_sql: SELECT c.customer_id, c.customer_name FROM dim_customers c WHERE
+    NOT EXISTS (SELECT 1 FROM fact_orders o WHERE o.customer_id = c.customer_id AND
+    o.status = 'completed') ORDER BY c.customer_id ASC
+  required_ast:
+  - id: not-exists
+    kind: not_exists
+    min: 1
+  comparison:
+    row_order_significant: true
+    duplicate_policy: multiset
+    decimal_scale: 0
+    abs_tolerance: '0'
+    rel_tolerance: '0'
+    max_rows: 10000
+  weight: 1.0
+  sort_order: 5
+- stable_key: top3_products_per_category
+  title: 每品类收入前三商品
+  category: window_rank
+  radar_dimension: 窗口函数
+  difficulty: hard
+  question: 按净销售额取每个品类恰好前三商品，同额时按 product_id 升序打破并列；输出 category、product_id、product_name、net_revenue、rank_no，并按
+    category、rank_no 升序；必须使用 ROW_NUMBER 分区窗口。
+  reference_sql: WITH product_revenue AS (SELECT p.category, p.product_id, p.product_name,
+    SUM(i.quantity * i.unit_price - i.discount_amount) AS net_revenue FROM fact_order_items
+    i JOIN fact_orders o ON o.order_id = i.order_id JOIN dim_products p ON p.product_id
+    = i.product_id WHERE o.status = 'completed' GROUP BY p.category, p.product_id,
+    p.product_name), ranked AS (SELECT category, product_id, product_name, net_revenue,
+    ROW_NUMBER() OVER (PARTITION BY category ORDER BY net_revenue DESC, product_id
+    ASC) AS rank_no FROM product_revenue) SELECT category, product_id, product_name,
+    net_revenue, rank_no FROM ranked WHERE rank_no <= 3 ORDER BY category ASC, rank_no
+    ASC
+  required_ast:
+  - id: top3-row-number
+    kind: window_function
+    name: ROW_NUMBER
+    partition_columns:
+    - category
+    order_by:
+    - expression: net_revenue
+      direction: DESC
+    - expression: product_id
+      direction: ASC
+    min: 1
+  comparison:
+    row_order_significant: true
+    duplicate_policy: multiset
+    decimal_scale: 2
+    abs_tolerance: '0.005'
+    rel_tolerance: '0'
+    max_rows: 10000
+  weight: 1.0
+  sort_order: 6
+- stable_key: monthly_running_revenue
+  title: 月收入与累计收入
+  category: window_aggregate
+  radar_dimension: 窗口函数
+  difficulty: medium
+  question: 输出 2025 年每月已完成订单收入及累计收入 month、monthly_revenue、cumulative_revenue，按 month
+    升序；必须使用 SUM 窗口并按 month 排序。
+  reference_sql: WITH monthly AS (SELECT strftime(order_date, '%Y-%m') AS month, SUM(total_amount)
+    AS monthly_revenue FROM fact_orders WHERE status = 'completed' AND order_date
+    >= DATE '2025-01-01' AND order_date < DATE '2026-01-01' GROUP BY month) SELECT
+    month, monthly_revenue, SUM(monthly_revenue) OVER (ORDER BY month ASC ROWS BETWEEN
+    UNBOUNDED PRECEDING AND CURRENT ROW) AS cumulative_revenue FROM monthly ORDER
+    BY month ASC
+  required_ast:
+  - id: running-sum
+    kind: window_function
+    name: SUM
+    partition_columns: []
+    order_by:
+    - expression: month
+      direction: ASC
+    min: 1
+  comparison:
+    row_order_significant: true
+    duplicate_policy: multiset
+    decimal_scale: 2
+    abs_tolerance: '0.005'
+    rel_tolerance: '0'
+    max_rows: 10000
+  weight: 1.0
+  sort_order: 7
+- stable_key: monthly_mom_growth
+  title: 月收入环比增长
+  category: window_offset
+  radar_dimension: 窗口函数
+  difficulty: medium
+  question: 输出 2025 年每月收入及环比百分比 month、monthly_revenue、mom_pct，首月为 NULL，其余四舍五入 2 位，按
+    month 升序；必须使用 LAG。
+  reference_sql: WITH monthly AS (SELECT strftime(order_date, '%Y-%m') AS month, SUM(total_amount)
+    AS monthly_revenue FROM fact_orders WHERE status = 'completed' AND order_date
+    >= DATE '2025-01-01' AND order_date < DATE '2026-01-01' GROUP BY month), lagged
+    AS (SELECT month, monthly_revenue, LAG(monthly_revenue) OVER (ORDER BY month ASC)
+    AS previous_revenue FROM monthly) SELECT month, monthly_revenue, ROUND((monthly_revenue
+    - previous_revenue) / NULLIF(previous_revenue, 0) * 100, 2) AS mom_pct FROM lagged
+    ORDER BY month ASC
+  required_ast:
+  - id: mom-lag
+    kind: window_function
+    name: LAG
+    partition_columns: []
+    order_by:
+    - expression: month
+      direction: ASC
+    min: 1
+  comparison:
+    row_order_significant: true
+    duplicate_policy: multiset
+    decimal_scale: 2
+    abs_tolerance: '0.005'
+    rel_tolerance: '0'
+    max_rows: 10000
+  weight: 1.0
+  sort_order: 8
+- stable_key: above_average_customer_spend
+  title: 高于平均累计消费客户
+  category: nested_query
+  radar_dimension: 复杂管道
+  difficulty: hard
+  question: 找出累计已完成消费高于有已完成订单客户平均累计消费的客户，输出 customer_id、customer_name、total_spend，并按
+    total_spend 降序、customer_id 升序；必须至少两层 derived table 或子查询。
+  reference_sql: SELECT spend.customer_id, c.customer_name, spend.total_spend FROM
+    (SELECT customer_id, SUM(total_amount) AS total_spend FROM fact_orders WHERE status
+    = 'completed' GROUP BY customer_id) spend JOIN dim_customers c ON c.customer_id
+    = spend.customer_id WHERE spend.total_spend > (SELECT AVG(avg_source.total_spend)
+    FROM (SELECT customer_id, SUM(total_amount) AS total_spend FROM fact_orders WHERE
+    status = 'completed' GROUP BY customer_id) avg_source) ORDER BY spend.total_spend
+    DESC, spend.customer_id ASC
+  required_ast:
+  - id: depth-3
+    kind: query_depth
+    min: 3
+  comparison:
+    row_order_significant: true
+    duplicate_policy: multiset
+    decimal_scale: 2
+    abs_tolerance: '0.005'
+    rel_tolerance: '0'
+    max_rows: 10000
+  weight: 1.0
+  sort_order: 9
+- stable_key: payment_status_by_channel
+  title: 渠道支付状态金额
+  category: conditional_aggregation
+  radar_dimension: 聚合分析
+  difficulty: medium
+  question: 按渠道类型输出 channel_type、paid_amount、refunded_amount、failed_amount，并按 channel_type
+    升序；必须使用三组 SUM(CASE WHEN ...) 条件聚合。
+  reference_sql: SELECT ch.channel_type, SUM(CASE WHEN p.status = 'paid' THEN p.amount
+    ELSE 0 END) AS paid_amount, SUM(CASE WHEN p.status = 'refunded' THEN p.amount
+    ELSE 0 END) AS refunded_amount, SUM(CASE WHEN p.status = 'failed' THEN p.amount
+    ELSE 0 END) AS failed_amount FROM fact_payments p JOIN fact_orders o ON o.order_id
+    = p.order_id JOIN dim_channels ch ON ch.channel_id = o.channel_id WHERE o.status
+    = 'completed' GROUP BY ch.channel_type ORDER BY ch.channel_type ASC
+  required_ast:
+  - id: sum-case-3
+    kind: aggregate_case_count
+    aggregate: SUM
+    when_count: 3
+  comparison:
+    row_order_significant: true
+    duplicate_policy: multiset
+    decimal_scale: 2
+    abs_tolerance: '0.005'
+    rel_tolerance: '0'
+    max_rows: 10000
+  weight: 1.0
+  sort_order: 10
+- stable_key: category_return_rate
+  title: 品类退货率
+  category: multi_stage_cte
+  radar_dimension: 复杂管道
+  difficulty: hard
+  question: 先分别聚合已完成订单的售出数量和退货数量，再计算品类退货率；输出 category、sold_qty、returned_qty、return_rate，比率四舍五入
+    4 位，按 return_rate 降序、category 升序；必须至少两个 CTE 且不得明细直接 JOIN 造成 fan-out。
+  reference_sql: WITH sold AS (SELECT p.category, SUM(i.quantity) AS sold_qty FROM
+    fact_order_items i JOIN fact_orders o ON o.order_id = i.order_id JOIN dim_products
+    p ON p.product_id = i.product_id WHERE o.status = 'completed' GROUP BY p.category),
+    returned AS (SELECT p.category, SUM(r.return_qty) AS returned_qty FROM fact_returns
+    r JOIN fact_order_items i ON i.order_id = r.order_id AND i.line_no = r.line_no
+    JOIN fact_orders o ON o.order_id = i.order_id JOIN dim_products p ON p.product_id
+    = i.product_id WHERE o.status = 'completed' GROUP BY p.category) SELECT s.category,
+    s.sold_qty, COALESCE(r.returned_qty, 0) AS returned_qty, ROUND(COALESCE(r.returned_qty,
+    0)::DECIMAL / NULLIF(s.sold_qty, 0), 4) AS return_rate FROM sold s LEFT JOIN returned
+    r ON r.category = s.category ORDER BY return_rate DESC, s.category ASC
+  required_ast:
+  - id: cte-2
+    kind: cte_count
+    min: 2
+  - id: preaggregate
+    kind: separate_measure_preaggregation
+    left_cte: sold
+    left_measure_table: fact_order_items
+    left_measure_column: quantity
+    right_cte: returned
+    right_measure_table: fact_returns
+    right_measure_column: return_qty
+    group_keys:
+    - category
+  comparison:
+    row_order_significant: true
+    duplicate_policy: multiset
+    decimal_scale: 4
+    abs_tolerance: '0.00005'
+    rel_tolerance: '0'
+    max_rows: 10000
+  weight: 1.0
+  sort_order: 11
+- stable_key: latest_successful_payment
+  title: 每单最新成功支付
+  category: latest_per_group
+  radar_dimension: 窗口函数
+  difficulty: medium
+  question: 为每个有成功支付的订单取最新一笔成功支付，同一时间按 payment_id 降序打破并列；输出 order_id、payment_id、paid_at、amount，按
+    order_id 升序；必须使用 ROW_NUMBER。
+  reference_sql: WITH ranked AS (SELECT p.order_id, p.payment_id, p.paid_at, p.amount,
+    ROW_NUMBER() OVER (PARTITION BY p.order_id ORDER BY p.paid_at DESC, p.payment_id
+    DESC) AS rank_no FROM fact_payments p WHERE p.status = 'paid') SELECT order_id,
+    payment_id, paid_at, amount FROM ranked WHERE rank_no = 1 ORDER BY order_id ASC
+  required_ast:
+  - id: latest-row-number
+    kind: window_function
+    name: ROW_NUMBER
+    partition_columns:
+    - p.order_id
+    order_by:
+    - expression: p.paid_at
+      direction: DESC
+    - expression: p.payment_id
+      direction: DESC
+    min: 1
+  comparison:
+    row_order_significant: true
+    duplicate_policy: multiset
+    decimal_scale: 2
+    abs_tolerance: '0.005'
+    rel_tolerance: '0'
+    max_rows: 10000
+  weight: 1.0
+  sort_order: 12

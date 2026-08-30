@@ -1,0 +1,94 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ci-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  backend:
+    name: Backend and evidence
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: astral-sh/setup-uv@v6
+        with:
+          version: "0.10.7"
+          enable-cache: true
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Install locked dependencies
+        run: uv sync --frozen
+
+      - name: Lint
+        run: uv run ruff check .
+
+      - name: Type check
+        run: uv run mypy backend tests
+
+      - name: Test
+        run: uv run pytest -q
+
+      - name: Upgrade an empty database
+        run: |
+          tmp_dir="$RUNNER_TEMP/llm-test-migration"
+          mkdir -p "$tmp_dir"
+          LLM_TEST_VAR_DIR="$tmp_dir" \
+          LLM_TEST_DATABASE_URL="sqlite+aiosqlite:///$tmp_dir/app.db" \
+            uv run alembic upgrade head
+
+      - name: Verify published evidence
+        run: uv run python -m backend.app.cli verify-evidence --input evidence
+
+  frontend:
+    name: Frontend and production bundle
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: pnpm/action-setup@v4
+        with:
+          version: "10.15.1"
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+          cache-dependency-path: frontend/pnpm-lock.yaml
+
+      - name: Install locked dependencies
+        working-directory: frontend
+        run: pnpm install --frozen-lockfile
+
+      - name: Lint
+        working-directory: frontend
+        run: pnpm lint
+
+      - name: Type check
+        working-directory: frontend
+        run: pnpm typecheck
+
+      - name: Test
+        working-directory: frontend
+        run: pnpm test
+
+      - name: Build production frontend
+        working-directory: frontend
+        run: pnpm build
+
+      - name: Confirm committed bundle is current
+        run: git diff --exit-code -- backend/app/static

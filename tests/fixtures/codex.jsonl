@@ -1,0 +1,3 @@
+{"type":"thread.started","thread_id":"codex-request-1"}
+{"type":"item.completed","item":{"id":"item-1","type":"agent_message","text":"{\"plan\":{\"grain\":\"single row\",\"sources\":[],\"joins\":[],\"filters\":[],\"metrics\":[\"value\"],\"steps\":[\"select constant value\"],\"risks\":[]},\"sql\":\"SELECT 1 AS value\",\"summary\":\"返回常量\",\"assumptions\":[]}"}}
+{"type":"turn.completed","model":"gpt-5.3-codex","usage":{"input_tokens":120,"output_tokens":30}}

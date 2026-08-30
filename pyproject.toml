@@ -1,0 +1,53 @@
+[project]
+name = "llm-text-to-sql-benchmark"
+version = "0.2.0"
+description = "Local-first deterministic Text-to-SQL benchmark"
+requires-python = ">=3.12,<3.13"
+dependencies = [
+  "aiosqlite>=0.21.0",
+  "alembic>=1.16.5",
+  "duckdb==1.5.5",
+  "fastapi>=0.116.1",
+  "httpx>=0.28.1",
+  "keyring>=25.6.0",
+  "pydantic>=2.11.7",
+  "python-multipart>=0.0.20",
+  "pyyaml>=6.0.2",
+  "sqlalchemy[asyncio]>=2.0.43",
+  "sqlglot>=27.12.0",
+  "uvicorn[standard]>=0.35.0",
+]
+
+[dependency-groups]
+dev = [
+  "mypy>=1.17.1",
+  "pytest>=8.4.1",
+  "pytest-asyncio>=1.1.0",
+  "types-pyyaml>=6.0.12.20250915",
+  "ruff>=0.12.11",
+]
+
+[tool.uv]
+package = false
+
+[tool.ruff]
+target-version = "py312"
+line-length = 100
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "UP", "B", "ASYNC"]
+
+[tool.ruff.lint.per-file-ignores]
+"alembic/versions/*.py" = ["E501", "I001", "UP007", "UP035"]
+"backend/app/api/routes.py" = ["B008"]
+
+[tool.mypy]
+python_version = "3.12"
+strict = true
+plugins = ["pydantic.mypy"]
+exclude = ["^alembic/versions/"]
+
+[tool.pytest.ini_options]
+asyncio_mode = "auto"
+testpaths = ["tests"]
+pythonpath = ["."]

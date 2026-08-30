@@ -1,0 +1,371 @@
+{
+  "content_hash": "0a4a18b4374f510f5eff18b06272c30c3375e1f082ae405adc8ead7dd9c81556",
+  "description": "固定可复现的零售分析 Text-to-SQL 基准",
+  "dialect": "duckdb",
+  "name": "retail-analytics-v1",
+  "published_at": "2026-08-29T15:06:41.221501",
+  "status": "published",
+  "structure": {
+    "semantic_relationships": [
+      {
+        "cardinality": "many_to_one",
+        "from_entity": "order",
+        "sql_on": "fact_orders.customer_id = dim_customers.customer_id",
+        "to_entity": "customer"
+      },
+      {
+        "cardinality": "many_to_one",
+        "from_entity": "order",
+        "sql_on": "fact_orders.channel_id = dim_channels.channel_id",
+        "to_entity": "channel"
+      },
+      {
+        "cardinality": "many_to_one",
+        "from_entity": "order_item",
+        "sql_on": "fact_order_items.order_id = fact_orders.order_id",
+        "to_entity": "order"
+      },
+      {
+        "cardinality": "many_to_one",
+        "from_entity": "order_item",
+        "sql_on": "fact_order_items.product_id = dim_products.product_id",
+        "to_entity": "product"
+      },
+      {
+        "cardinality": "many_to_one",
+        "from_entity": "payment",
+        "sql_on": "fact_payments.order_id = fact_orders.order_id",
+        "to_entity": "order"
+      },
+      {
+        "cardinality": "many_to_one",
+        "from_entity": "return",
+        "sql_on": "fact_returns.order_id = fact_order_items.order_id AND fact_returns.line_no = fact_order_items.line_no",
+        "to_entity": "order_item"
+      }
+    ],
+    "tables": [
+      {
+        "columns": [
+          {
+            "data_type": "BIGINT",
+            "name": "channel_id",
+            "nullable": false
+          },
+          {
+            "data_type": "VARCHAR",
+            "name": "channel_name",
+            "nullable": false
+          },
+          {
+            "data_type": "VARCHAR",
+            "name": "channel_type",
+            "nullable": false
+          }
+        ],
+        "foreign_keys": [],
+        "name": "dim_channels",
+        "primary_key": [
+          "channel_id"
+        ]
+      },
+      {
+        "columns": [
+          {
+            "data_type": "BIGINT",
+            "name": "customer_id",
+            "nullable": false
+          },
+          {
+            "data_type": "VARCHAR",
+            "name": "customer_name",
+            "nullable": false
+          },
+          {
+            "data_type": "VARCHAR",
+            "name": "city",
+            "nullable": true
+          },
+          {
+            "data_type": "DATE",
+            "name": "signup_date",
+            "nullable": false
+          },
+          {
+            "data_type": "VARCHAR",
+            "name": "segment",
+            "nullable": false
+          }
+        ],
+        "foreign_keys": [],
+        "name": "dim_customers",
+        "primary_key": [
+          "customer_id"
+        ]
+      },
+      {
+        "columns": [
+          {
+            "data_type": "BIGINT",
+            "name": "product_id",
+            "nullable": false
+          },
+          {
+            "data_type": "VARCHAR",
+            "name": "product_name",
+            "nullable": false
+          },
+          {
+            "data_type": "VARCHAR",
+            "name": "category",
+            "nullable": false
+          },
+          {
+            "data_type": "VARCHAR",
+            "name": "brand",
+            "nullable": false
+          },
+          {
+            "data_type": "DECIMAL(14,2)",
+            "name": "list_price",
+            "nullable": false
+          }
+        ],
+        "foreign_keys": [],
+        "name": "dim_products",
+        "primary_key": [
+          "product_id"
+        ]
+      },
+      {
+        "columns": [
+          {
+            "data_type": "BIGINT",
+            "name": "order_id",
+            "nullable": false
+          },
+          {
+            "data_type": "BIGINT",
+            "name": "line_no",
+            "nullable": false
+          },
+          {
+            "data_type": "BIGINT",
+            "name": "product_id",
+            "nullable": false
+          },
+          {
+            "data_type": "BIGINT",
+            "name": "quantity",
+            "nullable": false
+          },
+          {
+            "data_type": "DECIMAL(14,2)",
+            "name": "unit_price",
+            "nullable": false
+          },
+          {
+            "data_type": "DECIMAL(14,2)",
+            "name": "discount_amount",
+            "nullable": false
+          }
+        ],
+        "foreign_keys": [
+          {
+            "columns": [
+              "order_id"
+            ],
+            "referenced_columns": [
+              "order_id"
+            ],
+            "referenced_table": "fact_orders"
+          },
+          {
+            "columns": [
+              "product_id"
+            ],
+            "referenced_columns": [
+              "product_id"
+            ],
+            "referenced_table": "dim_products"
+          }
+        ],
+        "name": "fact_order_items",
+        "primary_key": [
+          "order_id",
+          "line_no"
+        ]
+      },
+      {
+        "columns": [
+          {
+            "data_type": "BIGINT",
+            "name": "order_id",
+            "nullable": false
+          },
+          {
+            "data_type": "BIGINT",
+            "name": "customer_id",
+            "nullable": false
+          },
+          {
+            "data_type": "BIGINT",
+            "name": "channel_id",
+            "nullable": false
+          },
+          {
+            "data_type": "DATE",
+            "name": "order_date",
+            "nullable": false
+          },
+          {
+            "data_type": "VARCHAR",
+            "name": "status",
+            "nullable": false
+          },
+          {
+            "data_type": "DECIMAL(14,2)",
+            "name": "total_amount",
+            "nullable": false
+          }
+        ],
+        "foreign_keys": [
+          {
+            "columns": [
+              "customer_id"
+            ],
+            "referenced_columns": [
+              "customer_id"
+            ],
+            "referenced_table": "dim_customers"
+          },
+          {
+            "columns": [
+              "channel_id"
+            ],
+            "referenced_columns": [
+              "channel_id"
+            ],
+            "referenced_table": "dim_channels"
+          }
+        ],
+        "name": "fact_orders",
+        "primary_key": [
+          "order_id"
+        ]
+      },
+      {
+        "columns": [
+          {
+            "data_type": "BIGINT",
+            "name": "payment_id",
+            "nullable": false
+          },
+          {
+            "data_type": "BIGINT",
+            "name": "order_id",
+            "nullable": false
+          },
+          {
+            "data_type": "TIMESTAMP",
+            "name": "paid_at",
+            "nullable": false
+          },
+          {
+            "data_type": "VARCHAR",
+            "name": "payment_method",
+            "nullable": false
+          },
+          {
+            "data_type": "DECIMAL(14,2)",
+            "name": "amount",
+            "nullable": false
+          },
+          {
+            "data_type": "VARCHAR",
+            "name": "status",
+            "nullable": false
+          }
+        ],
+        "foreign_keys": [
+          {
+            "columns": [
+              "order_id"
+            ],
+            "referenced_columns": [
+              "order_id"
+            ],
+            "referenced_table": "fact_orders"
+          }
+        ],
+        "name": "fact_payments",
+        "primary_key": [
+          "payment_id"
+        ]
+      },
+      {
+        "columns": [
+          {
+            "data_type": "BIGINT",
+            "name": "return_id",
+            "nullable": false
+          },
+          {
+            "data_type": "BIGINT",
+            "name": "order_id",
+            "nullable": false
+          },
+          {
+            "data_type": "BIGINT",
+            "name": "line_no",
+            "nullable": false
+          },
+          {
+            "data_type": "TIMESTAMP",
+            "name": "returned_at",
+            "nullable": false
+          },
+          {
+            "data_type": "BIGINT",
+            "name": "return_qty",
+            "nullable": false
+          },
+          {
+            "data_type": "DECIMAL(14,2)",
+            "name": "refund_amount",
+            "nullable": false
+          },
+          {
+            "data_type": "VARCHAR",
+            "name": "reason",
+            "nullable": true
+          }
+        ],
+        "foreign_keys": [
+          {
+            "columns": [
+              "order_id",
+              "line_no"
+            ],
+            "referenced_columns": [
+              "order_id",
+              "line_no"
+            ],
+            "referenced_table": "fact_order_items"
+          }
+        ],
+        "name": "fact_returns",
+        "primary_key": [
+          "return_id"
+        ]
+      }
+    ]
+  },
+  "suite_id": 1,
+  "suite_version_id": 1,
+  "version": 1,
+  "warehouse": {
+    "committed": false,
+    "reason": "Deterministically rebuilt from source/schema.sql and source/seed.sql"
+  }
+}

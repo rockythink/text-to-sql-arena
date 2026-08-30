@@ -1,0 +1,401 @@
+{
+  "actual_digest": "a810b96e6018f4f1ce3bbce9e22992acee975e2e1b2476f6c22a089655544192",
+  "assumptions": null,
+  "attempt": 1,
+  "category": "window_rank",
+  "comparison": {
+    "abs_tolerance": "0.005",
+    "decimal_scale": 2,
+    "duplicate_policy": "multiset",
+    "max_rows": 10000,
+    "rel_tolerance": "0",
+    "row_order_significant": true
+  },
+  "difficulty": "hard",
+  "error_code": null,
+  "error_message": null,
+  "execution_ms": 229.61462500097696,
+  "expected_digest": "f2439805a56cc7a748ddab3daa6cf4fd1133078be6998cb0bd6fc820cd0897ac",
+  "expected_result_preview": {
+    "columns": [
+      {
+        "name": "category",
+        "type": "VARCHAR"
+      },
+      {
+        "name": "product_id",
+        "type": "BIGINT"
+      },
+      {
+        "name": "product_name",
+        "type": "VARCHAR"
+      },
+      {
+        "name": "net_revenue",
+        "type": "DECIMAL(38,2)"
+      },
+      {
+        "name": "rank_no",
+        "type": "BIGINT"
+      }
+    ],
+    "digest": "f2439805a56cc7a748ddab3daa6cf4fd1133078be6998cb0bd6fc820cd0897ac",
+    "row_count": 18,
+    "rows": [
+      [
+        "品类-1",
+        6,
+        "商品-06",
+        "6521.00",
+        1
+      ],
+      [
+        "品类-1",
+        5,
+        "商品-05",
+        "5990.00",
+        2
+      ],
+      [
+        "品类-1",
+        4,
+        "商品-04",
+        "5667.50",
+        3
+      ],
+      [
+        "品类-2",
+        9,
+        "商品-09",
+        "11830.25",
+        1
+      ],
+      [
+        "品类-2",
+        10,
+        "商品-10",
+        "11727.50",
+        2
+      ],
+      [
+        "品类-2",
+        11,
+        "商品-11",
+        "10139.25",
+        3
+      ],
+      [
+        "品类-3",
+        18,
+        "商品-18",
+        "15645.00",
+        1
+      ],
+      [
+        "品类-3",
+        17,
+        "商品-17",
+        "14429.00",
+        2
+      ],
+      [
+        "品类-3",
+        16,
+        "商品-16",
+        "14072.50",
+        3
+      ],
+      [
+        "品类-4",
+        23,
+        "商品-23",
+        "23517.25",
+        1
+      ],
+      [
+        "品类-4",
+        21,
+        "商品-21",
+        "18053.50",
+        2
+      ],
+      [
+        "品类-4",
+        24,
+        "商品-24",
+        "16750.50",
+        3
+      ],
+      [
+        "品类-5",
+        30,
+        "商品-30",
+        "25247.50",
+        1
+      ],
+      [
+        "品类-5",
+        27,
+        "商品-27",
+        "23718.25",
+        2
+      ],
+      [
+        "品类-5",
+        29,
+        "商品-29",
+        "18985.75",
+        3
+      ],
+      [
+        "品类-6",
+        35,
+        "商品-35",
+        "32105.00",
+        1
+      ],
+      [
+        "品类-6",
+        31,
+        "商品-31",
+        "31610.00",
+        2
+      ],
+      [
+        "品类-6",
+        36,
+        "商品-36",
+        "30399.00",
+        3
+      ]
+    ]
+  },
+  "finished_at": "2026-08-29T16:24:02.699061",
+  "formatted_sql": "WITH product_revenue AS (\n  SELECT\n    p.category,\n    p.product_id,\n    p.product_name,\n    SUM(oi.quantity * oi.unit_price - oi.discount_amount) AS net_revenue\n  FROM fact_order_items AS oi\n  JOIN fact_orders AS o\n    ON oi.order_id = o.order_id\n  JOIN dim_products AS p\n    ON oi.product_id = p.product_id\n  WHERE\n    o.status = 'completed'\n  GROUP BY\n    p.category,\n    p.product_id,\n    p.product_name\n), ranked_products AS (\n  SELECT\n    category,\n    product_id,\n    product_name,\n    net_revenue,\n    ROW_NUMBER() OVER (PARTITION BY category ORDER BY net_revenue DESC, product_id ASC) AS rank_no\n  FROM product_revenue\n)\nSELECT\n  category,\n  product_id,\n  product_name,\n  net_revenue,\n  rank_no\nFROM ranked_products\nWHERE\n  rank_no <= 3\nORDER BY\n  category ASC,\n  rank_no ASC",
+  "generated_sql": "WITH product_revenue AS (\n    SELECT\n        p.category,\n        p.product_id,\n        p.product_name,\n        SUM(oi.quantity * oi.unit_price - oi.discount_amount) AS net_revenue\n    FROM fact_order_items AS oi\n    JOIN fact_orders AS o\n      ON oi.order_id = o.order_id\n    JOIN dim_products AS p\n      ON oi.product_id = p.product_id\n    WHERE o.status = 'completed'\n    GROUP BY p.category, p.product_id, p.product_name\n), ranked_products AS (\n    SELECT\n        category,\n        product_id,\n        product_name,\n        net_revenue,\n        ROW_NUMBER() OVER (\n            PARTITION BY category\n            ORDER BY net_revenue DESC, product_id ASC\n        ) AS rank_no\n    FROM product_revenue\n)\nSELECT\n    category,\n    product_id,\n    product_name,\n    net_revenue,\n    rank_no\nFROM ranked_products\nWHERE rank_no <= 3\nORDER BY category ASC, rank_no ASC",
+  "generation_ms": null,
+  "id": 12,
+  "model_name": "Sol 本机实测",
+  "model_run_id": 10,
+  "plan": null,
+  "prompt": "你是 Text-to-SQL 生成器。只生成完成问题所需的 SQL 和简短可见摘要，不输出隐藏推理。\n\n方言与安全规则：\nUse DuckDB SQL. Return exactly one read-only query. Do not access files, URLs, extensions, or schemas outside the supplied tables.\n\n数据库结构：\n{\"semantic_relationships\":[{\"cardinality\":\"many_to_one\",\"from_entity\":\"order\",\"sql_on\":\"fact_orders.customer_id = dim_customers.customer_id\",\"to_entity\":\"customer\"},{\"cardinality\":\"many_to_one\",\"from_entity\":\"order\",\"sql_on\":\"fact_orders.channel_id = dim_channels.channel_id\",\"to_entity\":\"channel\"},{\"cardinality\":\"many_to_one\",\"from_entity\":\"order_item\",\"sql_on\":\"fact_order_items.order_id = fact_orders.order_id\",\"to_entity\":\"order\"},{\"cardinality\":\"many_to_one\",\"from_entity\":\"order_item\",\"sql_on\":\"fact_order_items.product_id = dim_products.product_id\",\"to_entity\":\"product\"},{\"cardinality\":\"many_to_one\",\"from_entity\":\"payment\",\"sql_on\":\"fact_payments.order_id = fact_orders.order_id\",\"to_entity\":\"order\"},{\"cardinality\":\"many_to_one\",\"from_entity\":\"return\",\"sql_on\":\"fact_returns.order_id = fact_order_items.order_id AND fact_returns.line_no = fact_order_items.line_no\",\"to_entity\":\"order_item\"}],\"tables\":[{\"columns\":[{\"data_type\":\"BIGINT\",\"name\":\"channel_id\",\"nullable\":false},{\"data_type\":\"VARCHAR\",\"name\":\"channel_name\",\"nullable\":false},{\"data_type\":\"VARCHAR\",\"name\":\"channel_type\",\"nullable\":false}],\"foreign_keys\":[],\"name\":\"dim_channels\",\"primary_key\":[\"channel_id\"]},{\"columns\":[{\"data_type\":\"BIGINT\",\"name\":\"customer_id\",\"nullable\":false},{\"data_type\":\"VARCHAR\",\"name\":\"customer_name\",\"nullable\":false},{\"data_type\":\"VARCHAR\",\"name\":\"city\",\"nullable\":true},{\"data_type\":\"DATE\",\"name\":\"signup_date\",\"nullable\":false},{\"data_type\":\"VARCHAR\",\"name\":\"segment\",\"nullable\":false}],\"foreign_keys\":[],\"name\":\"dim_customers\",\"primary_key\":[\"customer_id\"]},{\"columns\":[{\"data_type\":\"BIGINT\",\"name\":\"product_id\",\"nullable\":false},{\"data_type\":\"VARCHAR\",\"name\":\"product_name\",\"nullable\":false},{\"data_type\":\"VARCHAR\",\"name\":\"category\",\"nullable\":false},{\"data_type\":\"VARCHAR\",\"name\":\"brand\",\"nullable\":false},{\"data_type\":\"DECIMAL(14,2)\",\"name\":\"list_price\",\"nullable\":false}],\"foreign_keys\":[],\"name\":\"dim_products\",\"primary_key\":[\"product_id\"]},{\"columns\":[{\"data_type\":\"BIGINT\",\"name\":\"order_id\",\"nullable\":false},{\"data_type\":\"BIGINT\",\"name\":\"line_no\",\"nullable\":false},{\"data_type\":\"BIGINT\",\"name\":\"product_id\",\"nullable\":false},{\"data_type\":\"BIGINT\",\"name\":\"quantity\",\"nullable\":false},{\"data_type\":\"DECIMAL(14,2)\",\"name\":\"unit_price\",\"nullable\":false},{\"data_type\":\"DECIMAL(14,2)\",\"name\":\"discount_amount\",\"nullable\":false}],\"foreign_keys\":[{\"columns\":[\"order_id\"],\"referenced_columns\":[\"order_id\"],\"referenced_table\":\"fact_orders\"},{\"columns\":[\"product_id\"],\"referenced_columns\":[\"product_id\"],\"referenced_table\":\"dim_products\"}],\"name\":\"fact_order_items\",\"primary_key\":[\"order_id\",\"line_no\"]},{\"columns\":[{\"data_type\":\"BIGINT\",\"name\":\"order_id\",\"nullable\":false},{\"data_type\":\"BIGINT\",\"name\":\"customer_id\",\"nullable\":false},{\"data_type\":\"BIGINT\",\"name\":\"channel_id\",\"nullable\":false},{\"data_type\":\"DATE\",\"name\":\"order_date\",\"nullable\":false},{\"data_type\":\"VARCHAR\",\"name\":\"status\",\"nullable\":false},{\"data_type\":\"DECIMAL(14,2)\",\"name\":\"total_amount\",\"nullable\":false}],\"foreign_keys\":[{\"columns\":[\"customer_id\"],\"referenced_columns\":[\"customer_id\"],\"referenced_table\":\"dim_customers\"},{\"columns\":[\"channel_id\"],\"referenced_columns\":[\"channel_id\"],\"referenced_table\":\"dim_channels\"}],\"name\":\"fact_orders\",\"primary_key\":[\"order_id\"]},{\"columns\":[{\"data_type\":\"BIGINT\",\"name\":\"payment_id\",\"nullable\":false},{\"data_type\":\"BIGINT\",\"name\":\"order_id\",\"nullable\":false},{\"data_type\":\"TIMESTAMP\",\"name\":\"paid_at\",\"nullable\":false},{\"data_type\":\"VARCHAR\",\"name\":\"payment_method\",\"nullable\":false},{\"data_type\":\"DECIMAL(14,2)\",\"name\":\"amount\",\"nullable\":false},{\"data_type\":\"VARCHAR\",\"name\":\"status\",\"nullable\":false}],\"foreign_keys\":[{\"columns\":[\"order_id\"],\"referenced_columns\":[\"order_id\"],\"referenced_table\":\"fact_orders\"}],\"name\":\"fact_payments\",\"primary_key\":[\"payment_id\"]},{\"columns\":[{\"data_type\":\"BIGINT\",\"name\":\"return_id\",\"nullable\":false},{\"data_type\":\"BIGINT\",\"name\":\"order_id\",\"nullable\":false},{\"data_type\":\"BIGINT\",\"name\":\"line_no\",\"nullable\":false},{\"data_type\":\"TIMESTAMP\",\"name\":\"returned_at\",\"nullable\":false},{\"data_type\":\"BIGINT\",\"name\":\"return_qty\",\"nullable\":false},{\"data_type\":\"DECIMAL(14,2)\",\"name\":\"refund_amount\",\"nullable\":false},{\"data_type\":\"VARCHAR\",\"name\":\"reason\",\"nullable\":true}],\"foreign_keys\":[{\"columns\":[\"order_id\",\"line_no\"],\"referenced_columns\":[\"order_id\",\"line_no\"],\"referenced_table\":\"fact_order_items\"}],\"name\":\"fact_returns\",\"primary_key\":[\"return_id\"]}]}\n\n语义层与业务口径：\n{\"business_rules\":[\"完成订单仅指 fact_orders.status = 'completed'。\",\"净销售额为 quantity * unit_price - discount_amount。\",\"paid、refunded、failed 金额只按 fact_payments.status 分类。\",\"退货率为完成订单的 returned_qty / sold_qty，售出数量仅含完成订单。\",\"月份按 UTC Gregorian calendar 计算。\"],\"dimensions\":[{\"data_type\":\"VARCHAR\",\"description\":\"客户分群\",\"expression\":\"dim_customers.segment\",\"name\":\"customer_segment\"},{\"data_type\":\"VARCHAR\",\"description\":\"商品品类\",\"expression\":\"dim_products.category\",\"name\":\"product_category\"},{\"data_type\":\"VARCHAR\",\"description\":\"渠道类型\",\"expression\":\"dim_channels.channel_type\",\"name\":\"channel_type\"},{\"data_type\":\"VARCHAR\",\"description\":\"UTC Gregorian 月份\",\"expression\":\"strftime(fact_orders.order_date, '%Y-%m')\",\"name\":\"order_month\"}],\"entities\":[{\"description\":\"客户主数据\",\"grain\":\"每行一个客户\",\"name\":\"customer\",\"primary_key\":[\"customer_id\"],\"table\":\"dim_customers\"},{\"description\":\"商品主数据\",\"grain\":\"每行一个商品\",\"name\":\"product\",\"primary_key\":[\"product_id\"],\"table\":\"dim_products\"},{\"description\":\"渠道主数据\",\"grain\":\"每行一个渠道\",\"name\":\"channel\",\"primary_key\":[\"channel_id\"],\"table\":\"dim_channels\"},{\"description\":\"订单头\",\"grain\":\"每行一个订单\",\"name\":\"order\",\"primary_key\":[\"order_id\"],\"table\":\"fact_orders\"},{\"description\":\"订单行\",\"grain\":\"每行一个订单商品行\",\"name\":\"order_item\",\"primary_key\":[\"order_id\",\"line_no\"],\"table\":\"fact_order_items\"},{\"description\":\"支付尝试\",\"grain\":\"每行一笔支付\",\"name\":\"payment\",\"primary_key\":[\"payment_id\"],\"table\":\"fact_payments\"},{\"description\":\"退货记录\",\"grain\":\"每行一条订单行退货\",\"name\":\"return\",\"primary_key\":[\"return_id\"],\"table\":\"fact_returns\"}],\"metrics\":[{\"description\":\"已完成订单数\",\"expression\":\"COUNT(DISTINCT CASE WHEN fact_orders.status = 'completed' THEN fact_orders.order_id END)\",\"filters\":[\"fact_orders.status = 'completed'\"],\"grain\":\"聚合\",\"name\":\"completed_order_count\"},{\"description\":\"完成订单商品行净销售额\",\"expression\":\"SUM(fact_order_items.quantity * fact_order_items.unit_price - fact_order_items.discount_amount)\",\"filters\":[\"fact_orders.status = 'completed'\"],\"grain\":\"聚合\",\"name\":\"net_revenue\"},{\"description\":\"成功支付金额\",\"expression\":\"SUM(CASE WHEN fact_payments.status = 'paid' THEN fact_payments.amount ELSE 0 END)\",\"filters\":[],\"grain\":\"聚合\",\"name\":\"paid_amount\"},{\"description\":\"退款状态支付金额\",\"expression\":\"SUM(CASE WHEN fact_payments.status = 'refunded' THEN fact_payments.amount ELSE 0 END)\",\"filters\":[],\"grain\":\"聚合\",\"name\":\"refunded_amount\"},{\"description\":\"失败支付金额\",\"expression\":\"SUM(CASE WHEN fact_payments.status = 'failed' THEN fact_payments.amount ELSE 0 END)\",\"filters\":[],\"grain\":\"聚合\",\"name\":\"failed_amount\"},{\"description\":\"完成订单退货数量除以售出数量\",\"expression\":\"SUM(fact_returns.return_qty) / SUM(fact_order_items.quantity)\",\"filters\":[\"fact_orders.status = 'completed'\"],\"grain\":\"聚合\",\"name\":\"return_rate\"}],\"relationships\":[{\"cardinality\":\"many_to_one\",\"from_entity\":\"order\",\"sql_on\":\"fact_orders.customer_id = dim_customers.customer_id\",\"to_entity\":\"customer\"},{\"cardinality\":\"many_to_one\",\"from_entity\":\"order\",\"sql_on\":\"fact_orders.channel_id = dim_channels.channel_id\",\"to_entity\":\"channel\"},{\"cardinality\":\"many_to_one\",\"from_entity\":\"order_item\",\"sql_on\":\"fact_order_items.order_id = fact_orders.order_id\",\"to_entity\":\"order\"},{\"cardinality\":\"many_to_one\",\"from_entity\":\"order_item\",\"sql_on\":\"fact_order_items.product_id = dim_products.product_id\",\"to_entity\":\"product\"},{\"cardinality\":\"many_to_one\",\"from_entity\":\"payment\",\"sql_on\":\"fact_payments.order_id = fact_orders.order_id\",\"to_entity\":\"order\"},{\"cardinality\":\"many_to_one\",\"from_entity\":\"return\",\"sql_on\":\"fact_returns.order_id = fact_order_items.order_id AND fact_returns.line_no = fact_order_items.line_no\",\"to_entity\":\"order_item\"}]}\n\n问题：\n按净销售额取每个品类恰好前三商品，同额时按 product_id 升序打破并列；输出 category、product_id、product_name、net_revenue、rank_no，并按 category、rank_no 升序；必须使用 ROW_NUMBER 分区窗口。\n\n输出必须严格匹配此 JSON Schema：\n{\"additionalProperties\":false,\"properties\":{\"assumptions\":{\"items\":{\"type\":\"string\"},\"title\":\"Assumptions\",\"type\":\"array\"},\"sql\":{\"title\":\"Sql\",\"type\":\"string\"},\"summary\":{\"title\":\"Summary\",\"type\":\"string\"}},\"required\":[\"sql\",\"summary\",\"assumptions\"],\"title\":\"GenerationOutput\",\"type\":\"object\"}",
+  "provider_request_id": null,
+  "question": "按净销售额取每个品类恰好前三商品，同额时按 product_id 升序打破并列；输出 category、product_id、product_name、net_revenue、rank_no，并按 category、rank_no 升序；必须使用 ROW_NUMBER 分区窗口。",
+  "radar_dimension": "窗口函数",
+  "raw_output": "{\"sql\":\"WITH product_revenue AS (\\n    SELECT\\n        p.category,\\n        p.product_id,\\n        p.product_name,\\n        SUM(oi.quantity * oi.unit_price - oi.discount_amount) AS net_revenue\\n    FROM fact_order_items AS oi\\n    JOIN fact_orders AS o\\n      ON oi.order_id = o.order_id\\n    JOIN dim_products AS p\\n      ON oi.product_id = p.product_id\\n    WHERE o.status = 'completed'\\n    GROUP BY p.category, p.product_id, p.product_name\\n), ranked_products AS (\\n    SELECT\\n        category,\\n        product_id,\\n        product_name,\\n        net_revenue,\\n        ROW_NUMBER() OVER (\\n            PARTITION BY category\\n            ORDER BY net_revenue DESC, product_id ASC\\n        ) AS rank_no\\n    FROM product_revenue\\n)\\nSELECT\\n    category,\\n    product_id,\\n    product_name,\\n    net_revenue,\\n    rank_no\\nFROM ranked_products\\nWHERE rank_no <= 3\\nORDER BY category ASC, rank_no ASC\",\"summary\":\"汇总完成订单中各商品的净销售额，并使用 ROW_NUMBER 选出每个品类排名前三的商品；同额时 product_id 较小者优先。\",\"assumptions\":[\"仅统计至少出现在一笔完成订单中的商品；不足三个商品的品类将返回其全部符合条件的商品。\"]}",
+  "reference_sql": "WITH product_revenue AS (SELECT p.category, p.product_id, p.product_name, SUM(i.quantity * i.unit_price - i.discount_amount) AS net_revenue FROM fact_order_items i JOIN fact_orders o ON o.order_id = i.order_id JOIN dim_products p ON p.product_id = i.product_id WHERE o.status = 'completed' GROUP BY p.category, p.product_id, p.product_name), ranked AS (SELECT category, product_id, product_name, net_revenue, ROW_NUMBER() OVER (PARTITION BY category ORDER BY net_revenue DESC, product_id ASC) AS rank_no FROM product_revenue) SELECT category, product_id, product_name, net_revenue, rank_no FROM ranked WHERE rank_no <= 3 ORDER BY category ASC, rank_no ASC",
+  "requested_model_id": "gpt-5.6-sol",
+  "required_ast": [
+    {
+      "id": "top3-row-number",
+      "kind": "window_function",
+      "min": 1,
+      "name": "ROW_NUMBER",
+      "order_by": [
+        {
+          "direction": "DESC",
+          "expression": "net_revenue"
+        },
+        {
+          "direction": "ASC",
+          "expression": "product_id"
+        }
+      ],
+      "partition_columns": [
+        "category"
+      ]
+    }
+  ],
+  "resolved_model_id": "gpt-5.6-sol",
+  "result_preview": {
+    "columns": [
+      {
+        "name": "category",
+        "type": "VARCHAR"
+      },
+      {
+        "name": "product_id",
+        "type": "BIGINT"
+      },
+      {
+        "name": "product_name",
+        "type": "VARCHAR"
+      },
+      {
+        "name": "net_revenue",
+        "type": "DECIMAL(38,2)"
+      },
+      {
+        "name": "rank_no",
+        "type": "BIGINT"
+      }
+    ],
+    "extra": [],
+    "missing": [],
+    "row_count": 18,
+    "rows": [
+      [
+        "品类-1",
+        6,
+        "商品-06",
+        "6521.00",
+        1
+      ],
+      [
+        "品类-1",
+        5,
+        "商品-05",
+        "5990.00",
+        2
+      ],
+      [
+        "品类-1",
+        4,
+        "商品-04",
+        "5667.50",
+        3
+      ],
+      [
+        "品类-2",
+        9,
+        "商品-09",
+        "11830.25",
+        1
+      ],
+      [
+        "品类-2",
+        10,
+        "商品-10",
+        "11727.50",
+        2
+      ],
+      [
+        "品类-2",
+        11,
+        "商品-11",
+        "10139.25",
+        3
+      ],
+      [
+        "品类-3",
+        18,
+        "商品-18",
+        "15645.00",
+        1
+      ],
+      [
+        "品类-3",
+        17,
+        "商品-17",
+        "14429.00",
+        2
+      ],
+      [
+        "品类-3",
+        16,
+        "商品-16",
+        "14072.50",
+        3
+      ],
+      [
+        "品类-4",
+        23,
+        "商品-23",
+        "23517.25",
+        1
+      ],
+      [
+        "品类-4",
+        21,
+        "商品-21",
+        "18053.50",
+        2
+      ],
+      [
+        "品类-4",
+        24,
+        "商品-24",
+        "16750.50",
+        3
+      ],
+      [
+        "品类-5",
+        30,
+        "商品-30",
+        "25247.50",
+        1
+      ],
+      [
+        "品类-5",
+        27,
+        "商品-27",
+        "23718.25",
+        2
+      ],
+      [
+        "品类-5",
+        29,
+        "商品-29",
+        "18985.75",
+        3
+      ],
+      [
+        "品类-6",
+        35,
+        "商品-35",
+        "32105.00",
+        1
+      ],
+      [
+        "品类-6",
+        31,
+        "商品-31",
+        "31610.00",
+        2
+      ],
+      [
+        "品类-6",
+        36,
+        "商品-36",
+        "30399.00",
+        3
+      ]
+    ]
+  },
+  "run_id": 10,
+  "score": {
+    "ast_rules": [
+      {
+        "details": {
+          "actual": 1,
+          "required": 1
+        },
+        "id": "top3-row-number",
+        "kind": "window_function",
+        "passed": true
+      }
+    ],
+    "column_count": 5.0,
+    "column_names": 5.0,
+    "execution": 10.0,
+    "ordering": 10.0,
+    "protocol": 5.0,
+    "read_only_ast": 5.0,
+    "row_f1": 45.0,
+    "sql_capability": 15.0,
+    "total": 100.0
+  },
+  "stable_key": "top3_products_per_category",
+  "started_at": "2026-08-29T16:23:41.550396",
+  "status": "completed",
+  "suite_content_hash": "0a4a18b4374f510f5eff18b06272c30c3375e1f082ae405adc8ead7dd9c81556",
+  "title": "每品类收入前三商品",
+  "token_usage": {
+    "cache_write_input_tokens": 0,
+    "cached_input_tokens": 0,
+    "input_tokens": 19159,
+    "output_tokens": 313,
+    "reasoning_output_tokens": 0
+  },
+  "visible_summary": "汇总完成订单中各商品的净销售额，并使用 ROW_NUMBER 选出每个品类排名前三的商品；同额时 product_id 较小者优先。"
+}

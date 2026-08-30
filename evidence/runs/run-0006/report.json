@@ -1,0 +1,117 @@
+{
+  "app_version": "0.1.0",
+  "attempts": 1,
+  "conclusion": {
+    "champions": [],
+    "models": [],
+    "status": "incomplete"
+  },
+  "created_at": "2026-08-29T16:18:56",
+  "duckdb_version": "1.5.5",
+  "fairness": {
+    "comparison_mode": "single_model",
+    "controlled_fields": [
+      "adapter_kind",
+      "base_url",
+      "response_mode",
+      "parameters",
+      "cli_version"
+    ],
+    "differences": [],
+    "exact_rerun_default": true,
+    "model_variable": [
+      "gpt-5.6-sol"
+    ],
+    "pure_model_comparison": false
+  },
+  "finished_at": "2026-08-29T16:18:56.571722",
+  "id": 6,
+  "models": [
+    {
+      "adapter_kind": "codex_cli",
+      "attempt_statistics": {
+        "basic_filter_sort": {
+          "mean": 0.0,
+          "stddev": 0.0,
+          "success_rate": 0.0
+        }
+      },
+      "cases": [
+        {
+          "attempt": 1,
+          "case_id": 1,
+          "category": "filter",
+          "error_code": "provider_cli_error",
+          "error_message": "Codex 退出码 1: WARNING: proceeding, even though we could not create PATH aliases: File exists (os error 17)\nError loading config.toml: Failed to read requirements file /etc/codex/requirements.toml: Operation not permitted (os error 1)\n",
+          "execution_ms": null,
+          "formatted_sql": null,
+          "generation_ms": null,
+          "id": 8,
+          "provider_request_id": null,
+          "radar_dimension": "基础查询",
+          "score": {
+            "total": 0.0
+          },
+          "stable_key": "basic_filter_sort",
+          "status": "failed",
+          "title": "基础筛选与排序",
+          "token_usage": null,
+          "visible_summary": null
+        }
+      ],
+      "categories": {
+        "基础查询": 0.0
+      },
+      "cli_version": "codex-cli 0.147.0",
+      "failure_count": 1,
+      "id": 6,
+      "isolation": {
+        "auth_allowlisted": true,
+        "executable": "$HOME/.nvm/versions/node/v24.4.1/bin/codex",
+        "message": "CLI 与隔离参数可用",
+        "native_executable": "$HOME/.nvm/versions/node/v24.4.1/lib/node_modules/@openai/codex/node_modules/@openai/codex-darwin-arm64/vendor/aarch64-apple-darwin/bin/codex",
+        "required_flags": [
+          "--json",
+          "--ephemeral",
+          "--ignore-user-config",
+          "--ignore-rules",
+          "--sandbox",
+          "--skip-git-repo-check",
+          "--output-schema"
+        ],
+        "resolved_model_id": "gpt-5.6-sol",
+        "sandbox_exec": "/usr/bin/sandbox-exec",
+        "version": "codex-cli 0.147.0"
+      },
+      "name": "Sol 本机实测",
+      "official_score": 0.0,
+      "parameters": {
+        "timeout_seconds": 180
+      },
+      "requested_model_id": "gpt-5.6-sol",
+      "resolved_model_id": "gpt-5.6-sol",
+      "response_mode": "text",
+      "status": "failed"
+    }
+  ],
+  "protocol": {
+    "app_version": "0.1.0",
+    "attempts": 1,
+    "case_count": 1,
+    "duckdb_version": "1.5.5",
+    "output_contract": "query-plan-v1",
+    "scorer_version": "1.0.0",
+    "sqlglot_version": "30.17.0"
+  },
+  "report_schema_version": "run-report-v1",
+  "scorer_version": "1.0.0",
+  "selected_case_keys": [
+    "basic_filter_sort"
+  ],
+  "source_run_id": null,
+  "sqlglot_version": "30.17.0",
+  "started_at": "2026-08-29T16:18:56.506205",
+  "status": "failed",
+  "suite_content_hash": "0a4a18b4374f510f5eff18b06272c30c3375e1f082ae405adc8ead7dd9c81556",
+  "suite_version_id": 1
+}

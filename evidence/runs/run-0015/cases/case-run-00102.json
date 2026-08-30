@@ -1,0 +1,65 @@
+{
+  "actual_digest": null,
+  "assumptions": null,
+  "attempt": 1,
+  "category": "window_rank",
+  "comparison": {
+    "abs_tolerance": "0.005",
+    "decimal_scale": 2,
+    "duplicate_policy": "multiset",
+    "max_rows": 10000,
+    "rel_tolerance": "0",
+    "row_order_significant": true
+  },
+  "difficulty": "hard",
+  "error_code": null,
+  "error_message": null,
+  "execution_ms": null,
+  "expected_digest": null,
+  "finished_at": "2026-08-29T20:42:00.805089",
+  "formatted_sql": null,
+  "generated_sql": null,
+  "generation_ms": null,
+  "id": 102,
+  "model_name": "Sol 本机实测",
+  "model_run_id": 18,
+  "plan": null,
+  "prompt": null,
+  "provider_request_id": null,
+  "question": "按净销售额取每个品类恰好前三商品，同额时按 product_id 升序打破并列；输出 category、product_id、product_name、net_revenue、rank_no，并按 category、rank_no 升序；必须使用 ROW_NUMBER 分区窗口。",
+  "radar_dimension": "窗口函数",
+  "raw_output": null,
+  "requested_model_id": "gpt-5.6-sol",
+  "required_ast": [
+    {
+      "id": "top3-row-number",
+      "kind": "window_function",
+      "min": 1,
+      "name": "ROW_NUMBER",
+      "order_by": [
+        {
+          "direction": "DESC",
+          "expression": "net_revenue"
+        },
+        {
+          "direction": "ASC",
+          "expression": "product_id"
+        }
+      ],
+      "partition_columns": [
+        "category"
+      ]
+    }
+  ],
+  "resolved_model_id": "gpt-5.6-sol",
+  "result_preview": null,
+  "run_id": 15,
+  "score": null,
+  "stable_key": "top3_products_per_category",
+  "started_at": null,
+  "status": "cancelled",
+  "suite_content_hash": "0a4a18b4374f510f5eff18b06272c30c3375e1f082ae405adc8ead7dd9c81556",
+  "title": "每品类收入前三商品",
+  "token_usage": null,
+  "visible_summary": null
+}

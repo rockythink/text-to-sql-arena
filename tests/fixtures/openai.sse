@@ -1,0 +1,5 @@
+data: {"id":"chatcmpl-1","model":"model-a","choices":[{"delta":{"content":"{\"plan\":{\"grain\":\"single row\",\"sources\":[],\"joins\":[],\"filters\":[],\"metrics\":[\"value\"],\"steps\":["}}]}
+
+data: {"id":"chatcmpl-1","model":"model-a","choices":[{"delta":{"content":"\"select constant value\"],\"risks\":[]},\"sql\":\"SELECT 1 AS value\",\"summary\":\"返回常量\",\"assumptions\":[]}"}}],"usage":{"prompt_tokens":90,"completion_tokens":18}}
+
+data: [DONE]

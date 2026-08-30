@@ -1,0 +1,260 @@
+{
+  "actual_digest": "e011205b29b762f8fcac07678b0ff932ec989049e2d79621e5e081ae7a1b067c",
+  "assumptions": [
+    "输出 dim_channels 中定义的所有 channel_type；没有对应事实记录的指标显示为 0。"
+  ],
+  "attempt": 1,
+  "category": "semantic_metrics",
+  "comparison": {
+    "abs_tolerance": "0.005",
+    "decimal_scale": 2,
+    "duplicate_policy": "multiset",
+    "max_rows": 10000,
+    "rel_tolerance": "0",
+    "row_order_significant": true
+  },
+  "difficulty": "hard",
+  "error_code": null,
+  "error_message": null,
+  "execution_ms": 215.86691700213123,
+  "expected_digest": "c2e7ea06590c967caa9ecc5dd8be012a5ae8d46f9b6d6dbdea1d4b8e72a692e2",
+  "expected_result_preview": {
+    "columns": [
+      {
+        "name": "channel_type",
+        "type": "VARCHAR"
+      },
+      {
+        "name": "completed_order_count",
+        "type": "BIGINT"
+      },
+      {
+        "name": "net_revenue",
+        "type": "DECIMAL(38,2)"
+      },
+      {
+        "name": "paid_amount",
+        "type": "DECIMAL(38,2)"
+      },
+      {
+        "name": "refunded_amount",
+        "type": "DECIMAL(38,2)"
+      },
+      {
+        "name": "failed_amount",
+        "type": "DECIMAL(38,2)"
+      }
+    ],
+    "digest": "c2e7ea06590c967caa9ecc5dd8be012a5ae8d46f9b6d6dbdea1d4b8e72a692e2",
+    "row_count": 5,
+    "rows": [
+      [
+        "affiliate",
+        114,
+        "129676.50",
+        "130639.25",
+        "5602.25",
+        "13165.50"
+      ],
+      [
+        "offline",
+        112,
+        "140491.50",
+        "140754.00",
+        "5162.75",
+        "22860.50"
+      ],
+      [
+        "organic",
+        141,
+        "145543.00",
+        "134754.50",
+        "8260.00",
+        "24282.50"
+      ],
+      [
+        "paid_search",
+        117,
+        "143237.25",
+        "121154.50",
+        "8709.75",
+        "19564.25"
+      ],
+      [
+        "partner",
+        0,
+        "0.00",
+        "0.00",
+        "0.00",
+        "0.00"
+      ]
+    ]
+  },
+  "finished_at": "2026-08-29T22:53:42.348600",
+  "formatted_sql": "WITH channel_types AS (\n  SELECT\n    channel_type\n  FROM dim_channels\n  GROUP BY\n    channel_type\n), completed_orders AS (\n  SELECT\n    c.channel_type,\n    COUNT(DISTINCT o.order_id) AS completed_order_count\n  FROM fact_orders AS o\n  JOIN dim_channels AS c\n    ON o.channel_id = c.channel_id\n  WHERE\n    o.status = 'completed'\n  GROUP BY\n    c.channel_type\n), net_revenue AS (\n  SELECT\n    c.channel_type,\n    SUM(oi.quantity * oi.unit_price - oi.discount_amount) AS net_revenue\n  FROM fact_order_items AS oi\n  JOIN fact_orders AS o\n    ON oi.order_id = o.order_id\n  JOIN dim_channels AS c\n    ON o.channel_id = c.channel_id\n  WHERE\n    o.status = 'completed'\n  GROUP BY\n    c.channel_type\n), payment_amounts AS (\n  SELECT\n    c.channel_type,\n    SUM(CASE WHEN p.status = 'paid' THEN p.amount ELSE 0 END) AS paid_amount,\n    SUM(CASE WHEN p.status = 'refunded' THEN p.amount ELSE 0 END) AS refunded_amount,\n    SUM(CASE WHEN p.status = 'failed' THEN p.amount ELSE 0 END) AS failed_amount\n  FROM fact_payments AS p\n  JOIN fact_orders AS o\n    ON p.order_id = o.order_id\n  JOIN dim_channels AS c\n    ON o.channel_id = c.channel_id\n  GROUP BY\n    c.channel_type\n)\nSELECT\n  ct.channel_type,\n  COALESCE(co.completed_order_count, 0) AS completed_order_count,\n  COALESCE(nr.net_revenue, 0) AS net_revenue,\n  COALESCE(pa.paid_amount, 0) AS paid_amount,\n  COALESCE(pa.refunded_amount, 0) AS refunded_amount,\n  COALESCE(pa.failed_amount, 0) AS failed_amount\nFROM channel_types AS ct\nLEFT JOIN completed_orders AS co\n  ON ct.channel_type = co.channel_type\nLEFT JOIN net_revenue AS nr\n  ON ct.channel_type = nr.channel_type\nLEFT JOIN payment_amounts AS pa\n  ON ct.channel_type = pa.channel_type\nORDER BY\n  ct.channel_type ASC",
+  "generated_sql": "WITH channel_types AS (\n    SELECT channel_type\n    FROM dim_channels\n    GROUP BY channel_type\n),\ncompleted_orders AS (\n    SELECT\n        c.channel_type,\n        COUNT(DISTINCT o.order_id) AS completed_order_count\n    FROM fact_orders AS o\n    JOIN dim_channels AS c\n      ON o.channel_id = c.channel_id\n    WHERE o.status = 'completed'\n    GROUP BY c.channel_type\n),\nnet_revenue AS (\n    SELECT\n        c.channel_type,\n        SUM(oi.quantity * oi.unit_price - oi.discount_amount) AS net_revenue\n    FROM fact_order_items AS oi\n    JOIN fact_orders AS o\n      ON oi.order_id = o.order_id\n    JOIN dim_channels AS c\n      ON o.channel_id = c.channel_id\n    WHERE o.status = 'completed'\n    GROUP BY c.channel_type\n),\npayment_amounts AS (\n    SELECT\n        c.channel_type,\n        SUM(CASE WHEN p.status = 'paid' THEN p.amount ELSE 0 END) AS paid_amount,\n        SUM(CASE WHEN p.status = 'refunded' THEN p.amount ELSE 0 END) AS refunded_amount,\n        SUM(CASE WHEN p.status = 'failed' THEN p.amount ELSE 0 END) AS failed_amount\n    FROM fact_payments AS p\n    JOIN fact_orders AS o\n      ON p.order_id = o.order_id\n    JOIN dim_channels AS c\n      ON o.channel_id = c.channel_id\n    GROUP BY c.channel_type\n)\nSELECT\n    ct.channel_type,\n    COALESCE(co.completed_order_count, 0) AS completed_order_count,\n    COALESCE(nr.net_revenue, 0) AS net_revenue,\n    COALESCE(pa.paid_amount, 0) AS paid_amount,\n    COALESCE(pa.refunded_amount, 0) AS refunded_amount,\n    COALESCE(pa.failed_amount, 0) AS failed_amount\nFROM channel_types AS ct\nLEFT JOIN completed_orders AS co\n  ON ct.channel_type = co.channel_type\nLEFT JOIN net_revenue AS nr\n  ON ct.channel_type = nr.channel_type\nLEFT JOIN payment_amounts AS pa\n  ON ct.channel_type = pa.channel_type\nORDER BY ct.channel_type ASC",
+  "generation_ms": null,
+  "id": 161,
+  "model_name": "Sol 本机实测",
+  "model_run_id": 22,
+  "plan": {
+    "filters": [
+      "订单数和净销售额仅含 fact_orders.status = 'completed'",
+      "支付金额仅按 fact_payments.status 分类"
+    ],
+    "grain": "每行一个 channel_type",
+    "joins": [
+      "fact_orders.channel_id = dim_channels.channel_id",
+      "fact_order_items.order_id = fact_orders.order_id",
+      "fact_payments.order_id = fact_orders.order_id"
+    ],
+    "metrics": [
+      "completed_order_count：完成订单去重计数",
+      "net_revenue：完成订单行 quantity * unit_price - discount_amount 汇总",
+      "paid_amount：status = 'paid' 的支付金额",
+      "refunded_amount：status = 'refunded' 的支付金额",
+      "failed_amount：status = 'failed' 的支付金额"
+    ],
+    "risks": [
+      "订单行与支付记录不得直接连接",
+      "同一 channel_type 可对应多个 channel_id",
+      "支付指标不得套用完成订单过滤"
+    ],
+    "sources": [
+      "dim_channels",
+      "fact_orders",
+      "fact_order_items",
+      "fact_payments"
+    ],
+    "steps": [
+      "分别聚合完成订单数、订单行净销售额和支付状态金额",
+      "以 channel_type 汇总渠道维表",
+      "连接各指标聚合并将缺失值补零",
+      "按 channel_type 升序输出"
+    ]
+  },
+  "prompt": "你是 Text-to-SQL 数据分析与数据开发生成器。先形成简洁、可审计的结构化查询方案，再生成完成问题所需的 SQL；不要输出隐藏推理。\n\n方言与安全规则：\nUse DuckDB SQL. Return exactly one read-only query. Do not access files, URLs, extensions, or schemas outside the supplied tables.\n\n数据库结构：\n{\"semantic_relationships\":[{\"cardinality\":\"many_to_one\",\"from_entity\":\"order\",\"sql_on\":\"fact_orders.customer_id = dim_customers.customer_id\",\"to_entity\":\"customer\"},{\"cardinality\":\"many_to_one\",\"from_entity\":\"order\",\"sql_on\":\"fact_orders.channel_id = dim_channels.channel_id\",\"to_entity\":\"channel\"},{\"cardinality\":\"many_to_one\",\"from_entity\":\"order_item\",\"sql_on\":\"fact_order_items.order_id = fact_orders.order_id\",\"to_entity\":\"order\"},{\"cardinality\":\"many_to_one\",\"from_entity\":\"order_item\",\"sql_on\":\"fact_order_items.product_id = dim_products.product_id\",\"to_entity\":\"product\"},{\"cardinality\":\"many_to_one\",\"from_entity\":\"payment\",\"sql_on\":\"fact_payments.order_id = fact_orders.order_id\",\"to_entity\":\"order\"},{\"cardinality\":\"many_to_one\",\"from_entity\":\"return\",\"sql_on\":\"fact_returns.order_id = fact_order_items.order_id AND fact_returns.line_no = fact_order_items.line_no\",\"to_entity\":\"order_item\"}],\"tables\":[{\"columns\":[{\"data_type\":\"BIGINT\",\"name\":\"channel_id\",\"nullable\":false},{\"data_type\":\"VARCHAR\",\"name\":\"channel_name\",\"nullable\":false},{\"data_type\":\"VARCHAR\",\"name\":\"channel_type\",\"nullable\":false}],\"foreign_keys\":[],\"name\":\"dim_channels\",\"primary_key\":[\"channel_id\"]},{\"columns\":[{\"data_type\":\"BIGINT\",\"name\":\"customer_id\",\"nullable\":false},{\"data_type\":\"VARCHAR\",\"name\":\"customer_name\",\"nullable\":false},{\"data_type\":\"VARCHAR\",\"name\":\"city\",\"nullable\":true},{\"data_type\":\"DATE\",\"name\":\"signup_date\",\"nullable\":false},{\"data_type\":\"VARCHAR\",\"name\":\"segment\",\"nullable\":false}],\"foreign_keys\":[],\"name\":\"dim_customers\",\"primary_key\":[\"customer_id\"]},{\"columns\":[{\"data_type\":\"BIGINT\",\"name\":\"product_id\",\"nullable\":false},{\"data_type\":\"VARCHAR\",\"name\":\"product_name\",\"nullable\":false},{\"data_type\":\"VARCHAR\",\"name\":\"category\",\"nullable\":false},{\"data_type\":\"VARCHAR\",\"name\":\"brand\",\"nullable\":false},{\"data_type\":\"DECIMAL(14,2)\",\"name\":\"list_price\",\"nullable\":false}],\"foreign_keys\":[],\"name\":\"dim_products\",\"primary_key\":[\"product_id\"]},{\"columns\":[{\"data_type\":\"BIGINT\",\"name\":\"order_id\",\"nullable\":false},{\"data_type\":\"BIGINT\",\"name\":\"line_no\",\"nullable\":false},{\"data_type\":\"BIGINT\",\"name\":\"product_id\",\"nullable\":false},{\"data_type\":\"BIGINT\",\"name\":\"quantity\",\"nullable\":false},{\"data_type\":\"DECIMAL(14,2)\",\"name\":\"unit_price\",\"nullable\":false},{\"data_type\":\"DECIMAL(14,2)\",\"name\":\"discount_amount\",\"nullable\":false}],\"foreign_keys\":[{\"columns\":[\"order_id\"],\"referenced_columns\":[\"order_id\"],\"referenced_table\":\"fact_orders\"},{\"columns\":[\"product_id\"],\"referenced_columns\":[\"product_id\"],\"referenced_table\":\"dim_products\"}],\"name\":\"fact_order_items\",\"primary_key\":[\"order_id\",\"line_no\"]},{\"columns\":[{\"data_type\":\"BIGINT\",\"name\":\"order_id\",\"nullable\":false},{\"data_type\":\"BIGINT\",\"name\":\"customer_id\",\"nullable\":false},{\"data_type\":\"BIGINT\",\"name\":\"channel_id\",\"nullable\":false},{\"data_type\":\"DATE\",\"name\":\"order_date\",\"nullable\":false},{\"data_type\":\"VARCHAR\",\"name\":\"status\",\"nullable\":false},{\"data_type\":\"DECIMAL(14,2)\",\"name\":\"total_amount\",\"nullable\":false}],\"foreign_keys\":[{\"columns\":[\"customer_id\"],\"referenced_columns\":[\"customer_id\"],\"referenced_table\":\"dim_customers\"},{\"columns\":[\"channel_id\"],\"referenced_columns\":[\"channel_id\"],\"referenced_table\":\"dim_channels\"}],\"name\":\"fact_orders\",\"primary_key\":[\"order_id\"]},{\"columns\":[{\"data_type\":\"BIGINT\",\"name\":\"payment_id\",\"nullable\":false},{\"data_type\":\"BIGINT\",\"name\":\"order_id\",\"nullable\":false},{\"data_type\":\"TIMESTAMP\",\"name\":\"paid_at\",\"nullable\":false},{\"data_type\":\"VARCHAR\",\"name\":\"payment_method\",\"nullable\":false},{\"data_type\":\"DECIMAL(14,2)\",\"name\":\"amount\",\"nullable\":false},{\"data_type\":\"VARCHAR\",\"name\":\"status\",\"nullable\":false}],\"foreign_keys\":[{\"columns\":[\"order_id\"],\"referenced_columns\":[\"order_id\"],\"referenced_table\":\"fact_orders\"}],\"name\":\"fact_payments\",\"primary_key\":[\"payment_id\"]},{\"columns\":[{\"data_type\":\"BIGINT\",\"name\":\"return_id\",\"nullable\":false},{\"data_type\":\"BIGINT\",\"name\":\"order_id\",\"nullable\":false},{\"data_type\":\"BIGINT\",\"name\":\"line_no\",\"nullable\":false},{\"data_type\":\"TIMESTAMP\",\"name\":\"returned_at\",\"nullable\":false},{\"data_type\":\"BIGINT\",\"name\":\"return_qty\",\"nullable\":false},{\"data_type\":\"DECIMAL(14,2)\",\"name\":\"refund_amount\",\"nullable\":false},{\"data_type\":\"VARCHAR\",\"name\":\"reason\",\"nullable\":true}],\"foreign_keys\":[{\"columns\":[\"order_id\",\"line_no\"],\"referenced_columns\":[\"order_id\",\"line_no\"],\"referenced_table\":\"fact_order_items\"}],\"name\":\"fact_returns\",\"primary_key\":[\"return_id\"]}]}\n\n语义层与业务口径：\n{\"business_rules\":[\"完成订单仅指 fact_orders.status = 'completed'。\",\"净销售额为 quantity * unit_price - discount_amount。\",\"paid、refunded、failed 金额只按 fact_payments.status 分类。\",\"退货率为完成订单的 returned_qty / sold_qty，售出数量仅含完成订单。\",\"月份按 UTC Gregorian calendar 计算。\",\"订单头 total_amount 应等于订单行净额汇总，差异视为数据质量异常。\"],\"dimensions\":[{\"data_type\":\"VARCHAR\",\"description\":\"客户分群\",\"expression\":\"dim_customers.segment\",\"name\":\"customer_segment\"},{\"data_type\":\"VARCHAR\",\"description\":\"商品品类\",\"expression\":\"dim_products.category\",\"name\":\"product_category\"},{\"data_type\":\"VARCHAR\",\"description\":\"渠道类型\",\"expression\":\"dim_channels.channel_type\",\"name\":\"channel_type\"},{\"data_type\":\"VARCHAR\",\"description\":\"UTC Gregorian 月份\",\"expression\":\"strftime(fact_orders.order_date, '%Y-%m')\",\"name\":\"order_month\"}],\"entities\":[{\"description\":\"客户主数据\",\"grain\":\"每行一个客户\",\"name\":\"customer\",\"primary_key\":[\"customer_id\"],\"table\":\"dim_customers\"},{\"description\":\"商品主数据\",\"grain\":\"每行一个商品\",\"name\":\"product\",\"primary_key\":[\"product_id\"],\"table\":\"dim_products\"},{\"description\":\"渠道主数据\",\"grain\":\"每行一个渠道\",\"name\":\"channel\",\"primary_key\":[\"channel_id\"],\"table\":\"dim_channels\"},{\"description\":\"订单头\",\"grain\":\"每行一个订单\",\"name\":\"order\",\"primary_key\":[\"order_id\"],\"table\":\"fact_orders\"},{\"description\":\"订单行\",\"grain\":\"每行一个订单商品行\",\"name\":\"order_item\",\"primary_key\":[\"order_id\",\"line_no\"],\"table\":\"fact_order_items\"},{\"description\":\"支付尝试\",\"grain\":\"每行一笔支付\",\"name\":\"payment\",\"primary_key\":[\"payment_id\"],\"table\":\"fact_payments\"},{\"description\":\"退货记录\",\"grain\":\"每行一条订单行退货\",\"name\":\"return\",\"primary_key\":[\"return_id\"],\"table\":\"fact_returns\"}],\"metrics\":[{\"description\":\"已完成订单数\",\"expression\":\"COUNT(DISTINCT CASE WHEN fact_orders.status = 'completed' THEN fact_orders.order_id END)\",\"filters\":[\"fact_orders.status = 'completed'\"],\"grain\":\"聚合\",\"name\":\"completed_order_count\"},{\"description\":\"完成订单商品行净销售额\",\"expression\":\"SUM(fact_order_items.quantity * fact_order_items.unit_price - fact_order_items.discount_amount)\",\"filters\":[\"fact_orders.status = 'completed'\"],\"grain\":\"聚合\",\"name\":\"net_revenue\"},{\"description\":\"成功支付金额\",\"expression\":\"SUM(CASE WHEN fact_payments.status = 'paid' THEN fact_payments.amount ELSE 0 END)\",\"filters\":[],\"grain\":\"聚合\",\"name\":\"paid_amount\"},{\"description\":\"退款状态支付金额\",\"expression\":\"SUM(CASE WHEN fact_payments.status = 'refunded' THEN fact_payments.amount ELSE 0 END)\",\"filters\":[],\"grain\":\"聚合\",\"name\":\"refunded_amount\"},{\"description\":\"失败支付金额\",\"expression\":\"SUM(CASE WHEN fact_payments.status = 'failed' THEN fact_payments.amount ELSE 0 END)\",\"filters\":[],\"grain\":\"聚合\",\"name\":\"failed_amount\"},{\"description\":\"完成订单退货数量除以售出数量\",\"expression\":\"SUM(fact_returns.return_qty) / SUM(fact_order_items.quantity)\",\"filters\":[\"fact_orders.status = 'completed'\"],\"grain\":\"聚合\",\"name\":\"return_rate\"}],\"relationships\":[{\"cardinality\":\"many_to_one\",\"from_entity\":\"order\",\"sql_on\":\"fact_orders.customer_id = dim_customers.customer_id\",\"to_entity\":\"customer\"},{\"cardinality\":\"many_to_one\",\"from_entity\":\"order\",\"sql_on\":\"fact_orders.channel_id = dim_channels.channel_id\",\"to_entity\":\"channel\"},{\"cardinality\":\"many_to_one\",\"from_entity\":\"order_item\",\"sql_on\":\"fact_order_items.order_id = fact_orders.order_id\",\"to_entity\":\"order\"},{\"cardinality\":\"many_to_one\",\"from_entity\":\"order_item\",\"sql_on\":\"fact_order_items.product_id = dim_products.product_id\",\"to_entity\":\"product\"},{\"cardinality\":\"many_to_one\",\"from_entity\":\"payment\",\"sql_on\":\"fact_payments.order_id = fact_orders.order_id\",\"to_entity\":\"order\"},{\"cardinality\":\"many_to_one\",\"from_entity\":\"return\",\"sql_on\":\"fact_returns.order_id = fact_order_items.order_id AND fact_returns.line_no = fact_order_items.line_no\",\"to_entity\":\"order_item\"}]}\n\n问题：\n按 channel_type 输出 completed_order_count、net_revenue、paid_amount、refunded_amount、failed_amount。所有指标必须遵循语义层口径，避免订单行与支付记录直接连接造成重复计算，并按 channel_type 升序。\n\n规划要求：\nplan 只记录输出粒度、数据源、连接、过滤、指标、执行步骤和风险检查；每项保持简短。\nSQL 必须严格实现该 plan，并遵循语义层业务口径。\nsummary 只概括最终做法，assumptions 只列无法由上下文确定的必要假设。\n输出必须严格匹配此 JSON Schema：\n{\"$defs\":{\"QueryPlan\":{\"additionalProperties\":false,\"properties\":{\"filters\":{\"items\":{\"type\":\"string\"},\"title\":\"Filters\",\"type\":\"array\"},\"grain\":{\"title\":\"Grain\",\"type\":\"string\"},\"joins\":{\"items\":{\"type\":\"string\"},\"title\":\"Joins\",\"type\":\"array\"},\"metrics\":{\"items\":{\"type\":\"string\"},\"title\":\"Metrics\",\"type\":\"array\"},\"risks\":{\"items\":{\"type\":\"string\"},\"title\":\"Risks\",\"type\":\"array\"},\"sources\":{\"items\":{\"type\":\"string\"},\"title\":\"Sources\",\"type\":\"array\"},\"steps\":{\"items\":{\"type\":\"string\"},\"title\":\"Steps\",\"type\":\"array\"}},\"required\":[\"grain\",\"sources\",\"joins\",\"filters\",\"metrics\",\"steps\",\"risks\"],\"title\":\"QueryPlan\",\"type\":\"object\"}},\"additionalProperties\":false,\"properties\":{\"assumptions\":{\"items\":{\"type\":\"string\"},\"title\":\"Assumptions\",\"type\":\"array\"},\"plan\":{\"$ref\":\"#/$defs/QueryPlan\"},\"sql\":{\"title\":\"Sql\",\"type\":\"string\"},\"summary\":{\"title\":\"Summary\",\"type\":\"string\"}},\"required\":[\"plan\",\"sql\",\"summary\",\"assumptions\"],\"title\":\"GenerationOutput\",\"type\":\"object\"}",
+  "provider_request_id": null,
+  "question": "按 channel_type 输出 completed_order_count、net_revenue、paid_amount、refunded_amount、failed_amount。所有指标必须遵循语义层口径，避免订单行与支付记录直接连接造成重复计算，并按 channel_type 升序。",
+  "radar_dimension": "聚合与指标",
+  "raw_output": "{\"plan\":{\"grain\":\"每行一个 channel_type\",\"sources\":[\"dim_channels\",\"fact_orders\",\"fact_order_items\",\"fact_payments\"],\"joins\":[\"fact_orders.channel_id = dim_channels.channel_id\",\"fact_order_items.order_id = fact_orders.order_id\",\"fact_payments.order_id = fact_orders.order_id\"],\"filters\":[\"订单数和净销售额仅含 fact_orders.status = 'completed'\",\"支付金额仅按 fact_payments.status 分类\"],\"metrics\":[\"completed_order_count：完成订单去重计数\",\"net_revenue：完成订单行 quantity * unit_price - discount_amount 汇总\",\"paid_amount：status = 'paid' 的支付金额\",\"refunded_amount：status = 'refunded' 的支付金额\",\"failed_amount：status = 'failed' 的支付金额\"],\"steps\":[\"分别聚合完成订单数、订单行净销售额和支付状态金额\",\"以 channel_type 汇总渠道维表\",\"连接各指标聚合并将缺失值补零\",\"按 channel_type 升序输出\"],\"risks\":[\"订单行与支付记录不得直接连接\",\"同一 channel_type 可对应多个 channel_id\",\"支付指标不得套用完成订单过滤\"]},\"sql\":\"WITH channel_types AS (\\n    SELECT channel_type\\n    FROM dim_channels\\n    GROUP BY channel_type\\n),\\ncompleted_orders AS (\\n    SELECT\\n        c.channel_type,\\n        COUNT(DISTINCT o.order_id) AS completed_order_count\\n    FROM fact_orders AS o\\n    JOIN dim_channels AS c\\n      ON o.channel_id = c.channel_id\\n    WHERE o.status = 'completed'\\n    GROUP BY c.channel_type\\n),\\nnet_revenue AS (\\n    SELECT\\n        c.channel_type,\\n        SUM(oi.quantity * oi.unit_price - oi.discount_amount) AS net_revenue\\n    FROM fact_order_items AS oi\\n    JOIN fact_orders AS o\\n      ON oi.order_id = o.order_id\\n    JOIN dim_channels AS c\\n      ON o.channel_id = c.channel_id\\n    WHERE o.status = 'completed'\\n    GROUP BY c.channel_type\\n),\\npayment_amounts AS (\\n    SELECT\\n        c.channel_type,\\n        SUM(CASE WHEN p.status = 'paid' THEN p.amount ELSE 0 END) AS paid_amount,\\n        SUM(CASE WHEN p.status = 'refunded' THEN p.amount ELSE 0 END) AS refunded_amount,\\n        SUM(CASE WHEN p.status = 'failed' THEN p.amount ELSE 0 END) AS failed_amount\\n    FROM fact_payments AS p\\n    JOIN fact_orders AS o\\n      ON p.order_id = o.order_id\\n    JOIN dim_channels AS c\\n      ON o.channel_id = c.channel_id\\n    GROUP BY c.channel_type\\n)\\nSELECT\\n    ct.channel_type,\\n    COALESCE(co.completed_order_count, 0) AS completed_order_count,\\n    COALESCE(nr.net_revenue, 0) AS net_revenue,\\n    COALESCE(pa.paid_amount, 0) AS paid_amount,\\n    COALESCE(pa.refunded_amount, 0) AS refunded_amount,\\n    COALESCE(pa.failed_amount, 0) AS failed_amount\\nFROM channel_types AS ct\\nLEFT JOIN completed_orders AS co\\n  ON ct.channel_type = co.channel_type\\nLEFT JOIN net_revenue AS nr\\n  ON ct.channel_type = nr.channel_type\\nLEFT JOIN payment_amounts AS pa\\n  ON ct.channel_type = pa.channel_type\\nORDER BY ct.channel_type ASC\",\"summary\":\"分别在订单、订单行和支付粒度聚合指标，再按 channel_type 合并，避免订单行与支付记录相乘导致重复计算。\",\"assumptions\":[\"输出 dim_channels 中定义的所有 channel_type；没有对应事实记录的指标显示为 0。\"]}",
+  "reference_sql": "WITH sales AS (SELECT ch.channel_type, COUNT(DISTINCT o.order_id) AS completed_order_count, SUM(i.quantity * i.unit_price - i.discount_amount) AS net_revenue FROM dim_channels ch JOIN fact_orders o ON o.channel_id = ch.channel_id AND o.status = 'completed' JOIN fact_order_items i ON i.order_id = o.order_id GROUP BY ch.channel_type), payments AS (SELECT ch.channel_type, SUM(CASE WHEN p.status = 'paid' THEN p.amount ELSE 0 END) AS paid_amount, SUM(CASE WHEN p.status = 'refunded' THEN p.amount ELSE 0 END) AS refunded_amount, SUM(CASE WHEN p.status = 'failed' THEN p.amount ELSE 0 END) AS failed_amount FROM dim_channels ch JOIN fact_orders o ON o.channel_id = ch.channel_id JOIN fact_payments p ON p.order_id = o.order_id GROUP BY ch.channel_type) SELECT ch.channel_type, COALESCE(s.completed_order_count, 0) AS completed_order_count, COALESCE(s.net_revenue, 0) AS net_revenue, COALESCE(p.paid_amount, 0) AS paid_amount, COALESCE(p.refunded_amount, 0) AS refunded_amount, COALESCE(p.failed_amount, 0) AS failed_amount FROM (SELECT DISTINCT channel_type FROM dim_channels) ch LEFT JOIN sales s ON s.channel_type = ch.channel_type LEFT JOIN payments p ON p.channel_type = ch.channel_type ORDER BY ch.channel_type ASC",
+  "requested_model_id": "gpt-5.6-sol",
+  "required_ast": [
+    {
+      "id": "kpi-preaggregation",
+      "kind": "cte_count",
+      "min": 2
+    }
+  ],
+  "resolved_model_id": "gpt-5.6-sol",
+  "result_preview": {
+    "columns": [
+      {
+        "name": "channel_type",
+        "type": "VARCHAR"
+      },
+      {
+        "name": "completed_order_count",
+        "type": "BIGINT"
+      },
+      {
+        "name": "net_revenue",
+        "type": "DECIMAL(38,2)"
+      },
+      {
+        "name": "paid_amount",
+        "type": "DECIMAL(38,2)"
+      },
+      {
+        "name": "refunded_amount",
+        "type": "DECIMAL(38,2)"
+      },
+      {
+        "name": "failed_amount",
+        "type": "DECIMAL(38,2)"
+      }
+    ],
+    "extra": [],
+    "missing": [],
+    "row_count": 5,
+    "rows": [
+      [
+        "affiliate",
+        114,
+        "129676.50",
+        "130639.25",
+        "5602.25",
+        "13165.50"
+      ],
+      [
+        "offline",
+        112,
+        "140491.50",
+        "140754.00",
+        "5162.75",
+        "22860.50"
+      ],
+      [
+        "organic",
+        141,
+        "145543.00",
+        "134754.50",
+        "8260.00",
+        "24282.50"
+      ],
+      [
+        "paid_search",
+        117,
+        "143237.25",
+        "121154.50",
+        "8709.75",
+        "19564.25"
+      ],
+      [
+        "partner",
+        0,
+        "0.00",
+        "0.00",
+        "0.00",
+        "0.00"
+      ]
+    ]
+  },
+  "run_id": 18,
+  "score": {
+    "ast_rules": [
+      {
+        "details": {
+          "actual": 4,
+          "required": 2
+        },
+        "id": "kpi-preaggregation",
+        "kind": "cte_count",
+        "passed": true
+      }
+    ],
+    "column_count": 5.0,
+    "column_names": 5.0,
+    "execution": 10.0,
+    "ordering": 10.0,
+    "protocol": 5.0,
+    "read_only_ast": 5.0,
+    "row_f1": 45.0,
+    "sql_capability": 15.0,
+    "total": 100.0
+  },
+  "stable_key": "semantic_channel_kpis",
+  "started_at": "2026-08-29T22:53:08.881645",
+  "status": "completed",
+  "suite_content_hash": "5b5d98876ea35114f18ce6dfa48cc9800d88b6baba80d311b2f52552a38b31af",
+  "title": "渠道核心指标",
+  "token_usage": {
+    "cache_write_input_tokens": 0,
+    "cached_input_tokens": 0,
+    "input_tokens": 19519,
+    "output_tokens": 1099,
+    "reasoning_output_tokens": 291
+  },
+  "visible_summary": "分别在订单、订单行和支付粒度聚合指标，再按 channel_type 合并，避免订单行与支付记录相乘导致重复计算。"
+}

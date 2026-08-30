@@ -1,0 +1,64 @@
+{
+  "actual_digest": null,
+  "assumptions": null,
+  "attempt": 1,
+  "category": "multi_stage_cte",
+  "comparison": {
+    "abs_tolerance": "0.00005",
+    "decimal_scale": 4,
+    "duplicate_policy": "multiset",
+    "max_rows": 10000,
+    "rel_tolerance": "0",
+    "row_order_significant": true
+  },
+  "difficulty": "hard",
+  "error_code": null,
+  "error_message": null,
+  "execution_ms": null,
+  "expected_digest": null,
+  "finished_at": "2026-08-29T20:42:00.808079",
+  "formatted_sql": null,
+  "generated_sql": null,
+  "generation_ms": null,
+  "id": 107,
+  "model_name": "Sol 本机实测",
+  "model_run_id": 18,
+  "plan": null,
+  "prompt": null,
+  "provider_request_id": null,
+  "question": "先分别聚合已完成订单的售出数量和退货数量，再计算品类退货率；输出 category、sold_qty、returned_qty、return_rate，比率四舍五入 4 位，按 return_rate 降序、category 升序；必须至少两个 CTE 且不得明细直接 JOIN 造成 fan-out。",
+  "radar_dimension": "复杂管道",
+  "raw_output": null,
+  "requested_model_id": "gpt-5.6-sol",
+  "required_ast": [
+    {
+      "id": "cte-2",
+      "kind": "cte_count",
+      "min": 2
+    },
+    {
+      "group_keys": [
+        "category"
+      ],
+      "id": "preaggregate",
+      "kind": "separate_measure_preaggregation",
+      "left_cte": "sold",
+      "left_measure_column": "quantity",
+      "left_measure_table": "fact_order_items",
+      "right_cte": "returned",
+      "right_measure_column": "return_qty",
+      "right_measure_table": "fact_returns"
+    }
+  ],
+  "resolved_model_id": "gpt-5.6-sol",
+  "result_preview": null,
+  "run_id": 15,
+  "score": null,
+  "stable_key": "category_return_rate",
+  "started_at": null,
+  "status": "cancelled",
+  "suite_content_hash": "0a4a18b4374f510f5eff18b06272c30c3375e1f082ae405adc8ead7dd9c81556",
+  "title": "品类退货率",
+  "token_usage": null,
+  "visible_summary": null
+}

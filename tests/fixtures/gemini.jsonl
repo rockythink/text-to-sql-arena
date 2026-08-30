@@ -1,0 +1,2 @@
+{"type":"message","role":"model","content":"{\"plan\":{\"grain\":\"single row\",\"sources\":[],\"joins\":[],\"filters\":[],\"metrics\":[\"value\"],\"steps\":[\"select constant value\"],\"risks\":[]},\"sql\":\"SELECT 1 AS value\",\"summary\":\"返回常量\",\"assumptions\":[]}"}
+{"type":"result","id":"gemini-request-1","model":"gemini-2.5-pro","stats":{"input_tokens":100,"output_tokens":20}}

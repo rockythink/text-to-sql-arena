@@ -1,0 +1,59 @@
+{
+  "actual_digest": null,
+  "assumptions": null,
+  "attempt": 1,
+  "category": "window_aggregate",
+  "comparison": {
+    "abs_tolerance": "0.005",
+    "decimal_scale": 2,
+    "duplicate_policy": "multiset",
+    "max_rows": 10000,
+    "rel_tolerance": "0",
+    "row_order_significant": true
+  },
+  "difficulty": "medium",
+  "error_code": null,
+  "error_message": null,
+  "execution_ms": null,
+  "expected_digest": null,
+  "finished_at": "2026-08-29T20:42:00.805742",
+  "formatted_sql": null,
+  "generated_sql": null,
+  "generation_ms": null,
+  "id": 103,
+  "model_name": "Sol 本机实测",
+  "model_run_id": 18,
+  "plan": null,
+  "prompt": null,
+  "provider_request_id": null,
+  "question": "输出 2025 年每月已完成订单收入及累计收入 month、monthly_revenue、cumulative_revenue，按 month 升序；必须使用 SUM 窗口并按 month 排序。",
+  "radar_dimension": "窗口函数",
+  "raw_output": null,
+  "requested_model_id": "gpt-5.6-sol",
+  "required_ast": [
+    {
+      "id": "running-sum",
+      "kind": "window_function",
+      "min": 1,
+      "name": "SUM",
+      "order_by": [
+        {
+          "direction": "ASC",
+          "expression": "month"
+        }
+      ],
+      "partition_columns": []
+    }
+  ],
+  "resolved_model_id": "gpt-5.6-sol",
+  "result_preview": null,
+  "run_id": 15,
+  "score": null,
+  "stable_key": "monthly_running_revenue",
+  "started_at": null,
+  "status": "cancelled",
+  "suite_content_hash": "0a4a18b4374f510f5eff18b06272c30c3375e1f082ae405adc8ead7dd9c81556",
+  "title": "月收入与累计收入",
+  "token_usage": null,
+  "visible_summary": null
+}

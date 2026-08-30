@@ -1,0 +1,82 @@
+{
+  "bundle_sha256": "70342e65b34276c8f338518d9f5803707e4da8591dd44641c0b7139d9c72da1d",
+  "case_run_count": 12,
+  "event_count": 14,
+  "files": [
+    {
+      "bytes": 43933,
+      "path": "cases/case-run-00097.json",
+      "sha256": "05120cd2990370d9aaf11d7376805d41bdb704e914750cb7df47bf3d30548bc3"
+    },
+    {
+      "bytes": 11974,
+      "path": "cases/case-run-00098.json",
+      "sha256": "b7424f71e0b645a6f095b3f0f29f9b35a64d24d38f95febc0ae90fb3315eb6b3"
+    },
+    {
+      "bytes": 1499,
+      "path": "cases/case-run-00099.json",
+      "sha256": "6be93971c972e8e1523cc4f0bf685a8e2e27f9cca31735662bd25c25d23a4367"
+    },
+    {
+      "bytes": 1522,
+      "path": "cases/case-run-00100.json",
+      "sha256": "e203290a6a403cf20beba83d03c80c3fdd3e7b1a9caac7be03b4edf87c316bc7"
+    },
+    {
+      "bytes": 1385,
+      "path": "cases/case-run-00101.json",
+      "sha256": "b57d7bab6968090b916c51f8512b169131b72cf54a734b5cc32b44f0f4cbf67a"
+    },
+    {
+      "bytes": 1809,
+      "path": "cases/case-run-00102.json",
+      "sha256": "6f3a63633d4d68245a7c696fd858589bcd034e6b1c075e5fd649f30b1cef114c"
+    },
+    {
+      "bytes": 1607,
+      "path": "cases/case-run-00103.json",
+      "sha256": "2c1e408ab32f0cae12bbf66373ed7b9391b3715c9c22bbba0ec68ea5c9aea2ce"
+    },
+    {
+      "bytes": 1587,
+      "path": "cases/case-run-00104.json",
+      "sha256": "ea1a93a11e94c3e22e8e96c238bafcd6f89a4adc5f81dd4479370f9b6d68efe8"
+    },
+    {
+      "bytes": 1507,
+      "path": "cases/case-run-00105.json",
+      "sha256": "5dfb894e89fbd34cc9e84649d59632b92204880cd9d1982890cb1a96e7bc343f"
+    },
+    {
+      "bytes": 1488,
+      "path": "cases/case-run-00106.json",
+      "sha256": "52f9ae4c7ad406c8ad29d17c1be194c72e23b7aa0c39db22ac93259d12915016"
+    },
+    {
+      "bytes": 1909,
+      "path": "cases/case-run-00107.json",
+      "sha256": "10b5a5eced3c13cd8f69c608ec03cd6846ceafb28774bbda3ee790e66fec871a"
+    },
+    {
+      "bytes": 1786,
+      "path": "cases/case-run-00108.json",
+      "sha256": "4a07404392f4a8d18583bf25f794553d58b6c1a56e03d783727852bc694b051c"
+    },
+    {
+      "bytes": 3331,
+      "path": "events.jsonl",
+      "sha256": "7975a4b139a98bd335c052c8b7ba50c688459eb85e8ac85076d5ad438cdc28d5"
+    },
+    {
+      "bytes": 12524,
+      "path": "report.json",
+      "sha256": "30a7cc326c9f6b8a061d949078dc897a5c179344b4cefc26a811ddbffbd89195"
+    }
+  ],
+  "kind": "run",
+  "run_id": 15,
+  "schema_version": "text-to-sql-evidence-v1",
+  "status": "cancelled",
+  "suite_content_hash": "0a4a18b4374f510f5eff18b06272c30c3375e1f082ae405adc8ead7dd9c81556"
+}

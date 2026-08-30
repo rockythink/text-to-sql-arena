@@ -1,0 +1,142 @@
+{
+  "bundle_sha256": "d5da861e367c46b599d2894f89652f8bac573e3b8b9deee1f34169a65ad8501e",
+  "case_run_count": 24,
+  "event_count": 137,
+  "files": [
+    {
+      "bytes": 43937,
+      "path": "cases/case-run-00037.json",
+      "sha256": "663d4968b33c84d546986bcbf40f3f9c66e4d681af66b7d3d9b3c12285b72706"
+    },
+    {
+      "bytes": 16108,
+      "path": "cases/case-run-00038.json",
+      "sha256": "f97ea544e126b0f7f2ef3df884122345b025f18fcd1312a2c5a2aa6f1d911e69"
+    },
+    {
+      "bytes": 29718,
+      "path": "cases/case-run-00039.json",
+      "sha256": "20e96e135749eeefd7b76a01aec1a4e668b5328f04d825ec54814aa7cc3484ba"
+    },
+    {
+      "bytes": 56236,
+      "path": "cases/case-run-00040.json",
+      "sha256": "6f1975118df4e1cccab5770e3ab52cba93c8878f29bd7eaeb6a47cdb5350ecfa"
+    },
+    {
+      "bytes": 15398,
+      "path": "cases/case-run-00041.json",
+      "sha256": "3550d949189c8e0934b979a18eaf9efd852126ddf6028acd6d38a644bae475cc"
+    },
+    {
+      "bytes": 21398,
+      "path": "cases/case-run-00042.json",
+      "sha256": "b06e066b2a6e8e1b42a07a0e59ccbd228754c46e465a70c56a95bf1ef3e4eaa7"
+    },
+    {
+      "bytes": 17935,
+      "path": "cases/case-run-00043.json",
+      "sha256": "cf2b04dcdec40f41e0ef873a3cf5e39f96491eb65e1f42d4431082e6f46a40da"
+    },
+    {
+      "bytes": 18720,
+      "path": "cases/case-run-00044.json",
+      "sha256": "9c05c445041849382343a3040c145f542a931a68cc2d6f2524579a6e294c33d9"
+    },
+    {
+      "bytes": 24108,
+      "path": "cases/case-run-00045.json",
+      "sha256": "f3b006b9cc7f9fe6c0fcba777df943a3c833e6cdd33d3e4054a331959d38cc54"
+    },
+    {
+      "bytes": 16431,
+      "path": "cases/case-run-00046.json",
+      "sha256": "2150cc5760f4e9398a496dfa9275fd1ba6ffa86f42db387aaa4c6e5ffddd63d0"
+    },
+    {
+      "bytes": 19572,
+      "path": "cases/case-run-00047.json",
+      "sha256": "d262869ac32e3877ac880c5b6e008cadd61729bb8c3e2e09c63b3d21f45fe467"
+    },
+    {
+      "bytes": 53839,
+      "path": "cases/case-run-00048.json",
+      "sha256": "45f027c7c5af3f6532145d1c057cb3987e71d222234a15d244af7c9d74ce3927"
+    },
+    {
+      "bytes": 11977,
+      "path": "cases/case-run-00049.json",
+      "sha256": "a03d80e0154086b5fbf2b67fee20a1292a3eefdaaf12d3d2aed2c7eea6f10b68"
+    },
+    {
+      "bytes": 12262,
+      "path": "cases/case-run-00050.json",
+      "sha256": "ae76600c781d9161c28331c36c525dd5f821554c6a4f8c6dac073ceaf3d1a39a"
+    },
+    {
+      "bytes": 12234,
+      "path": "cases/case-run-00051.json",
+      "sha256": "a667d97c3795b822a831bdddb30d64852590e038b2113e3838b90c1a11e90bbf"
+    },
+    {
+      "bytes": 12290,
+      "path": "cases/case-run-00052.json",
+      "sha256": "d05ef2828c0e437c8e316f279ac453d7f1b45463d253e70a81e02538eb1ca4cd"
+    },
+    {
+      "bytes": 12035,
+      "path": "cases/case-run-00053.json",
+      "sha256": "381f45a883479bb99a601242ee1bc31042230a8b96b0a3b2d212c79c45737b79"
+    },
+    {
+      "bytes": 12566,
+      "path": "cases/case-run-00054.json",
+      "sha256": "3ad94bd8dba3dbb7f8e542be26c6acf56737f806715880eda9a3e5bfb846c899"
+    },
+    {
+      "bytes": 12293,
+      "path": "cases/case-run-00055.json",
+      "sha256": "b60f613ffeb567f847ae4829c227292f9bc723cb68304cae9cd378e0835233cd"
+    },
+    {
+      "bytes": 12268,
+      "path": "cases/case-run-00056.json",
+      "sha256": "e6a0d6fef3ec1b3da5288320664b1c89ef24375315005fa8cb03d57544e77066"
+    },
+    {
+      "bytes": 12259,
+      "path": "cases/case-run-00057.json",
+      "sha256": "742b6105edccddc1ea4caba6f53617e072dbfc585cf6a0ec8cc68cd63d6ef2fa"
+    },
+    {
+      "bytes": 12172,
+      "path": "cases/case-run-00058.json",
+      "sha256": "003780b03974c2513000bf91037a43f960368eb0d676d2c34a84737007692e71"
+    },
+    {
+      "bytes": 12711,
+      "path": "cases/case-run-00059.json",
+      "sha256": "9b5f7e52f31d00935c5613d82e978098eeae09a0cd96cef38b85b2c6a111ac5f"
+    },
+    {
+      "bytes": 12512,
+      "path": "cases/case-run-00060.json",
+      "sha256": "862d90601603fd5c35f7a15e7770b82be3555e17ca1de276ea2679f6ca2f13cb"
+    },
+    {
+      "bytes": 42573,
+      "path": "events.jsonl",
+      "sha256": "02a02b86f025377f95d2c896fe33a533620407bd88dc8ffd1fd31fd02d948cef"
+    },
+    {
+      "bytes": 43368,
+      "path": "report.json",
+      "sha256": "21e821e00608955c49f0bea3f05ffa789b817b3aa8cb04c77144f970c67781cd"
+    }
+  ],
+  "kind": "run",
+  "run_id": 12,
+  "schema_version": "text-to-sql-evidence-v1",
+  "status": "completed_with_errors",
+  "suite_content_hash": "0a4a18b4374f510f5eff18b06272c30c3375e1f082ae405adc8ead7dd9c81556"
+}

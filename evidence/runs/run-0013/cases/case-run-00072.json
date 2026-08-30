@@ -1,0 +1,65 @@
+{
+  "actual_digest": null,
+  "assumptions": null,
+  "attempt": 1,
+  "category": "latest_per_group",
+  "comparison": {
+    "abs_tolerance": "0.005",
+    "decimal_scale": 2,
+    "duplicate_policy": "multiset",
+    "max_rows": 10000,
+    "rel_tolerance": "0",
+    "row_order_significant": true
+  },
+  "difficulty": "medium",
+  "error_code": null,
+  "error_message": null,
+  "execution_ms": null,
+  "expected_digest": null,
+  "finished_at": "2026-08-29T16:45:41.984811",
+  "formatted_sql": null,
+  "generated_sql": null,
+  "generation_ms": null,
+  "id": 72,
+  "model_name": "Sol 本机实测",
+  "model_run_id": 15,
+  "plan": null,
+  "prompt": null,
+  "provider_request_id": null,
+  "question": "为每个有成功支付的订单取最新一笔成功支付，同一时间按 payment_id 降序打破并列；输出 order_id、payment_id、paid_at、amount，按 order_id 升序；必须使用 ROW_NUMBER。",
+  "radar_dimension": "窗口函数",
+  "raw_output": null,
+  "requested_model_id": "gpt-5.6-sol",
+  "required_ast": [
+    {
+      "id": "latest-row-number",
+      "kind": "window_function",
+      "min": 1,
+      "name": "ROW_NUMBER",
+      "order_by": [
+        {
+          "direction": "DESC",
+          "expression": "p.paid_at"
+        },
+        {
+          "direction": "DESC",
+          "expression": "p.payment_id"
+        }
+      ],
+      "partition_columns": [
+        "p.order_id"
+      ]
+    }
+  ],
+  "resolved_model_id": "gpt-5.6-sol",
+  "result_preview": null,
+  "run_id": 13,
+  "score": null,
+  "stable_key": "latest_successful_payment",
+  "started_at": null,
+  "status": "cancelled",
+  "suite_content_hash": "0a4a18b4374f510f5eff18b06272c30c3375e1f082ae405adc8ead7dd9c81556",
+  "title": "每单最新成功支付",
+  "token_usage": null,
+  "visible_summary": null
+}

@@ -1,0 +1,215 @@
+{
+  "actual_digest": "e3e33a8d79a4d303911eb88b097327ebb48e30feca858ac83c4c9901cf9fa0a9",
+  "assumptions": [],
+  "attempt": 1,
+  "category": "outer_join_grain",
+  "comparison": {
+    "abs_tolerance": "0.005",
+    "decimal_scale": 2,
+    "duplicate_policy": "multiset",
+    "max_rows": 10000,
+    "rel_tolerance": "0",
+    "row_order_significant": true
+  },
+  "difficulty": "medium",
+  "error_code": null,
+  "error_message": null,
+  "execution_ms": 200.73437500104774,
+  "expected_digest": "f15f2aead207aa4001397ebec61576bf89602b59f591a06bf087b9ca52c546de",
+  "expected_result_preview": {
+    "columns": [
+      {
+        "name": "channel_id",
+        "type": "BIGINT"
+      },
+      {
+        "name": "channel_name",
+        "type": "VARCHAR"
+      },
+      {
+        "name": "completed_order_count",
+        "type": "BIGINT"
+      },
+      {
+        "name": "net_revenue",
+        "type": "DECIMAL(38,2)"
+      }
+    ],
+    "digest": "f15f2aead207aa4001397ebec61576bf89602b59f591a06bf087b9ca52c546de",
+    "row_count": 5,
+    "rows": [
+      [
+        1,
+        "自然流量",
+        141,
+        "145543.00"
+      ],
+      [
+        2,
+        "搜索广告",
+        117,
+        "143237.25"
+      ],
+      [
+        3,
+        "联盟渠道",
+        114,
+        "129676.50"
+      ],
+      [
+        4,
+        "线下门店",
+        112,
+        "140491.50"
+      ],
+      [
+        5,
+        "合作伙伴",
+        0,
+        "0.00"
+      ]
+    ]
+  },
+  "finished_at": "2026-08-29T22:53:08.879297",
+  "formatted_sql": "SELECT\n  c.channel_id,\n  c.channel_name,\n  COALESCE(a.completed_order_count, 0) AS completed_order_count,\n  COALESCE(a.net_revenue, CAST(0 AS DECIMAL(38, 2))) AS net_revenue\nFROM dim_channels AS c\nLEFT JOIN (\n  SELECT\n    o.channel_id,\n    COUNT(DISTINCT o.order_id) AS completed_order_count,\n    SUM(oi.quantity * oi.unit_price - oi.discount_amount) AS net_revenue\n  FROM fact_orders AS o\n  INNER JOIN fact_order_items AS oi\n    ON oi.order_id = o.order_id\n  WHERE\n    o.status = 'completed'\n  GROUP BY\n    o.channel_id\n) AS a\n  ON a.channel_id = c.channel_id\nORDER BY\n  c.channel_id ASC",
+  "generated_sql": "SELECT\n    c.channel_id,\n    c.channel_name,\n    COALESCE(a.completed_order_count, 0) AS completed_order_count,\n    COALESCE(a.net_revenue, CAST(0 AS DECIMAL(38, 2))) AS net_revenue\nFROM dim_channels AS c\nLEFT JOIN (\n    SELECT\n        o.channel_id,\n        COUNT(DISTINCT o.order_id) AS completed_order_count,\n        SUM(oi.quantity * oi.unit_price - oi.discount_amount) AS net_revenue\n    FROM fact_orders AS o\n    INNER JOIN fact_order_items AS oi\n        ON oi.order_id = o.order_id\n    WHERE o.status = 'completed'\n    GROUP BY o.channel_id\n) AS a\n    ON a.channel_id = c.channel_id\nORDER BY c.channel_id ASC",
+  "generation_ms": null,
+  "id": 160,
+  "model_name": "Sol 本机实测",
+  "model_run_id": 22,
+  "plan": {
+    "filters": [
+      "聚合子查询内 fact_orders.status = 'completed'"
+    ],
+    "grain": "每行一个渠道",
+    "joins": [
+      "完成订单行按 channel_id 聚合后 LEFT JOIN dim_channels"
+    ],
+    "metrics": [
+      "completed_order_count：完成订单去重计数，空值为 0",
+      "net_revenue：SUM(quantity * unit_price - discount_amount)，空值为 0"
+    ],
+    "risks": [
+      "先聚合再连接，避免订单行连接导致订单数重复",
+      "状态过滤保留在聚合子查询内，避免排除无完成订单渠道"
+    ],
+    "sources": [
+      "dim_channels",
+      "fact_orders",
+      "fact_order_items"
+    ],
+    "steps": [
+      "连接完成订单与订单行",
+      "按 channel_id 聚合指标",
+      "以全部渠道为主表左连接聚合结果",
+      "按 channel_id 升序"
+    ]
+  },
+  "prompt": "你是 Text-to-SQL 数据分析与数据开发生成器。先形成简洁、可审计的结构化查询方案，再生成完成问题所需的 SQL；不要输出隐藏推理。\n\n方言与安全规则：\nUse DuckDB SQL. Return exactly one read-only query. Do not access files, URLs, extensions, or schemas outside the supplied tables.\n\n数据库结构：\n{\"semantic_relationships\":[{\"cardinality\":\"many_to_one\",\"from_entity\":\"order\",\"sql_on\":\"fact_orders.customer_id = dim_customers.customer_id\",\"to_entity\":\"customer\"},{\"cardinality\":\"many_to_one\",\"from_entity\":\"order\",\"sql_on\":\"fact_orders.channel_id = dim_channels.channel_id\",\"to_entity\":\"channel\"},{\"cardinality\":\"many_to_one\",\"from_entity\":\"order_item\",\"sql_on\":\"fact_order_items.order_id = fact_orders.order_id\",\"to_entity\":\"order\"},{\"cardinality\":\"many_to_one\",\"from_entity\":\"order_item\",\"sql_on\":\"fact_order_items.product_id = dim_products.product_id\",\"to_entity\":\"product\"},{\"cardinality\":\"many_to_one\",\"from_entity\":\"payment\",\"sql_on\":\"fact_payments.order_id = fact_orders.order_id\",\"to_entity\":\"order\"},{\"cardinality\":\"many_to_one\",\"from_entity\":\"return\",\"sql_on\":\"fact_returns.order_id = fact_order_items.order_id AND fact_returns.line_no = fact_order_items.line_no\",\"to_entity\":\"order_item\"}],\"tables\":[{\"columns\":[{\"data_type\":\"BIGINT\",\"name\":\"channel_id\",\"nullable\":false},{\"data_type\":\"VARCHAR\",\"name\":\"channel_name\",\"nullable\":false},{\"data_type\":\"VARCHAR\",\"name\":\"channel_type\",\"nullable\":false}],\"foreign_keys\":[],\"name\":\"dim_channels\",\"primary_key\":[\"channel_id\"]},{\"columns\":[{\"data_type\":\"BIGINT\",\"name\":\"customer_id\",\"nullable\":false},{\"data_type\":\"VARCHAR\",\"name\":\"customer_name\",\"nullable\":false},{\"data_type\":\"VARCHAR\",\"name\":\"city\",\"nullable\":true},{\"data_type\":\"DATE\",\"name\":\"signup_date\",\"nullable\":false},{\"data_type\":\"VARCHAR\",\"name\":\"segment\",\"nullable\":false}],\"foreign_keys\":[],\"name\":\"dim_customers\",\"primary_key\":[\"customer_id\"]},{\"columns\":[{\"data_type\":\"BIGINT\",\"name\":\"product_id\",\"nullable\":false},{\"data_type\":\"VARCHAR\",\"name\":\"product_name\",\"nullable\":false},{\"data_type\":\"VARCHAR\",\"name\":\"category\",\"nullable\":false},{\"data_type\":\"VARCHAR\",\"name\":\"brand\",\"nullable\":false},{\"data_type\":\"DECIMAL(14,2)\",\"name\":\"list_price\",\"nullable\":false}],\"foreign_keys\":[],\"name\":\"dim_products\",\"primary_key\":[\"product_id\"]},{\"columns\":[{\"data_type\":\"BIGINT\",\"name\":\"order_id\",\"nullable\":false},{\"data_type\":\"BIGINT\",\"name\":\"line_no\",\"nullable\":false},{\"data_type\":\"BIGINT\",\"name\":\"product_id\",\"nullable\":false},{\"data_type\":\"BIGINT\",\"name\":\"quantity\",\"nullable\":false},{\"data_type\":\"DECIMAL(14,2)\",\"name\":\"unit_price\",\"nullable\":false},{\"data_type\":\"DECIMAL(14,2)\",\"name\":\"discount_amount\",\"nullable\":false}],\"foreign_keys\":[{\"columns\":[\"order_id\"],\"referenced_columns\":[\"order_id\"],\"referenced_table\":\"fact_orders\"},{\"columns\":[\"product_id\"],\"referenced_columns\":[\"product_id\"],\"referenced_table\":\"dim_products\"}],\"name\":\"fact_order_items\",\"primary_key\":[\"order_id\",\"line_no\"]},{\"columns\":[{\"data_type\":\"BIGINT\",\"name\":\"order_id\",\"nullable\":false},{\"data_type\":\"BIGINT\",\"name\":\"customer_id\",\"nullable\":false},{\"data_type\":\"BIGINT\",\"name\":\"channel_id\",\"nullable\":false},{\"data_type\":\"DATE\",\"name\":\"order_date\",\"nullable\":false},{\"data_type\":\"VARCHAR\",\"name\":\"status\",\"nullable\":false},{\"data_type\":\"DECIMAL(14,2)\",\"name\":\"total_amount\",\"nullable\":false}],\"foreign_keys\":[{\"columns\":[\"customer_id\"],\"referenced_columns\":[\"customer_id\"],\"referenced_table\":\"dim_customers\"},{\"columns\":[\"channel_id\"],\"referenced_columns\":[\"channel_id\"],\"referenced_table\":\"dim_channels\"}],\"name\":\"fact_orders\",\"primary_key\":[\"order_id\"]},{\"columns\":[{\"data_type\":\"BIGINT\",\"name\":\"payment_id\",\"nullable\":false},{\"data_type\":\"BIGINT\",\"name\":\"order_id\",\"nullable\":false},{\"data_type\":\"TIMESTAMP\",\"name\":\"paid_at\",\"nullable\":false},{\"data_type\":\"VARCHAR\",\"name\":\"payment_method\",\"nullable\":false},{\"data_type\":\"DECIMAL(14,2)\",\"name\":\"amount\",\"nullable\":false},{\"data_type\":\"VARCHAR\",\"name\":\"status\",\"nullable\":false}],\"foreign_keys\":[{\"columns\":[\"order_id\"],\"referenced_columns\":[\"order_id\"],\"referenced_table\":\"fact_orders\"}],\"name\":\"fact_payments\",\"primary_key\":[\"payment_id\"]},{\"columns\":[{\"data_type\":\"BIGINT\",\"name\":\"return_id\",\"nullable\":false},{\"data_type\":\"BIGINT\",\"name\":\"order_id\",\"nullable\":false},{\"data_type\":\"BIGINT\",\"name\":\"line_no\",\"nullable\":false},{\"data_type\":\"TIMESTAMP\",\"name\":\"returned_at\",\"nullable\":false},{\"data_type\":\"BIGINT\",\"name\":\"return_qty\",\"nullable\":false},{\"data_type\":\"DECIMAL(14,2)\",\"name\":\"refund_amount\",\"nullable\":false},{\"data_type\":\"VARCHAR\",\"name\":\"reason\",\"nullable\":true}],\"foreign_keys\":[{\"columns\":[\"order_id\",\"line_no\"],\"referenced_columns\":[\"order_id\",\"line_no\"],\"referenced_table\":\"fact_order_items\"}],\"name\":\"fact_returns\",\"primary_key\":[\"return_id\"]}]}\n\n语义层与业务口径：\n{\"business_rules\":[\"完成订单仅指 fact_orders.status = 'completed'。\",\"净销售额为 quantity * unit_price - discount_amount。\",\"paid、refunded、failed 金额只按 fact_payments.status 分类。\",\"退货率为完成订单的 returned_qty / sold_qty，售出数量仅含完成订单。\",\"月份按 UTC Gregorian calendar 计算。\",\"订单头 total_amount 应等于订单行净额汇总，差异视为数据质量异常。\"],\"dimensions\":[{\"data_type\":\"VARCHAR\",\"description\":\"客户分群\",\"expression\":\"dim_customers.segment\",\"name\":\"customer_segment\"},{\"data_type\":\"VARCHAR\",\"description\":\"商品品类\",\"expression\":\"dim_products.category\",\"name\":\"product_category\"},{\"data_type\":\"VARCHAR\",\"description\":\"渠道类型\",\"expression\":\"dim_channels.channel_type\",\"name\":\"channel_type\"},{\"data_type\":\"VARCHAR\",\"description\":\"UTC Gregorian 月份\",\"expression\":\"strftime(fact_orders.order_date, '%Y-%m')\",\"name\":\"order_month\"}],\"entities\":[{\"description\":\"客户主数据\",\"grain\":\"每行一个客户\",\"name\":\"customer\",\"primary_key\":[\"customer_id\"],\"table\":\"dim_customers\"},{\"description\":\"商品主数据\",\"grain\":\"每行一个商品\",\"name\":\"product\",\"primary_key\":[\"product_id\"],\"table\":\"dim_products\"},{\"description\":\"渠道主数据\",\"grain\":\"每行一个渠道\",\"name\":\"channel\",\"primary_key\":[\"channel_id\"],\"table\":\"dim_channels\"},{\"description\":\"订单头\",\"grain\":\"每行一个订单\",\"name\":\"order\",\"primary_key\":[\"order_id\"],\"table\":\"fact_orders\"},{\"description\":\"订单行\",\"grain\":\"每行一个订单商品行\",\"name\":\"order_item\",\"primary_key\":[\"order_id\",\"line_no\"],\"table\":\"fact_order_items\"},{\"description\":\"支付尝试\",\"grain\":\"每行一笔支付\",\"name\":\"payment\",\"primary_key\":[\"payment_id\"],\"table\":\"fact_payments\"},{\"description\":\"退货记录\",\"grain\":\"每行一条订单行退货\",\"name\":\"return\",\"primary_key\":[\"return_id\"],\"table\":\"fact_returns\"}],\"metrics\":[{\"description\":\"已完成订单数\",\"expression\":\"COUNT(DISTINCT CASE WHEN fact_orders.status = 'completed' THEN fact_orders.order_id END)\",\"filters\":[\"fact_orders.status = 'completed'\"],\"grain\":\"聚合\",\"name\":\"completed_order_count\"},{\"description\":\"完成订单商品行净销售额\",\"expression\":\"SUM(fact_order_items.quantity * fact_order_items.unit_price - fact_order_items.discount_amount)\",\"filters\":[\"fact_orders.status = 'completed'\"],\"grain\":\"聚合\",\"name\":\"net_revenue\"},{\"description\":\"成功支付金额\",\"expression\":\"SUM(CASE WHEN fact_payments.status = 'paid' THEN fact_payments.amount ELSE 0 END)\",\"filters\":[],\"grain\":\"聚合\",\"name\":\"paid_amount\"},{\"description\":\"退款状态支付金额\",\"expression\":\"SUM(CASE WHEN fact_payments.status = 'refunded' THEN fact_payments.amount ELSE 0 END)\",\"filters\":[],\"grain\":\"聚合\",\"name\":\"refunded_amount\"},{\"description\":\"失败支付金额\",\"expression\":\"SUM(CASE WHEN fact_payments.status = 'failed' THEN fact_payments.amount ELSE 0 END)\",\"filters\":[],\"grain\":\"聚合\",\"name\":\"failed_amount\"},{\"description\":\"完成订单退货数量除以售出数量\",\"expression\":\"SUM(fact_returns.return_qty) / SUM(fact_order_items.quantity)\",\"filters\":[\"fact_orders.status = 'completed'\"],\"grain\":\"聚合\",\"name\":\"return_rate\"}],\"relationships\":[{\"cardinality\":\"many_to_one\",\"from_entity\":\"order\",\"sql_on\":\"fact_orders.customer_id = dim_customers.customer_id\",\"to_entity\":\"customer\"},{\"cardinality\":\"many_to_one\",\"from_entity\":\"order\",\"sql_on\":\"fact_orders.channel_id = dim_channels.channel_id\",\"to_entity\":\"channel\"},{\"cardinality\":\"many_to_one\",\"from_entity\":\"order_item\",\"sql_on\":\"fact_order_items.order_id = fact_orders.order_id\",\"to_entity\":\"order\"},{\"cardinality\":\"many_to_one\",\"from_entity\":\"order_item\",\"sql_on\":\"fact_order_items.product_id = dim_products.product_id\",\"to_entity\":\"product\"},{\"cardinality\":\"many_to_one\",\"from_entity\":\"payment\",\"sql_on\":\"fact_payments.order_id = fact_orders.order_id\",\"to_entity\":\"order\"},{\"cardinality\":\"many_to_one\",\"from_entity\":\"return\",\"sql_on\":\"fact_returns.order_id = fact_order_items.order_id AND fact_returns.line_no = fact_order_items.line_no\",\"to_entity\":\"order_item\"}]}\n\n问题：\n列出所有渠道，包括没有已完成订单的渠道；输出 channel_id、channel_name、completed_order_count、net_revenue，空值按 0 处理，并按 channel_id 升序。\n\n规划要求：\nplan 只记录输出粒度、数据源、连接、过滤、指标、执行步骤和风险检查；每项保持简短。\nSQL 必须严格实现该 plan，并遵循语义层业务口径。\nsummary 只概括最终做法，assumptions 只列无法由上下文确定的必要假设。\n输出必须严格匹配此 JSON Schema：\n{\"$defs\":{\"QueryPlan\":{\"additionalProperties\":false,\"properties\":{\"filters\":{\"items\":{\"type\":\"string\"},\"title\":\"Filters\",\"type\":\"array\"},\"grain\":{\"title\":\"Grain\",\"type\":\"string\"},\"joins\":{\"items\":{\"type\":\"string\"},\"title\":\"Joins\",\"type\":\"array\"},\"metrics\":{\"items\":{\"type\":\"string\"},\"title\":\"Metrics\",\"type\":\"array\"},\"risks\":{\"items\":{\"type\":\"string\"},\"title\":\"Risks\",\"type\":\"array\"},\"sources\":{\"items\":{\"type\":\"string\"},\"title\":\"Sources\",\"type\":\"array\"},\"steps\":{\"items\":{\"type\":\"string\"},\"title\":\"Steps\",\"type\":\"array\"}},\"required\":[\"grain\",\"sources\",\"joins\",\"filters\",\"metrics\",\"steps\",\"risks\"],\"title\":\"QueryPlan\",\"type\":\"object\"}},\"additionalProperties\":false,\"properties\":{\"assumptions\":{\"items\":{\"type\":\"string\"},\"title\":\"Assumptions\",\"type\":\"array\"},\"plan\":{\"$ref\":\"#/$defs/QueryPlan\"},\"sql\":{\"title\":\"Sql\",\"type\":\"string\"},\"summary\":{\"title\":\"Summary\",\"type\":\"string\"}},\"required\":[\"plan\",\"sql\",\"summary\",\"assumptions\"],\"title\":\"GenerationOutput\",\"type\":\"object\"}",
+  "provider_request_id": null,
+  "question": "列出所有渠道，包括没有已完成订单的渠道；输出 channel_id、channel_name、completed_order_count、net_revenue，空值按 0 处理，并按 channel_id 升序。",
+  "radar_dimension": "连接与粒度",
+  "raw_output": "{\"plan\":{\"grain\":\"每行一个渠道\",\"sources\":[\"dim_channels\",\"fact_orders\",\"fact_order_items\"],\"joins\":[\"完成订单行按 channel_id 聚合后 LEFT JOIN dim_channels\"],\"filters\":[\"聚合子查询内 fact_orders.status = 'completed'\"],\"metrics\":[\"completed_order_count：完成订单去重计数，空值为 0\",\"net_revenue：SUM(quantity * unit_price - discount_amount)，空值为 0\"],\"steps\":[\"连接完成订单与订单行\",\"按 channel_id 聚合指标\",\"以全部渠道为主表左连接聚合结果\",\"按 channel_id 升序\"],\"risks\":[\"先聚合再连接，避免订单行连接导致订单数重复\",\"状态过滤保留在聚合子查询内，避免排除无完成订单渠道\"]},\"sql\":\"SELECT\\n    c.channel_id,\\n    c.channel_name,\\n    COALESCE(a.completed_order_count, 0) AS completed_order_count,\\n    COALESCE(a.net_revenue, CAST(0 AS DECIMAL(38, 2))) AS net_revenue\\nFROM dim_channels AS c\\nLEFT JOIN (\\n    SELECT\\n        o.channel_id,\\n        COUNT(DISTINCT o.order_id) AS completed_order_count,\\n        SUM(oi.quantity * oi.unit_price - oi.discount_amount) AS net_revenue\\n    FROM fact_orders AS o\\n    INNER JOIN fact_order_items AS oi\\n        ON oi.order_id = o.order_id\\n    WHERE o.status = 'completed'\\n    GROUP BY o.channel_id\\n) AS a\\n    ON a.channel_id = c.channel_id\\nORDER BY c.channel_id ASC\",\"summary\":\"先按渠道汇总完成订单数和订单行净销售额，再左连接全部渠道，并将缺失指标补为 0。\",\"assumptions\":[]}",
+  "reference_sql": "SELECT ch.channel_id, ch.channel_name, COUNT(DISTINCT o.order_id) AS completed_order_count, COALESCE(SUM(i.quantity * i.unit_price - i.discount_amount), 0) AS net_revenue FROM dim_channels ch LEFT JOIN fact_orders o ON o.channel_id = ch.channel_id AND o.status = 'completed' LEFT JOIN fact_order_items i ON i.order_id = o.order_id GROUP BY ch.channel_id, ch.channel_name ORDER BY ch.channel_id ASC",
+  "requested_model_id": "gpt-5.6-sol",
+  "required_ast": [
+    {
+      "id": "preserve-all-channels",
+      "join_type": "LEFT",
+      "kind": "join_type",
+      "min": 2
+    }
+  ],
+  "resolved_model_id": "gpt-5.6-sol",
+  "result_preview": {
+    "columns": [
+      {
+        "name": "channel_id",
+        "type": "BIGINT"
+      },
+      {
+        "name": "channel_name",
+        "type": "VARCHAR"
+      },
+      {
+        "name": "completed_order_count",
+        "type": "BIGINT"
+      },
+      {
+        "name": "net_revenue",
+        "type": "DECIMAL(38,2)"
+      }
+    ],
+    "extra": [],
+    "missing": [],
+    "row_count": 5,
+    "rows": [
+      [
+        1,
+        "自然流量",
+        141,
+        "145543.00"
+      ],
+      [
+        2,
+        "搜索广告",
+        117,
+        "143237.25"
+      ],
+      [
+        3,
+        "联盟渠道",
+        114,
+        "129676.50"
+      ],
+      [
+        4,
+        "线下门店",
+        112,
+        "140491.50"
+      ],
+      [
+        5,
+        "合作伙伴",
+        0,
+        "0.00"
+      ]
+    ]
+  },
+  "run_id": 18,
+  "score": {
+    "ast_rules": [
+      {
+        "details": {
+          "actual": 1,
+          "required": 2
+        },
+        "id": "preserve-all-channels",
+        "kind": "join_type",
+        "passed": false
+      }
+    ],
+    "column_count": 5.0,
+    "column_names": 5.0,
+    "execution": 10.0,
+    "ordering": 10.0,
+    "protocol": 5.0,
+    "read_only_ast": 5.0,
+    "row_f1": 45.0,
+    "sql_capability": 0.0,
+    "total": 85.0
+  },
+  "stable_key": "all_channel_performance",
+  "started_at": "2026-08-29T22:52:48.015961",
+  "status": "completed",
+  "suite_content_hash": "5b5d98876ea35114f18ce6dfa48cc9800d88b6baba80d311b2f52552a38b31af",
+  "title": "全渠道经营表现",
+  "token_usage": {
+    "cache_write_input_tokens": 0,
+    "cached_input_tokens": 0,
+    "input_tokens": 19515,
+    "output_tokens": 392,
+    "reasoning_output_tokens": 0
+  },
+  "visible_summary": "先按渠道汇总完成订单数和订单行净销售额，再左连接全部渠道，并将缺失指标补为 0。"
+}

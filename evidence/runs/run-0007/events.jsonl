@@ -1,0 +1,8 @@
+{"case_run_id":null,"created_at":"2026-08-29T16:19:38.324003","event_type":"run.created","level":"info","message":"","model_run_id":null,"payload":{"status":"queued"},"seq":1}
+{"case_run_id":null,"created_at":"2026-08-29T16:19:38.327796","event_type":"model.started","level":"info","message":"","model_run_id":null,"payload":{"status":"running"},"seq":2}
+{"case_run_id":9,"created_at":"2026-08-29T16:19:38.336686","event_type":"case.started","level":"info","message":"","model_run_id":7,"payload":{"status":"generating"},"seq":3}
+{"case_run_id":9,"created_at":"2026-08-29T16:19:38.339417","event_type":"prompt.built","level":"info","message":"","model_run_id":7,"payload":{"status":"completed"},"seq":4}
+{"case_run_id":9,"created_at":"2026-08-29T16:19:38.341795","event_type":"provider.requested","level":"info","message":"","model_run_id":7,"payload":{"isolation_policy_hash":"b2291764622d43edc5e482aa2b20d01d0aa8019202f81bba3ac00638ae5eb635","status":"running"},"seq":5}
+{"case_run_id":9,"created_at":"2026-08-29T16:19:39.019421","event_type":"case.failed","level":"error","message":"Codex 退出码 1: WARNING: proceeding, even though we could not create PATH aliases: Operation not permitted (os error 1)\nError: failed to initialize in-process app-server client: Operation not permitted (os error 1)\n","model_run_id":7,"payload":{"error_code":"provider_cli_error","status":"failed"},"seq":6}
+{"case_run_id":null,"created_at":"2026-08-29T16:19:39.022299","event_type":"model.completed","level":"info","message":"","model_run_id":7,"payload":{"score":0.0,"status":"failed"},"seq":7}
+{"case_run_id":null,"created_at":"2026-08-29T16:19:39.024560","event_type":"run.completed","level":"info","message":"","model_run_id":null,"payload":{"status":"failed"},"seq":8}

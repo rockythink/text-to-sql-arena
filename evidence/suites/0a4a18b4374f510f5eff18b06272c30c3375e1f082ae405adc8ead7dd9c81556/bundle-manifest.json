@@ -1,0 +1,104 @@
+{
+  "bundle_sha256": "3480015062ea555127daae99d83e16f29fae77a467d5516ccac3c1349232d913",
+  "content_hash": "0a4a18b4374f510f5eff18b06272c30c3375e1f082ae405adc8ead7dd9c81556",
+  "files": [
+    {
+      "bytes": 2273,
+      "path": "artifact-manifest.json",
+      "sha256": "d7cbd36e84df208990f19418801d95ae677a570023bc4f863fcc0ad6b9167f00"
+    },
+    {
+      "bytes": 1717,
+      "path": "gold/above_average_customer_spend.json",
+      "sha256": "9e9d27c30027718cf23f9d6b425244044c36033af40f639afb0a239a32916883"
+    },
+    {
+      "bytes": 6922,
+      "path": "gold/basic_filter_sort.json",
+      "sha256": "5e83e20289beb520f0f8b9ada26f9520b6c03b5fbdbe09650999ed2d3a70acad"
+    },
+    {
+      "bytes": 425,
+      "path": "gold/category_return_rate.json",
+      "sha256": "8898a9153535c6cad1431db66f3e69f87ce4dce267b78e3f577dc430f8817f47"
+    },
+    {
+      "bytes": 8657,
+      "path": "gold/correlated_segment_average.json",
+      "sha256": "75b85e5bde4e68b22039b511a645f28838f82c92f140faed02d99dea626281e2"
+    },
+    {
+      "bytes": 21162,
+      "path": "gold/latest_successful_payment.json",
+      "sha256": "cb38225302fcafebfb66b6dc0849e5a96a4d5fa7937a33409070d3489d8e5879"
+    },
+    {
+      "bytes": 2643,
+      "path": "gold/left_join_zero_orders.json",
+      "sha256": "793a649d9abd2d94a50765c56d7fcfd6bd200948cbb69d47b6590ea41a8f34eb"
+    },
+    {
+      "bytes": 589,
+      "path": "gold/monthly_mom_growth.json",
+      "sha256": "c1800c7874f45c23139a288e44fabab94d22f51409727e0f07ba7f923ca9c2a6"
+    },
+    {
+      "bytes": 653,
+      "path": "gold/monthly_running_revenue.json",
+      "sha256": "aec6f90d13d72f9bfb360ce610c706cfd46142cc75ae5759284a5383e343b036"
+    },
+    {
+      "bytes": 391,
+      "path": "gold/multi_join_category_revenue.json",
+      "sha256": "951f4c52d2e2c0f7c26d0eb5e70f058ee68f612bcecf8db6fb77d8dd8fcce7c3"
+    },
+    {
+      "bytes": 406,
+      "path": "gold/not_exists_customers.json",
+      "sha256": "589894d5670782b5ceb557721d810ba95f63a0d334e33f937d321bfd1df3bc34"
+    },
+    {
+      "bytes": 469,
+      "path": "gold/payment_status_by_channel.json",
+      "sha256": "ff9b93bd0926ec5531050b5dd7b9c33bf7c0c3dfc346843af7eac860ffbe81a3"
+    },
+    {
+      "bytes": 1026,
+      "path": "gold/top3_products_per_category.json",
+      "sha256": "01dea61d46356c9dc63cb18c46002c4df85831a0ce4cd077dd93177a0d549c51"
+    },
+    {
+      "bytes": 14169,
+      "path": "source/cases.yaml",
+      "sha256": "b9b78f38e5b7212c500745da4ccdfa979380424e0b8a0a3cd8c76e1aeb0eeb71"
+    },
+    {
+      "bytes": 322,
+      "path": "source/prompt.md",
+      "sha256": "97b5820817cd2ec55e9337821c0113d6b0af894fc7be75cab40afeb01f070b26"
+    },
+    {
+      "bytes": 2017,
+      "path": "source/schema.sql",
+      "sha256": "548daf085b8998b2a033d30196477fb6f3b173e8acb5f229d0a7b7c2c5b8673c"
+    },
+    {
+      "bytes": 5953,
+      "path": "source/seed.sql",
+      "sha256": "dba9a1e8bb1f58ce797ada3a8733aa7b16693fb24ff1162d7eddf7e0a434fad6"
+    },
+    {
+      "bytes": 5281,
+      "path": "source/semantic.json",
+      "sha256": "b76814c61616b853689c3a26d2d7b0cfda2cae3ec64b7ee916329ab038832d7e"
+    },
+    {
+      "bytes": 9059,
+      "path": "suite.json",
+      "sha256": "e75e42f3dab637684739ebd74fb20de46bed160a737ccc139e7615675ad5c719"
+    }
+  ],
+  "kind": "suite",
+  "schema_version": "text-to-sql-evidence-v1",
+  "suite_version_id": 1
+}

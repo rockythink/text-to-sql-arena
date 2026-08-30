@@ -1,0 +1,2 @@
+{"type":"assistant","message":{"model":"claude-sonnet-4-5","content":[{"type":"text","text":"{\"plan\":{\"grain\":\"single row\",\"sources\":[],\"joins\":[],\"filters\":[],\"metrics\":[\"value\"],\"steps\":[\"select constant value\"],\"risks\":[]},\"sql\":\"SELECT 1 AS value\",\"summary\":\"返回常量\",\"assumptions\":[]}"}]}}
+{"type":"result","session_id":"claude-request-1","is_error":false,"usage":{"input_tokens":110,"output_tokens":25}}

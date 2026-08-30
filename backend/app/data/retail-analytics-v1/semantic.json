@@ -1,0 +1,41 @@
+{
+  "entities": [
+    {"name":"customer","table":"dim_customers","description":"客户主数据","grain":"每行一个客户","primary_key":["customer_id"]},
+    {"name":"product","table":"dim_products","description":"商品主数据","grain":"每行一个商品","primary_key":["product_id"]},
+    {"name":"channel","table":"dim_channels","description":"渠道主数据","grain":"每行一个渠道","primary_key":["channel_id"]},
+    {"name":"order","table":"fact_orders","description":"订单头","grain":"每行一个订单","primary_key":["order_id"]},
+    {"name":"order_item","table":"fact_order_items","description":"订单行","grain":"每行一个订单商品行","primary_key":["order_id","line_no"]},
+    {"name":"payment","table":"fact_payments","description":"支付尝试","grain":"每行一笔支付","primary_key":["payment_id"]},
+    {"name":"return","table":"fact_returns","description":"退货记录","grain":"每行一条订单行退货","primary_key":["return_id"]}
+  ],
+  "relationships": [
+    {"from_entity":"order","to_entity":"customer","sql_on":"fact_orders.customer_id = dim_customers.customer_id","cardinality":"many_to_one"},
+    {"from_entity":"order","to_entity":"channel","sql_on":"fact_orders.channel_id = dim_channels.channel_id","cardinality":"many_to_one"},
+    {"from_entity":"order_item","to_entity":"order","sql_on":"fact_order_items.order_id = fact_orders.order_id","cardinality":"many_to_one"},
+    {"from_entity":"order_item","to_entity":"product","sql_on":"fact_order_items.product_id = dim_products.product_id","cardinality":"many_to_one"},
+    {"from_entity":"payment","to_entity":"order","sql_on":"fact_payments.order_id = fact_orders.order_id","cardinality":"many_to_one"},
+    {"from_entity":"return","to_entity":"order_item","sql_on":"fact_returns.order_id = fact_order_items.order_id AND fact_returns.line_no = fact_order_items.line_no","cardinality":"many_to_one"}
+  ],
+  "metrics": [
+    {"name":"completed_order_count","expression":"COUNT(DISTINCT CASE WHEN fact_orders.status = 'completed' THEN fact_orders.order_id END)","description":"已完成订单数","grain":"聚合","filters":["fact_orders.status = 'completed'"]},
+    {"name":"net_revenue","expression":"SUM(fact_order_items.quantity * fact_order_items.unit_price - fact_order_items.discount_amount)","description":"完成订单商品行净销售额","grain":"聚合","filters":["fact_orders.status = 'completed'"]},
+    {"name":"paid_amount","expression":"SUM(CASE WHEN fact_payments.status = 'paid' THEN fact_payments.amount ELSE 0 END)","description":"成功支付金额","grain":"聚合","filters":[]},
+    {"name":"refunded_amount","expression":"SUM(CASE WHEN fact_payments.status = 'refunded' THEN fact_payments.amount ELSE 0 END)","description":"退款状态支付金额","grain":"聚合","filters":[]},
+    {"name":"failed_amount","expression":"SUM(CASE WHEN fact_payments.status = 'failed' THEN fact_payments.amount ELSE 0 END)","description":"失败支付金额","grain":"聚合","filters":[]},
+    {"name":"return_rate","expression":"SUM(fact_returns.return_qty) / SUM(fact_order_items.quantity)","description":"完成订单退货数量除以售出数量","grain":"聚合","filters":["fact_orders.status = 'completed'"]}
+  ],
+  "dimensions": [
+    {"name":"customer_segment","expression":"dim_customers.segment","data_type":"VARCHAR","description":"客户分群"},
+    {"name":"product_category","expression":"dim_products.category","data_type":"VARCHAR","description":"商品品类"},
+    {"name":"channel_type","expression":"dim_channels.channel_type","data_type":"VARCHAR","description":"渠道类型"},
+    {"name":"order_month","expression":"strftime(fact_orders.order_date, '%Y-%m')","data_type":"VARCHAR","description":"UTC Gregorian 月份"}
+  ],
+  "business_rules": [
+    "完成订单仅指 fact_orders.status = 'completed'。",
+    "净销售额为 quantity * unit_price - discount_amount。",
+    "paid、refunded、failed 金额只按 fact_payments.status 分类。",
+    "退货率为完成订单的 returned_qty / sold_qty，售出数量仅含完成订单。",
+    "月份按 UTC Gregorian calendar 计算。",
+    "订单头 total_amount 应等于订单行净额汇总，差异视为数据质量异常。"
+  ]
+}

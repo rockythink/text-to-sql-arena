@@ -1,0 +1,37 @@
+import { useQuery } from "@tanstack/react-query";
+import { ArrowLeft, CheckCircle2, Copy, Download, Gauge, RotateCcw, Scale, ShieldCheck } from "lucide-react";
+import { Link, useParams } from "react-router-dom";
+import { toast } from "sonner";
+import { api } from "../api/client";
+import { PageHeader, Scoreboard } from "../components/AppShell";
+import { HeatmapChart, RadarChart, RankingChart } from "../components/ReportCharts";
+
+export function ReportPage() {
+  const runId = Number(useParams().id);
+  const report = useQuery({ queryKey: ["report", runId], queryFn: () => api.report(runId) });
+  if (!report.data) return <div className="loading-screen"><Gauge className="spin"/>正在生成裁判报告…</div>;
+  const data = report.data;
+  const rerun = async () => { const next = await api.rerun(runId); window.location.href = `/runs/${next.id}/live`; };
+  const copy = async () => { await navigator.clipboard.writeText(window.location.href); toast.success("报告链接已复制"); };
+  const download = () => {
+    const blob = new Blob([JSON.stringify(data, null, 2)], { type: "application/json" });
+    const url = URL.createObjectURL(blob);
+    const anchor = document.createElement("a");
+    anchor.href = url;
+    anchor.download = `llm-text-to-sql-run-${runId}-evidence.json`;
+    anchor.click();
+    URL.revokeObjectURL(url);
+  };
+  const fairness = data.fairness;
+  const fairnessTitle = fairness.comparison_mode === "pure_model" ? "纯模型对比" : fairness.comparison_mode === "access_path" ? "接入路径对比" : "单模型评测";
+
+  return <div className="page report-page">
+    <PageHeader eyebrow={`MATCH #${runId} / FINAL`} title="本场裁判报告" description="排名只看客观正确性；公平性、规划过程、运行快照和固定金标均可追溯。" actions={<><Link className="button ghost" to={`/runs/${runId}/live`}><ArrowLeft/>返回现场</Link><button className="button ghost" onClick={copy}><Copy/>复制链接</button><button className="button ghost" onClick={download}><Download/>导出报告 JSON</button><button className="button primary" onClick={rerun}><RotateCcw/>按快照精确重跑</button></>}/>
+    <Scoreboard suiteHash={data.suite_content_hash} models={[...data.models].sort((a, b) => (b.official_score ?? 0) - (a.official_score ?? 0)).map((model) => ({ id: model.id, name: model.name, score: model.official_score, status: model.status }))}/>
+    <section className={`fairness-verdict mode-${fairness.comparison_mode}`}><Scale/><div><small>FAIRNESS CONTRACT</small><h2>{fairnessTitle}</h2><p>{fairness.differences.length ? `接入控制项存在差异：${fairness.differences.join("、")}。分数代表模型与接入路径的整体表现。` : "接入方式、响应模式和参数一致；模型是唯一主动变量。"}</p></div><dl><div><dt>题量</dt><dd>{data.protocol.case_count}</dd></div><div><dt>尝试</dt><dd>{data.protocol.attempts}</dd></div><div><dt>输出合同</dt><dd>{data.protocol.output_contract}</dd></div><div><dt>重跑</dt><dd>exact snapshot</dd></div></dl></section>
+    <section className="verdict-strip"><div className="verdict-seal"><CheckCircle2/><span>OBJECTIVE</span></div><div><small>裁判结论</small><h2>{data.conclusion?.champions?.length ? `本场冠军：${data.conclusion.champions.join("、")}` : "本场已完成，查看各维度表现"}</h2><p>基于执行结果、列/行比对、顺序语义与 AST 能力规则。无人工印象分。</p></div><div className="runtime-proof"><span>APP {data.app_version}</span><span>SCORER {data.scorer_version}</span><span>DUCKDB {data.duckdb_version}</span><span>SQLGLOT {data.sqlglot_version}</span></div></section>
+    <div className="report-grid"><article className="chart-card"><header><div><small>01 / RANKING</small><h2>官方总分</h2></div><span>0—100 · 失败题按 0 分计</span></header><RankingChart report={data}/></article><article className="chart-card"><header><div><small>02 / ABILITY</small><h2>六维能力雷达</h2></div><span>每维固定 3 题</span></header><RadarChart report={data}/></article><article className="chart-card full"><header><div><small>03 / CASE MATRIX</small><h2>逐题热力图</h2></div><span>每格可追溯到规划、SQL 与结果</span></header><HeatmapChart report={data}/></article></div>
+    <section className="model-receipts">{data.models.map((model) => <article key={model.id}><div><small>MODEL RECEIPT</small><h3>{model.name}</h3><code>{model.resolved_model_id ?? model.requested_model_id}</code></div><dl><div><dt>Transport</dt><dd>{model.adapter_kind}</dd></div><div><dt>Harness</dt><dd>{model.cli_version ?? model.response_mode}</dd></div><div><dt>失败题数</dt><dd>{model.failure_count ?? 0}</dd></div><div><dt>官方分</dt><dd>{model.official_score?.toFixed(2) ?? "—"}</dd></div></dl></article>)}</section>
+    <section className="repro-proof"><ShieldCheck/><div><b>复现锚点</b><code>{data.suite_content_hash}</code></div><span>scorer {data.protocol.scorer_version} · source run {data.source_run_id ?? "original"}</span></section>
+  </div>;
+}
