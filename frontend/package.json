@@ -1,7 +1,7 @@
 {
   "name": "llm-text-to-sql-benchmark-ui",
   "private": true,
-  "version": "0.2.0",
+  "version": "0.3.0",
   "packageManager": "pnpm@10.15.1",
   "engines": {
     "node": ">=22.12.0 <25",

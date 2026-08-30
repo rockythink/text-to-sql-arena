@@ -1,5 +1,29 @@
 export type HealthStatus = "unknown" | "checking" | "healthy" | "unavailable" | "incompatible" | "error";
 
+export interface TokenPricing {
+  currency: "USD";
+  input_usd_per_million: number | null;
+  cached_input_usd_per_million: number | null;
+  cache_write_input_usd_per_million: number | null;
+  output_usd_per_million: number | null;
+  source: string;
+  effective_at: string;
+}
+
+export interface EfficiencyMetrics {
+  metric_schema_version: "efficiency-v1";
+  attempted_cases: number;
+  correct_case_equivalents: number;
+  coverage: Record<string, { measured: number; total: number }>;
+  tokens: { input: number; cached_input: number; cache_write_input: number; output: number; reasoning_output: number; total: number } | null;
+  estimated_cost_usd: number | null;
+  generation_ms: { total: number | null; mean: number | null; p50: number | null; p95: number | null };
+  execution_ms: { total: number | null; mean: number | null };
+  per_correct_case_equivalent: { tokens: number | null; estimated_cost_usd: number | null; generation_ms: number | null };
+  pricing: TokenPricing | null;
+  cost_basis: "estimated_token_price" | "unavailable";
+}
+
 export interface ModelProfile {
   id: number;
   name: string;
@@ -8,6 +32,7 @@ export interface ModelProfile {
   base_url: string | null;
   response_mode: "json_schema" | "json_object" | "text";
   parameters: Record<string, unknown>;
+  pricing: TokenPricing | null;
   enabled: boolean;
   has_secret: boolean;
   secret_backend: "keyring" | "environment" | "none";
@@ -113,6 +138,7 @@ export interface CaseRun {
   execution_ms: number | null;
   provider_request_id: string | null;
   token_usage: Record<string, number> | null;
+  efficiency?: { tokens: EfficiencyMetrics["tokens"]; estimated_cost_usd: number | null; generation_ms: number | null; execution_ms: number | null };
   score: ScoreBreakdown | null;
   error_code: string | null;
   error_message: string | null;
@@ -131,6 +157,7 @@ export interface ModelRun {
   cli_version: string | null;
   isolation: Record<string, unknown>;
   cases: CaseRun[];
+  efficiency?: EfficiencyMetrics;
   categories?: Record<string, number>;
   failure_count?: number;
 }
@@ -199,6 +226,7 @@ export interface CaseRunDetail {
   execution_ms: number | null;
   provider_request_id: string | null;
   token_usage: Record<string, number> | null;
+  efficiency?: { tokens: EfficiencyMetrics["tokens"]; estimated_cost_usd: number | null; generation_ms: number | null; execution_ms: number | null };
   expected_digest: string | null;
   actual_digest: string | null;
   result_preview: ResultPreview | null;

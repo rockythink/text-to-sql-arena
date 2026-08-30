@@ -100,6 +100,15 @@ def create_profile(
             "model_id": model_id,
             "response_mode": "text",
             "parameters": {},
+            "pricing": {
+                "currency": "USD",
+                "input_usd_per_million": 2.0,
+                "cached_input_usd_per_million": 0.5,
+                "cache_write_input_usd_per_million": 2.5,
+                "output_usd_per_million": 8.0,
+                "source": "test fixture",
+                "effective_at": "2026-08-30",
+            },
         },
     )
     assert response.status_code == 200, response.text
@@ -122,9 +131,7 @@ def wait_for_run(client: TestClient, run_id: int, timeout: float = 30) -> dict[s
     raise AssertionError(f"run {run_id} did not finish")
 
 
-def test_two_model_state_machine_resume_and_report(
-    monkeypatch: Any, tmp_path: Path
-) -> None:
+def test_two_model_state_machine_resume_and_report(monkeypatch: Any, tmp_path: Path) -> None:
     fixture = FixtureAdapter()
     monkeypatch.setitem(adapter_registry._adapters, "codex_cli", fixture)
     monkeypatch.setitem(adapter_registry._adapters, "gemini_cli", fixture)
@@ -164,9 +171,7 @@ def test_two_model_state_machine_resume_and_report(
         assert snapshot["models"][0]["official_score"] == 100.0
         assert snapshot["models"][1]["official_score"] == 0.0
 
-        history = client.get(f"/api/runs/{run_id}/events/history?limit=5000").json()[
-            "events"
-        ]
+        history = client.get(f"/api/runs/{run_id}/events/history?limit=5000").json()["events"]
         assert history == sorted(history, key=lambda event: event["seq"])
         assert any(event["event_type"] == "run.started" for event in history)
         model_started = [event for event in history if event["event_type"] == "model.started"]
@@ -210,7 +215,7 @@ def test_two_model_state_machine_resume_and_report(
         assert report_data["conclusion"]["champions"] == ["Reference"]
         assert report_data["protocol"] == {
             "output_contract": "query-plan-v1",
-            "app_version": "0.2.0",
+            "app_version": "0.3.0",
             "scorer_version": "1.0.0",
             "duckdb_version": "1.5.5",
             "sqlglot_version": "30.17.0",
@@ -226,6 +231,14 @@ def test_two_model_state_machine_resume_and_report(
             "时间与窗口",
             "复杂查询",
             "数据开发",
+        }
+        assert report_data["models"][0]["efficiency"]["tokens"]["total"] == 540
+        assert report_data["models"][0]["efficiency"]["estimated_cost_usd"] == 0.00324
+        assert report_data["models"][0]["efficiency"]["generation_ms"]["p95"] == 1.0
+        assert report_data["models"][0]["efficiency"]["per_correct_case_equivalent"] == {
+            "tokens": 30.0,
+            "estimated_cost_usd": 0.00018,
+            "generation_ms": 1.0,
         }
         recent = client.get("/api/runs").json()["runs"]
         assert any(item["id"] == run_id and item["case_count"] == 18 for item in recent)
@@ -253,9 +266,7 @@ def test_two_model_state_machine_resume_and_report(
         verified = verify_evidence(evidence_dir)
         assert verified["run_count"] >= 2
         public_text = "\n".join(
-            path.read_text(encoding="utf-8")
-            for path in evidence_dir.rglob("*")
-            if path.is_file()
+            path.read_text(encoding="utf-8") for path in evidence_dir.rglob("*") if path.is_file()
         )
         assert "private-token" not in public_text
         assert "/Users/" not in public_text
@@ -275,9 +286,7 @@ def test_browser_safety_rejects_untrusted_requests() -> None:
         assert untrusted_host.status_code == 403
         assert untrusted_host.json()["code"] == "host_forbidden"
 
-        untrusted_origin = client.get(
-            "/api/health", headers={"Origin": "https://evil.example"}
-        )
+        untrusted_origin = client.get("/api/health", headers={"Origin": "https://evil.example"})
         assert untrusted_origin.status_code == 403
         assert untrusted_origin.json()["code"] == "origin_forbidden"
 

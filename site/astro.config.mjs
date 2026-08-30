@@ -3,8 +3,8 @@ import { defineConfig } from "astro/config";
 import starlight from "@astrojs/starlight";
 import sitemap from "@astrojs/sitemap";
 
-const site = process.env.SITE_URL ?? "https://rockythink.github.io";
-const base = process.env.SITE_BASE ?? "/text-to-sql-arena";
+const site = process.env.SITE_URL ?? "https://arena.ss-data.cc";
+const base = process.env.SITE_BASE ?? "/";
 
 export default defineConfig({
   site,

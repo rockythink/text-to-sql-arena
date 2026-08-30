@@ -16,6 +16,7 @@ from backend.app.models import (
     ModelProfile,
     ModelRun,
 )
+from backend.app.services.efficiency import aggregate_efficiency, case_efficiency
 from backend.app.services.sql_evaluator import (
     attempt_statistics,
     build_conclusion,
@@ -77,6 +78,7 @@ async def build_run_snapshot(session: AsyncSession, run_id: int) -> dict[str, An
                 "adapter_kind": model.adapter_kind_snapshot,
                 "response_mode": model.response_mode_snapshot,
                 "parameters": model.parameters_snapshot_json,
+                "pricing": model.pricing_snapshot_json,
                 "cli_version": model.cli_version_snapshot,
                 "isolation": model.isolation_snapshot_json,
                 "cases": [
@@ -172,12 +174,15 @@ def build_run_report(snapshot: dict[str, Any]) -> dict[str, Any]:
                     key: attempt_statistics(values) for key, values in attempts_by_case.items()
                 },
                 "failure_count": sum(case["status"] == "failed" for case in model["cases"]),
+                "efficiency": aggregate_efficiency(
+                    model["cases"], model["adapter_kind"], model.get("pricing")
+                ),
             }
         )
     protocol = snapshot["protocol"]
     report = {
         **snapshot,
-        "report_schema_version": "run-report-v1",
+        "report_schema_version": "run-report-v2",
         "app_version": protocol["app_version"],
         "scorer_version": protocol["scorer_version"],
         "duckdb_version": protocol["duckdb_version"],
@@ -239,6 +244,15 @@ async def build_case_evidence(
         "execution_ms": case_run.execution_ms,
         "provider_request_id": case_run.provider_request_id,
         "token_usage": case_run.token_usage_json,
+        "efficiency": case_efficiency(
+            {
+                "token_usage": case_run.token_usage_json,
+                "generation_ms": case_run.generation_ms,
+                "execution_ms": case_run.execution_ms,
+            },
+            model.adapter_kind_snapshot,
+            model.pricing_snapshot_json,
+        ),
         "expected_digest": case_run.expected_digest,
         "actual_digest": case_run.actual_digest,
         "result_preview": case_run.result_preview_json,

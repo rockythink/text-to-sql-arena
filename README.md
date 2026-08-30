@@ -2,7 +2,7 @@
 
 本地优先、可复核的 Text-to-SQL 模型评测应用。它把题库、确定性 DuckDB 数据、模型调用、SQL 安全执行、结果比较、评分、实时事件和静态证据包放在同一条可审计链路中。
 
-当前版本：`0.2.0`。
+当前版本：`0.3.0`。
 
 ## 它解决什么问题
 
@@ -22,11 +22,12 @@
 | 题库编写 | 在 Web UI 创建草稿、克隆版本、编辑 Schema/Seed/Semantic/Prompt/Cases、预览 Prompt、发布不可变版本 |
 | 确定性数据 | DuckDB 1.5.5、UTC、固定 SQL 种子、单线程金标构建、内容寻址产物 |
 | 模型接入 | OpenAI-compatible HTTP、Codex CLI、Claude CLI、Gemini CLI |
-| 公平性 | 运行前健康检查；冻结适配器、模型 ID、参数、CLI 版本、隔离配置；区分纯模型比较和接入路径比较 |
+| 公平性 | 运行前健康检查；冻结适配器、模型 ID、参数、价格、CLI 版本、隔离配置；区分纯模型比较和接入路径比较 |
 | 结构化输出 | `query-plan-v1`：`plan`、`sql`、`summary`、`assumptions` 四个必填字段 |
 | SQL 安全 | SQLGlot 单语句解析、只读 AST、表白名单、外部访问函数拒绝；独立进程只读执行、超时、行数和内存上限 |
 | 结果比较 | 列名归一化/重排、Decimal 定标、UTC 时间、Unicode NFC、NULL、重复行多重集、容差匹配、顺序语义 |
 | 评分 | 100 分固定公式：协议 5、只读 5、执行 10、列 10、行 F1 45、顺序 10、SQL 能力 15 |
+| 资源效率 | `efficiency-v1`：Token、价格快照估算费用、生成/执行时长、正确等价题归一化及覆盖率 |
 | 运行控制 | 双模型或单模型、1–3 次尝试、取消、启动恢复、精确复跑、按当前配置复跑 |
 | 可观测性 | 持久化事件序列、SSE 断线续传、服务端筛选、虚拟列表、案例工作区、最终报告 |
 | 证据发布 | 导出全部已发布题库和全部历史运行；脱敏；逐文件和整包 SHA-256；离线验真 |
@@ -78,16 +79,16 @@ uv run python -m backend.app.cli serve
 
 ## 运行一次评测
 
-1. 在“模型”页创建配置并执行健康检查。
+1. 在“模型”页创建配置，按需填写 USD/百万 Token 价格，并执行健康检查。
 2. 在“题库”页选择已发布版本，或克隆为草稿后修改并重新发布。
 3. 在“新建对局”页选择一个或两个模型、题目和尝试次数。
 4. 在实时页观察 Prompt、Provider、SQL、比较和评分事件。
-5. 在报告页查看总分、六维雷达、分类分数、热力图、失败案例和查询工作区。
+5. 在报告页查看正确性、Token/正确等价题、估算费用/正确等价题、生成时长 P95、六维能力和逐题证据。
 6. 对需要复核的运行执行“精确复跑”；它复用原运行快照，不读取已变化的模型配置。
 
 ## 文档与证据站点
 
-GitHub Pages：<https://rockythink.github.io/text-to-sql-arena/>。
+Cloudflare Pages：<https://arena.ss-data.cc/>。
 
 站点从仓库内现有材料静态生成：
 
@@ -103,7 +104,7 @@ pnpm install --frozen-lockfile
 pnpm dev
 ```
 
-执行 `pnpm check && pnpm build` 会先同步正文并从证据索引生成全部静态页面。推送相关文件到 `main` 后，`.github/workflows/docs.yml` 会重新校验并部署 GitHub Pages。
+执行 `pnpm check && pnpm build && pnpm verify:build` 会先同步正文、从证据索引生成全部静态页面并检查内部链接。`.github/workflows/docs.yml` 只负责持续验证；公开站点由 Cloudflare Pages 托管。
 
 ## 公开证据
 

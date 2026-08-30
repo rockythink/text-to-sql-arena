@@ -192,7 +192,11 @@ code { font-family: var(--mono); }
 .case-title { min-width: 220px; }
 .case-score { font-size: 1rem; }
 .case-score.low { color: var(--danger); }
-.case-score.high { color: var(--aqua); }
+.efficiency-report { background: var(--panel); }
+.efficiency-table td:not(:first-child) { min-width: 170px; font-size: 1rem; }
+.efficiency-table td small { display: block; margin-top: .35rem; color: var(--muted); font: .62rem var(--mono); }
+.efficiency-table .case-title code { color: var(--muted); }
+.case-score.high { color: var(--paper); }
 .case-details { margin-top: 1.5rem; border-top: 1px solid var(--line); }
 .case-details details { border-bottom: 1px solid var(--line); }
 .case-details summary { padding: 1rem 0; cursor: pointer; display: flex; justify-content: space-between; gap: 1rem; }

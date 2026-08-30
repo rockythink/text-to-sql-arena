@@ -118,6 +118,7 @@ async def create_model_profile(
         response_mode=payload.response_mode,
         api_key_ref=reference,
         parameters_json=payload.parameters,
+        pricing_json=payload.pricing.model_dump(mode="json") if payload.pricing else None,
         enabled=payload.enabled,
     )
     session.add(profile)
@@ -138,6 +139,8 @@ async def patch_model_profile(
     updates = payload.model_dump(exclude_unset=True, exclude={"api_key", "api_key_env"})
     if "parameters" in updates:
         updates["parameters_json"] = updates.pop("parameters")
+    if "pricing" in updates:
+        updates["pricing_json"] = updates.pop("pricing")
     for key, value in updates.items():
         setattr(profile, key, value)
     if payload.api_key is not None or payload.api_key_env is not None:
@@ -571,6 +574,7 @@ async def create_run_record(
             requested_model_id=profile.model_id,
             resolved_model_id=profile.health_details_json.get("resolved_model_id"),
             parameters_snapshot_json=profile.parameters_json,
+            pricing_snapshot_json=profile.pricing_json,
             api_key_ref_snapshot=profile.api_key_ref,
             cli_version_snapshot=profile.health_details_json.get("version"),
             isolation_snapshot_json=profile.health_details_json,
@@ -739,6 +743,7 @@ async def rerun(
                 requested_model_id=source_model.requested_model_id,
                 resolved_model_id=source_model.resolved_model_id,
                 parameters_snapshot_json=source_model.parameters_snapshot_json,
+                pricing_snapshot_json=source_model.pricing_snapshot_json,
                 api_key_ref_snapshot=source_model.api_key_ref_snapshot,
                 cli_version_snapshot=source_model.cli_version_snapshot,
                 isolation_snapshot_json=source_model.isolation_snapshot_json,
@@ -779,6 +784,7 @@ async def run_snapshot(session: AsyncSession, run_id: int) -> dict[str, Any]:
         return await build_run_snapshot(session, run_id)
     except EvidenceLookupError as exc:
         raise fail(404, exc.code, str(exc)) from exc
+
 
 @router.get("/runs/{run_id}")
 async def get_run(
@@ -924,12 +930,11 @@ async def get_case_run(
     session: AsyncSession = Depends(get_session),
 ) -> dict[str, Any]:
     try:
-        return await build_case_evidence(
-            session, case_run_id, include_reference=include_reference
-        )
+        return await build_case_evidence(session, case_run_id, include_reference=include_reference)
     except EvidenceLookupError as exc:
         status = 404 if exc.code == "case_run_not_found" else 409
         raise fail(status, exc.code, str(exc)) from exc
+
 
 @router.get("/runs/{run_id}/report")
 async def run_report(

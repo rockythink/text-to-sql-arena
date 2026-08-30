@@ -30,6 +30,14 @@ const hasCapturedEnvelope = requestEvents.some((event) =>
 );
 const jsonText = (value: unknown) => JSON.stringify(value, null, 2) ?? String(value);
 const hasValue = (value: unknown) => value !== null && value !== undefined && value !== "";
+const caseReport = model.cases.find((item) => item.id === evidence.id);
+const caseMetric = evidence.efficiency ?? caseReport?.efficiency;
+const rawToken = (keys: string[]) => { for (const key of keys) { const value = evidence.token_usage?.[key]; if (typeof value === "number") return value; } return 0; };
+const historicalTokenTotal = rawToken(["input_tokens", "prompt_tokens"]) + rawToken(["cache_write_input_tokens", "cache_creation_input_tokens"]) + rawToken(["output_tokens", "completion_tokens"]);
+const tokenTotal = caseMetric?.tokens?.total ?? (historicalTokenTotal || null);
+const estimatedCost = caseMetric?.estimated_cost_usd;
+const metricTime = (value: number | null | undefined) => value == null ? "未记录" : value >= 1000 ? `${(value / 1000).toFixed(2)}s` : `${value.toFixed(0)}ms`;
+const metricCost = estimatedCost == null ? "不可估算" : `$${estimatedCost.toFixed(6)}`;
 const eventTime = (value: string) => new Intl.DateTimeFormat("zh-CN", {
   dateStyle: "medium",
   timeStyle: "medium",
@@ -64,7 +72,7 @@ const eventTime = (value: string) => new Intl.DateTimeFormat("zh-CN", {
       <div class="protocol-item"><small>run</small><code>#{report.id}</code></div>
       <div class="protocol-item"><small>case run</small><code>#{evidence.id}</code></div>
       <div class="protocol-item"><small>attempt</small><code>{String(evidence.attempt ?? "—")}</code></div>
-      <div class="protocol-item"><small>status</small><code>{evidence.status}</code></div>
+      <div class="protocol-item"><small>status</small><code>{evidence.status}</code></div><div class="protocol-item"><small>token total</small><code>{tokenTotal == null ? "未记录" : new Intl.NumberFormat("zh-CN").format(tokenTotal)}</code></div><div class="protocol-item"><small>estimated cost</small><code>{metricCost}</code></div><div class="protocol-item"><small>model generation</small><code>{metricTime(caseMetric?.generation_ms ?? caseReport?.generation_ms)}</code></div><div class="protocol-item"><small>SQL execution</small><code>{metricTime(caseMetric?.execution_ms ?? caseReport?.execution_ms)}</code></div>
       <div class="protocol-item"><small>adapter</small><code>{model.adapter_kind}</code></div>
       <div class="protocol-item"><small>response mode</small><code>{model.response_mode}</code></div>
       <div class="protocol-item"><small>requested model</small><code>{evidence.requested_model_id}</code></div>

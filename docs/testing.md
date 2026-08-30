@@ -128,7 +128,7 @@
 - 事件严格递增、history `after_seq` 和 SSE 续传；
 - 默认隐藏和显式揭示 reference/gold；
 - 生成耗时与 Provider request ID 落库；
-- `run-report-v1` 协议版本和公平性；
+- `run-report-v2` 协议版本、公平性、Token/费用/时长聚合与缺失数据覆盖率；
 - profile 改名后历史报告仍使用名称快照；
 - exact rerun 复制原模型和题库快照；
 - 取消到终态；
@@ -163,7 +163,7 @@
 
 至少验证：
 
-1. `GET /api/health` 返回 0.2.0；
+1. `GET /api/health` 返回 0.3.0；
 2. 首页/历史页加载，18 次公开前历史运行仍可打开；
 3. Run 18 报告显示 Luna 95.09、Sol 92.04，并标为 `pure_model`；
 4. 案例工作区默认隐藏 Reference，点击后能加载金标；
@@ -194,9 +194,10 @@ uv run alembic upgrade head
 
 随后确认：
 
-- `alembic_version = c4e8b9f7a102`；
+- `alembic_version = 8d7f4c12a901`；
 - `comparison_runs` 有五个版本快照字段；
-- `model_runs` 有 `profile_name_snapshot`；
+- `model_profiles` 有 `pricing_json`；
+- `model_runs` 有 `profile_name_snapshot` 和 `pricing_snapshot_json`；
 - `case_runs` 有 `generation_ms` 和 `provider_request_id`。
 
 现有早期数据库还要验证兼容路径：列已被 `ensure_schema()` 添加时，迁移可幂等跳过并正确盖章。

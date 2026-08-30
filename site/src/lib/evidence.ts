@@ -36,6 +36,20 @@ export interface CaseScore {
   [key: string]: unknown;
 }
 
+export interface EfficiencyMetrics {
+  metric_schema_version: string;
+  attempted_cases: number;
+  correct_case_equivalents: number;
+  coverage: Record<string, { measured: number; total: number }>;
+  tokens: { input: number; cached_input: number; cache_write_input: number; output: number; reasoning_output: number; total: number } | null;
+  estimated_cost_usd: number | null;
+  generation_ms: { total: number | null; mean: number | null; p50: number | null; p95: number | null };
+  execution_ms: { total: number | null; mean: number | null };
+  per_correct_case_equivalent: { tokens: number | null; estimated_cost_usd: number | null; generation_ms: number | null };
+  pricing: Record<string, unknown> | null;
+  cost_basis: string;
+}
+
 export interface CaseReport {
   attempt: number;
   case_id: number;
@@ -53,6 +67,7 @@ export interface CaseReport {
   status: string;
   title: string;
   token_usage: Record<string, unknown> | null;
+  efficiency?: { tokens: EfficiencyMetrics["tokens"]; estimated_cost_usd: number | null; generation_ms: number | null; execution_ms: number | null };
   visible_summary: string | null;
 }
 
@@ -63,6 +78,7 @@ export interface ModelReport {
   categories: Record<string, number>;
   cli_version: string | null;
   failure_count: number;
+  efficiency?: EfficiencyMetrics;
   id: number;
   name: string;
   official_score: number | null;
@@ -133,6 +149,7 @@ export interface CaseEvidenceDocument {
   reference_sql: string | null;
   provider_request_id: string | null;
   token_usage: Record<string, unknown> | null;
+  efficiency?: { tokens: EfficiencyMetrics["tokens"]; estimated_cost_usd: number | null; generation_ms: number | null; execution_ms: number | null };
   score: Record<string, unknown> | null;
   [key: string]: unknown;
 }
@@ -238,6 +255,42 @@ export function statusLabel(status: string): string {
 
 export function scoreText(score: number | null): string {
   return score == null ? "—" : score.toFixed(2);
+}
+
+const usageValue = (usage: Record<string, unknown> | null, keys: string[]) => {
+  for (const key of keys) { const value = usage?.[key]; if (typeof value === "number" && value >= 0) return value; }
+  return 0;
+};
+
+export function modelEfficiency(model: ModelReport): EfficiencyMetrics {
+  if (model.efficiency) return model.efficiency;
+  const totals = { input: 0, cached_input: 0, cache_write_input: 0, output: 0, reasoning_output: 0, total: 0 };
+  const generation = model.cases.flatMap((item) => typeof item.generation_ms === "number" ? [item.generation_ms] : []);
+  let measured = 0;
+  for (const item of model.cases) {
+    const input = usageValue(item.token_usage, ["input_tokens", "prompt_tokens"]);
+    const cached = usageValue(item.token_usage, ["cached_input_tokens", "cache_read_input_tokens", "cache_read_tokens"]);
+    const cacheWrite = usageValue(item.token_usage, ["cache_write_input_tokens", "cache_creation_input_tokens"]);
+    const output = usageValue(item.token_usage, ["output_tokens", "completion_tokens"]);
+    if (input || cached || cacheWrite || output) measured += 1;
+    totals.input += model.adapter_kind === "claude_cli" ? input : Math.max(input - cached, 0);
+    totals.cached_input += cached; totals.cache_write_input += cacheWrite; totals.output += output;
+    totals.reasoning_output += usageValue(item.token_usage, ["reasoning_output_tokens", "reasoning_tokens"]);
+  }
+  totals.total = totals.input + totals.cached_input + totals.cache_write_input + totals.output;
+  const equivalent = model.cases.reduce((sum, item) => sum + (typeof item.score?.total === "number" ? Math.max(item.score.total, 0) / 100 : 0), 0);
+  const ordered = [...generation].sort((a, b) => a - b);
+  const p95Index = ordered.length ? Math.ceil(ordered.length * .95) - 1 : -1;
+  const generationTotal = generation.length ? generation.reduce((sum, value) => sum + value, 0) : null;
+  return {
+    metric_schema_version: "efficiency-v1-derived", attempted_cases: model.cases.length, correct_case_equivalents: equivalent,
+    coverage: { tokens: { measured, total: model.cases.length }, cost: { measured: 0, total: model.cases.length }, generation_time: { measured: generation.length, total: model.cases.length } },
+    tokens: measured ? totals : null, estimated_cost_usd: null,
+    generation_ms: { total: generationTotal, mean: generationTotal == null ? null : generationTotal / generation.length, p50: ordered.length ? ordered[Math.floor((ordered.length - 1) / 2)] : null, p95: p95Index >= 0 ? ordered[p95Index] : null },
+    execution_ms: { total: null, mean: null },
+    per_correct_case_equivalent: { tokens: measured && equivalent > 0 ? totals.total / equivalent : null, estimated_cost_usd: null, generation_ms: generationTotal != null && equivalent > 0 ? generationTotal / equivalent : null },
+    pricing: null, cost_basis: "unavailable",
+  };
 }
 
 export function runSlug(id: number): string {

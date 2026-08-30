@@ -90,6 +90,7 @@ class AdapterError(RuntimeError):
 
 EventSink = Callable[[str, str, dict[str, Any]], Awaitable[None]]
 
+
 def provider_request_payload(
     profile: AdapterProfile,
     request: GenerationRequest,
@@ -98,7 +99,7 @@ def provider_request_payload(
     invocation: dict[str, Any],
 ) -> dict[str, Any]:
     """Build the secret-redacted request envelope persisted in run events."""
-    return redact_secrets(
+    payload = redact_secrets(
         {
             "status": "running",
             "transport": transport,
@@ -113,6 +114,9 @@ def provider_request_payload(
             "invocation": invocation,
         }
     )
+    if not isinstance(payload, dict):
+        raise TypeError("redacted provider request must remain an object")
+    return payload
 
 
 class ModelAdapter(Protocol):

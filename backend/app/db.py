@@ -36,26 +36,26 @@ async def ensure_schema() -> None:
     async with engine.begin() as connection:
         await connection.run_sync(Base.metadata.create_all)
         table_columns: dict[str, set[str]] = {}
-        for table in ("comparison_runs", "model_runs", "case_runs"):
+        for table in ("model_profiles", "comparison_runs", "model_runs", "case_runs"):
             table_columns[table] = {
                 str(row[1])
-                for row in (
-                    await connection.execute(text(f"PRAGMA table_info({table})"))
-                ).all()
+                for row in (await connection.execute(text(f"PRAGMA table_info({table})"))).all()
             }
 
         additions = {
+            "model_profiles": {
+                "pricing_json": "JSON",
+            },
             "comparison_runs": {
                 "app_version_snapshot": "VARCHAR(32) NOT NULL DEFAULT '0.1.0'",
                 "scorer_version_snapshot": "VARCHAR(32) NOT NULL DEFAULT '1.0.0'",
                 "duckdb_version_snapshot": "VARCHAR(32) NOT NULL DEFAULT '1.5.5'",
                 "sqlglot_version_snapshot": "VARCHAR(32) NOT NULL DEFAULT '30.17.0'",
-                "output_contract_snapshot": (
-                    "VARCHAR(40) NOT NULL DEFAULT 'query-plan-v1'"
-                ),
+                "output_contract_snapshot": ("VARCHAR(40) NOT NULL DEFAULT 'query-plan-v1'"),
             },
             "model_runs": {
                 "profile_name_snapshot": "VARCHAR(120)",
+                "pricing_snapshot_json": "JSON",
             },
             "case_runs": {
                 "plan_json": "JSON",

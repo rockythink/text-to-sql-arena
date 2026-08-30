@@ -3,7 +3,8 @@ import path from "node:path";
 
 const root = path.resolve(process.cwd(), "..");
 const dist = path.join(process.cwd(), "dist");
-const base = `/${(process.env.SITE_BASE ?? "text-to-sql-arena").replace(/^\/+|\/+$/g, "")}`;
+const baseName = (process.env.SITE_BASE ?? "/").replace(/^\/+|\/+$/g, "");
+const base = baseName ? `/${baseName}` : "";
 const index = JSON.parse(await readFile(path.join(root, "evidence", "index.json"), "utf8"));
 
 async function filesUnder(directory) {

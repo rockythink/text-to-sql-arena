@@ -19,6 +19,16 @@ class ErrorResponse(ApiModel):
     request_id: str
 
 
+class TokenPricing(ApiModel):
+    currency: Literal["USD"] = "USD"
+    input_usd_per_million: float | None = Field(default=None, ge=0)
+    cached_input_usd_per_million: float | None = Field(default=None, ge=0)
+    cache_write_input_usd_per_million: float | None = Field(default=None, ge=0)
+    output_usd_per_million: float | None = Field(default=None, ge=0)
+    source: str = "manual"
+    effective_at: str
+
+
 class ModelProfileCreate(ApiModel):
     name: str
     adapter_kind: Literal["openai_compatible", "codex_cli", "claude_cli", "gemini_cli"]
@@ -28,6 +38,7 @@ class ModelProfileCreate(ApiModel):
     api_key: str | None = None
     api_key_env: str | None = None
     parameters: dict[str, Any] = Field(default_factory=dict)
+    pricing: TokenPricing | None = None
     enabled: bool = True
 
     @model_validator(mode="after")
@@ -45,6 +56,7 @@ class ModelProfilePatch(ApiModel):
     api_key: str | None = None
     api_key_env: str | None = None
     parameters: dict[str, Any] | None = None
+    pricing: TokenPricing | None = None
     enabled: bool | None = None
 
 
@@ -56,6 +68,7 @@ class ModelProfileOut(ApiModel):
     base_url: str | None
     response_mode: str
     parameters: dict[str, Any]
+    pricing: TokenPricing | None
     enabled: bool
     has_secret: bool
     secret_backend: Literal["keyring", "environment", "none"]

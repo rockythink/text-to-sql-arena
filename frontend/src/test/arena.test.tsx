@@ -12,7 +12,7 @@ import type { CaseRunDetail, ModelProfile, ModelRun, RunEvent, RunSnapshot, Suit
 
 vi.mock("@monaco-editor/react", () => ({ DiffEditor: ({ modified }: { modified: string }) => <pre data-testid="diff-modified">{modified}</pre> }));
 
-const healthy = (id: number, name: string): ModelProfile => ({ id, name, adapter_kind: "codex_cli", model_id: name.toLowerCase(), base_url: null, response_mode: "text", parameters: {}, enabled: true, has_secret: false, secret_backend: "none", health_status: "healthy", health_details: {}, last_checked_at: null, health_expires_at: null });
+const healthy = (id: number, name: string): ModelProfile => ({ id, name, adapter_kind: "codex_cli", model_id: name.toLowerCase(), base_url: null, response_mode: "text", parameters: {}, pricing: null, enabled: true, has_secret: false, secret_backend: "none", health_status: "healthy", health_details: {}, last_checked_at: null, health_expires_at: null });
 const suite: Suite = { id: 1, name: "retail", description: "", versions: [{ id: 10, version: 1, status: "published", dialect: "duckdb", content_hash: "abcdef1234567890", published_at: null, schema_sql: "", seed_sql: "", semantic: {}, prompt_template: "", structure: {}, cases: [{ id: 11, stable_key: "case-1", title: "题一", category: "filter", radar_dimension: "基础查询", difficulty: "easy", question: "q", required_ast: [], comparison: {}, weight: 1, sort_order: 1 }] }] };
 
 function Wrapper({ children }: PropsWithChildren) {

@@ -90,6 +90,7 @@ def profile_public(profile: ModelProfile) -> dict[str, Any]:
         "base_url": profile.base_url,
         "response_mode": profile.response_mode,
         "parameters": profile.parameters_json,
+        "pricing": profile.pricing_json,
         "enabled": profile.enabled,
         "has_secret": bool(profile.api_key_ref),
         "secret_backend": backend,

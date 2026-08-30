@@ -4,10 +4,10 @@
 
 | 合同 | 当前值 | 变更原则 |
 | --- | --- | --- |
-| 应用 | `0.2.0` | 功能和持久化行为变化 |
+| 应用 | `0.3.0` | 功能和持久化行为变化 |
 | 评分器 | `1.0.0` | 评分公式、比较语义或聚合语义变化必须升级 |
 | 模型输出 | `query-plan-v1` | 必填字段或语义不兼容变化必须新版本 |
-| 运行报告 | `run-report-v1` | 静态报告结构不兼容变化必须新版本 |
+| 运行报告 | `run-report-v2` | 增加 `efficiency-v1` 资源指标、覆盖率和价格快照 |
 | 公开证据 | `text-to-sql-evidence-v1` | 目录/清单/验真语义不兼容变化必须新版本 |
 | DuckDB | `1.5.5` | 精确固定 |
 | SQLGlot | 运行时解析版本 | 每次运行冻结实际包版本 |
@@ -123,6 +123,7 @@ sort_order: positive integer # 版本内唯一
 - `response_mode_snapshot`
 - `requested_model_id`
 - `parameters_snapshot_json`
+- `pricing_snapshot_json`（USD/百万 Token 的可选价格快照）
 - `api_key_ref_snapshot`（仅引用，不是密钥）
 - `cli_version_snapshot`
 - `isolation_snapshot_json`
@@ -162,6 +163,20 @@ sort_order: positive integer # 版本内唯一
 - `error_message`
 
 历史运行中无法恢复的 `provider_request_id` 和 `generation_ms` 为 `null`。
+
+### 效率派生合同 `efficiency-v1`
+
+模型报告包含：
+
+- `correct_case_equivalents = sum(case_score / 100)`；
+- 标准化 Token：`input`、`cached_input`、`cache_write_input`、`output`、`reasoning_output`、`total`；
+- `estimated_cost_usd`，仅在所有已用 Token 类型都有冻结单价时产生；
+- 模型生成耗时 `total/mean/p50/p95`；
+- SQL 执行耗时 `total/mean`；
+- `per_correct_case_equivalent.tokens/cost/generation_ms`；
+- 每类指标的 `coverage.measured/total`。
+
+`reasoning_output` 只作披露，不在 `total` 中重复计数。缺失 Token、单价或耗时不得按 0 填充。费用是价格快照下的 Token 估算，不代表 CLI 包月订阅的实际边际账单。
 
 ## 5. 事件合同
 
@@ -256,7 +271,7 @@ sort_order: positive integer # 版本内唯一
 | POST | `/runs/{id}/cancel` | 幂等取消请求 |
 | POST | `/runs/{id}/rerun?mode=exact|current` | 精确快照或当前配置复跑 |
 | GET | `/runs/{id}` | 运行快照和案例摘要 |
-| GET | `/runs/{id}/report` | `run-report-v1` 静态报告 |
+| GET | `/runs/{id}/report` | `run-report-v2` 静态报告 |
 | GET | `/case-runs/{id}?include_reference=false` | 完整案例证据；默认不揭示参考 SQL/金标 |
 
 ### 事件
@@ -279,7 +294,7 @@ sort_order: positive integer # 版本内唯一
 
 HTTP 验证错误同样使用此信封。异常 details 会脱敏。
 
-## 7. 报告合同 `run-report-v1`
+## 7. 报告合同 `run-report-v2`
 
 顶层至少包含：
 
@@ -295,10 +310,10 @@ HTTP 验证错误同样使用此信封。异常 details 会脱敏。
 
 - profile 名称快照；
 - 请求/解析模型 ID；
-- 适配器、响应模式、参数、CLI 和隔离快照；
+- 适配器、响应模式、参数、价格、CLI 和隔离快照；
 - 状态、official score、失败数；
-- categories、attempt statistics；
-- 全部案例及其输入、输出、结果和评分字段。
+- categories、attempt statistics 与 `efficiency-v1`；
+- 全部案例及其输入、输出、结果、评分与效率字段。
 
 报告中的 `conclusion.status` 描述是否能形成结论；顶层 `status` 描述运行状态，两者不是同一字段。例如某模型个别案例失败时，顶层可为 `completed_with_errors`，但仍可形成模型比较结论。
 

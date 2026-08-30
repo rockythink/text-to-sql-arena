@@ -1,6 +1,6 @@
 [project]
 name = "llm-text-to-sql-benchmark"
-version = "0.2.0"
+version = "0.3.0"
 description = "Local-first deterministic Text-to-SQL benchmark"
 requires-python = ">=3.12,<3.13"
 dependencies = [

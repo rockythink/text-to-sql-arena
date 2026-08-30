@@ -69,7 +69,7 @@ evidence/
 
 ### `report.json`
 
-完整 `run-report-v1`。包括运行/模型/案例快照、分数和结论，不依赖当前 profile。
+完整运行报告；当前导出为 `run-report-v2`，包括运行/模型/案例快照、分数、资源效率和结论，不依赖当前 profile。历史目录保留其原始合同版本。
 
 ### `events.jsonl`
 
@@ -208,7 +208,7 @@ uv run pytest -q tests/test_retail_suite.py tests/test_result_compare.py tests/t
 - 页面路由使用稳定的 `run-XXXX` 目录名和 64 位题库 content hash；
 - 视觉图表不参与摘要计算，也不能代替 `verify-evidence`；
 - 证据变更后必须重新执行站点检查与构建，禁止手工维护第二份运行列表；
-- GitHub Pages 只发布静态产物，不接收模型密钥、用户输入或运行时数据库。
+- Cloudflare Pages 只发布静态产物，不接收模型密钥、用户输入或运行时数据库。
 
 每一条 `CaseRun` 还会生成独立详情页：
 
