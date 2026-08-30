@@ -20,7 +20,7 @@
 - Python 和 Node 锁定依赖的在线漏洞审计均报告无已知漏洞；
 - 评分、隔离、事件和快照的主要审计发现已修复。
 
-维护者已选择 MPL-2.0 和 `rockythink/text-to-sql-arena`；唯一剩余发布阻塞是在点风险处确认实际创建 public 仓库并推送全部暂存内容。
+发布阻塞已解除：MPL-2.0、仓库名和点风险确认均已完成，初始公开提交 `e6494e4df634` 已推送到 `rockythink/text-to-sql-arena` 的 `main` 分支。
 
 ## 2. 审计发现
 
@@ -294,4 +294,12 @@ uv export --frozen --no-dev --format requirements-txt \
 - [x] 维护者选择 `rockythink/text-to-sql-arena`。
 - [x] 写入标准 `LICENSE` 并更新 README、贡献指南和审计状态。
 - [x] 完成全套验证、生产构建、证据校验、暂存边界与敏感模式扫描。
-- [ ] 在实际执行 GitHub public create/push 前，进行点风险确认。
+- [x] 在实际执行 GitHub public create/push 前完成点风险确认，并按确认范围公开推送。
+
+## 8. 公开发布验证
+
+- 公开仓库：<https://github.com/rockythink/text-to-sql-arena>；可见性 `PUBLIC`，默认分支 `main`。
+- 初始公开提交：`e6494e4df634b2bf7c4df0467000939ca88ffe47`。
+- 远端 README、标准 MPL-2.0 `LICENSE` 和 `evidence/index.json` 均已读取验证；远端证据索引声明 `text-to-sql-evidence-v1`、2 suite / 18 run。
+- 远端 `LICENSE` SHA-256：`66a3107d5ad6a058aab753eaac2047ccb2ed0e39465dd0fe5844da3e300d5172`，与本地和 SPDX 标准文本一致。
+- GitHub Actions 初始提交 CI：<https://github.com/rockythink/text-to-sql-arena/actions/runs/33297542769>，结论 `success`。
