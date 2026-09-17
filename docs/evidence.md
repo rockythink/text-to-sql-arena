@@ -21,7 +21,7 @@ uv run python -m backend.app.cli export-evidence --output evidence
 1. 确认数据库兼容字段存在。
 2. 查询全部 `published` 题库版本。
 3. 从数据库源重建每版 SuiteSource 并重新计算 content hash。
-4. 重新构建 DuckDB 和全部金标；若哈希或金标构建失败则终止。
+4. 读取 content-hash 目录中原冻结 manifest/gold，校验 suite hash 与金标内容摘要。缺失或不一致则终止；不得用当前评分版本重建并覆盖历史金标。
 5. 写入题库源、结构、构建清单和完整金标。
 6. 查询全部历史运行，不只导出成功运行。
 7. 使用在线 API 同一个 `reporting.py` 构建报告和案例证据。
@@ -69,7 +69,7 @@ evidence/
 
 ### `report.json`
 
-完整运行报告；当前导出为 `run-report-v2`，包括运行/模型/案例快照、分数、资源效率和结论，不依赖当前 profile。历史目录保留其原始合同版本。
+完整运行报告；当前新导出为 `run-report-v3`，包括运行/模型/案例快照、官方分数、独立质量指标、资源效率和结论，不依赖当前 profile。历史目录保留其原始合同版本、字段与字节，不原地迁移。
 
 ### `events.jsonl`
 
@@ -218,13 +218,13 @@ uv run pytest -q tests/test_retail_suite.py tests/test_result_compare.py tests/t
 
 详情页完整展示：实际 Prompt、请求事件、原始响应、解析方案、生成/格式化 SQL、Token 与耗时、评分规则、期望/实际结果、全部案例事件及未经裁剪的案例 JSON。运行报告中的每个模型 × 测试用例记录都直接链接到对应详情页。
 
-`provider.requested` 从新运行开始保存脱敏调用信封：
+`provider.requested` 从新运行开始保存脱敏的 Pi 调用信封：
 
-- OpenAI-compatible：HTTP method、path 和实际 JSON body；
-- CLI 适配器：命令、参数、stdin/Prompt、输出 Schema 与隔离策略摘要；
-- 所有适配器：请求模型、响应模式、参数、完整 Prompt 和输出 Schema。
+- Pi harness/bridge/policy 版本、Provider、认证模式、请求模型和响应模式；
+- 固定 Prompt、显式生成参数、单轮/无工具/生成尝试次数与系统 Prompt 摘要；
+- Provider 实际请求元数据仅在 bridge 返回且通过脱敏时保存；不会保存 OAuth/API Key、Authorization、keyring 引用或凭据文件内容。
 
-认证头、API Key、Token、Secret、用户路径和临时目录仍按第 4 节规则脱敏。Run 1—18 的历史事件是在该调用信封字段加入前产生的，因此页面会明确标注“历史证据未保存底层调用报文”，不会根据现有 Prompt 反向伪造请求。
+Run 1—18 及其他既有历史证据按原字节、原适配器和原比较标签保留，不补写 Pi 字段，也不会根据现有 Prompt 反向伪造底层请求。新报告可以显示 `controlled_harness` 以及安全的 Provider/认证/有效控制，但“统一 harness”不表示同一端点或同一模型。
 
 本地站点验收：
 

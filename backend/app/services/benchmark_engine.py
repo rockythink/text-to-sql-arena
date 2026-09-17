@@ -59,12 +59,7 @@ class BenchmarkEngine:
         self._run_cancellations: dict[int, asyncio.Event] = {}
         self._tasks: dict[int, asyncio.Task[None]] = {}
         self._global = asyncio.Semaphore(3)
-        self._adapter_limits = {
-            "openai_compatible": asyncio.Semaphore(2),
-            "codex_cli": asyncio.Semaphore(1),
-            "claude_cli": asyncio.Semaphore(1),
-            "gemini_cli": asyncio.Semaphore(1),
-        }
+        self._adapter_limits = {"pi": asyncio.Semaphore(2)}
 
     def launch(self, run_id: int) -> None:
         task = asyncio.create_task(self.start_run(run_id))

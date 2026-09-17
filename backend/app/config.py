@@ -32,8 +32,8 @@ def get_settings() -> Settings:
         static_dir=root / "backend" / "app" / "static",
         host=host,
         port=int(os.environ.get("LLM_TEST_PORT", "8000")),
-        app_version="0.3.0",
-        scorer_version="1.0.0",
+        app_version="0.4.0",
+        scorer_version="2.0.0",
     )
 
 

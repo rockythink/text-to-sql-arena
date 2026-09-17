@@ -1,0 +1,64 @@
+<section class="proposal" data-proposal>
+  <div class="section-heading">
+    <h2>带一道真实业务题来挑战</h2>
+    <p>在本地整理成结构化提案。本站不会自动提交；复制或下载 JSON 后，由维护者审核数据授权、可复现性和金标，才可能进入新的题库版本。</p>
+  </div>
+  <form class="proposal-form">
+    <label><span>业务问题</span><textarea name="question" required rows="3" placeholder="例如：按自然月比较复购客户贡献的净收入，并说明退款口径。"></textarea></label>
+    <label><span>业务背景与使用者</span><textarea name="context" required rows="3" placeholder="谁会用这个结果做什么决策？"></textarea></label>
+    <div class="proposal-row">
+      <label><span>SQL 方言</span><input name="dialect" value="DuckDB" required /></label>
+      <label><span>结果粒度</span><input name="grain" required placeholder="例如：每月 × 客户分群" /></label>
+    </div>
+    <label><span>可复现数据说明</span><textarea name="data_notes" required rows="3" placeholder="列出所需表、关键字段、边界样例；不要粘贴隐私或密钥。"></textarea></label>
+    <label><span>验收口径</span><textarea name="acceptance" required rows="3" placeholder="列名、排序、空值、金额和时间边界如何判定？"></textarea></label>
+    <div class="proposal-actions">
+      <button class="button-link primary" type="submit">生成本地提案</button>
+      <button class="button-link" type="button" data-copy disabled>复制 JSON</button>
+      <button class="button-link" type="button" data-download disabled>下载 JSON</button>
+    </div>
+  </form>
+  <p class="proposal-status" data-status aria-live="polite">尚未生成。内容只在当前页面内处理。</p>
+  <pre class="proposal-output" data-output hidden><code></code></pre>
+</section>
+<script>
+  const root = document.querySelector<HTMLElement>("[data-proposal]");
+  if (root) {
+    const form = root.querySelector<HTMLFormElement>("form");
+    const output = root.querySelector<HTMLElement>("[data-output]");
+    const code = output?.querySelector("code");
+    const status = root.querySelector<HTMLElement>("[data-status]");
+    const copy = root.querySelector<HTMLButtonElement>("[data-copy]");
+    const download = root.querySelector<HTMLButtonElement>("[data-download]");
+    let json = "";
+    form?.addEventListener("submit", (event) => {
+      event.preventDefault();
+      if (!form.reportValidity()) return;
+      const data = new FormData(form);
+      json = JSON.stringify({
+        proposal_schema_version: "challenge-proposal-v1",
+        question: data.get("question"), context: data.get("context"), dialect: data.get("dialect"),
+        result_grain: data.get("grain"), data_notes: data.get("data_notes"), acceptance_criteria: data.get("acceptance"),
+        submission_state: "local_draft"
+      }, null, 2);
+      if (code) code.textContent = json;
+      if (output) output.hidden = false;
+      if (copy) copy.disabled = false;
+      if (download) download.disabled = false;
+      if (status) status.textContent = "已在本地生成草案；尚未提交、审核或进入题库。";
+    });
+    copy?.addEventListener("click", async () => {
+      if (!json) return;
+      await navigator.clipboard.writeText(json);
+      if (status) status.textContent = "已复制 JSON；尚未提交。";
+    });
+    download?.addEventListener("click", () => {
+      if (!json) return;
+      const url = URL.createObjectURL(new Blob([json], { type: "application/json" }));
+      const link = document.createElement("a");
+      link.href = url; link.download = "text-to-sql-challenge-proposal.json"; link.click();
+      URL.revokeObjectURL(url);
+      if (status) status.textContent = "已下载 JSON；尚未提交。";
+    });
+  }
+</script>

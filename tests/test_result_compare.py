@@ -3,7 +3,12 @@ from __future__ import annotations
 from decimal import Decimal
 
 from backend.app.domain import ComparisonConfig
-from backend.app.services.result_compare import QueryResult, ResultColumn, compare_results
+from backend.app.services.result_compare import (
+    QueryResult,
+    ResultColumn,
+    compare_results,
+    result_digest,
+)
 
 
 def comparison(order: bool = True) -> ComparisonConfig:
@@ -97,3 +102,98 @@ def test_empty_results_have_perfect_f1() -> None:
     diff = compare_results(result, result, comparison())
     assert diff.precision == diff.recall == diff.f1 == 1
     assert diff.ordered_equal
+
+
+def test_integer_gold_is_exact_and_preserves_mismatch_precision() -> None:
+    expected = QueryResult(columns=[ResultColumn(name="count", type="BIGINT")], rows=[[12]])
+    equivalent = QueryResult(columns=[ResultColumn(name="count", type="DOUBLE")], rows=[[12.0]])
+    different = QueryResult(columns=[ResultColumn(name="count", type="DOUBLE")], rows=[[12.4]])
+    config = comparison()
+    config.decimal_scale = 0
+
+    assert compare_results(expected, equivalent, config).verdict == "equal"
+    diff = compare_results(expected, different, config)
+
+    assert diff.verdict == "row_mismatch"
+    assert diff.missing_rows == [["12"]]
+    assert diff.extra_rows == [["12.4"]]
+
+
+def test_decimal_scale_does_not_change_digest_or_numeric_precision() -> None:
+    precise = QueryResult(
+        columns=[ResultColumn(name="amount", type="DECIMAL(14,4)")],
+        rows=[[Decimal("1234567890123456789012345678.0001")]],
+    )
+    nearby = QueryResult(
+        columns=[ResultColumn(name="amount", type="DECIMAL(14,4)")],
+        rows=[[Decimal("1234567890123456789012345678.0002")]],
+    )
+
+    assert result_digest(precise, 0) == result_digest(precise, 9)
+    assert result_digest(precise, 0) != result_digest(nearby, 0)
+
+
+def test_integer_column_cannot_borrow_decimal_tolerance() -> None:
+    expected = QueryResult(
+        columns=[
+            ResultColumn(name="id", type="BIGINT"),
+            ResultColumn(name="amount", type="DECIMAL(14,3)"),
+        ],
+        rows=[[100, Decimal("10.000")]],
+    )
+    actual = QueryResult(
+        columns=[
+            ResultColumn(name="id", type="DOUBLE"),
+            ResultColumn(name="amount", type="DOUBLE"),
+        ],
+        rows=[[100.004, 10.004]],
+    )
+
+    diff = compare_results(expected, actual, comparison())
+
+    assert diff.verdict == "row_mismatch"
+    assert diff.matched_count == 0
+
+
+def test_alias_alignment_uses_unique_type_aware_tolerant_mapping() -> None:
+    expected = QueryResult(
+        columns=[
+            ResultColumn(name="id", type="BIGINT"),
+            ResultColumn(name="amount", type="DECIMAL(14,3)"),
+        ],
+        rows=[[1, Decimal("10.000")], [2, Decimal("20.000")]],
+    )
+    actual = QueryResult(
+        columns=[
+            ResultColumn(name="computed_amount", type="DOUBLE"),
+            ResultColumn(name="computed_id", type="BIGINT"),
+        ],
+        rows=[[10.004, 1], [20.004, 2]],
+    )
+
+    diff = compare_results(expected, actual, comparison())
+
+    assert diff.verdict == "equal"
+    assert diff.column_mapping == [1, 0]
+
+
+def test_alias_alignment_rejects_multiple_tolerant_mappings() -> None:
+    expected = QueryResult(
+        columns=[
+            ResultColumn(name="left", type="DECIMAL(14,3)"),
+            ResultColumn(name="right", type="DECIMAL(14,3)"),
+        ],
+        rows=[[Decimal("10.000"), Decimal("10.001")]],
+    )
+    actual = QueryResult(
+        columns=[
+            ResultColumn(name="x", type="DOUBLE"),
+            ResultColumn(name="y", type="DOUBLE"),
+        ],
+        rows=[[10.002, 10.003]],
+    )
+
+    diff = compare_results(expected, actual, comparison())
+
+    assert diff.verdict == "column_alignment_ambiguous"
+    assert diff.column_mapping is None

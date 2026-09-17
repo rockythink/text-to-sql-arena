@@ -39,13 +39,15 @@ export interface CaseScore {
 export interface EfficiencyMetrics {
   metric_schema_version: string;
   attempted_cases: number;
-  correct_case_equivalents: number;
+  correct_case_equivalents?: number;
+  correct_cases?: number;
   coverage: Record<string, { measured: number; total: number }>;
   tokens: { input: number; cached_input: number; cache_write_input: number; output: number; reasoning_output: number; total: number } | null;
   estimated_cost_usd: number | null;
   generation_ms: { total: number | null; mean: number | null; p50: number | null; p95: number | null };
   execution_ms: { total: number | null; mean: number | null };
-  per_correct_case_equivalent: { tokens: number | null; estimated_cost_usd: number | null; generation_ms: number | null };
+  per_correct_case_equivalent?: { tokens: number | null; estimated_cost_usd: number | null; generation_ms: number | null };
+  per_correct_case?: { tokens: number | null; estimated_cost_usd: number | null; generation_ms: number | null };
   pricing: Record<string, unknown> | null;
   cost_basis: string;
 }
@@ -99,6 +101,7 @@ export interface RunReport {
   models: ModelReport[];
   protocol: Record<string, string | number | null>;
   report_schema_version: string;
+  quality_schema_version?: string;
   selected_case_keys: string[];
   source_run_id: number | null;
   started_at: string | null;
@@ -256,7 +259,46 @@ export function statusLabel(status: string): string {
 export function scoreText(score: number | null): string {
   return score == null ? "—" : score.toFixed(2);
 }
+export function getCaseRounds(report: RunReport) {
+  const terminal = new Set(["completed", "failed", "cancelled", "interrupted"]);
+  return report.selected_case_keys.map((stableKey) => {
+    const models = report.models.map((model) => {
+      const results = model.cases.filter((item) => item.stable_key === stableKey).sort((a, b) => a.attempt - b.attempt);
+      const complete = report.attempts > 0 && results.length === report.attempts
+        && new Set(results.map((item) => item.attempt)).size === report.attempts
+        && results.every((item) => item.attempt >= 1 && item.attempt <= report.attempts && terminal.has(item.status));
+      const mean = complete ? results.reduce((sum, item) => sum + (item.score?.total ?? 0), 0) / report.attempts : null;
+      const verdicts = results.map((item) => deriveResultVerdict(item.score, report.quality_schema_version === "result-quality-v2"));
+      const verdict: DerivedResultVerdict = !complete || verdicts.includes("unknown") ? "unknown" : verdicts.every((value) => value === "correct") ? "correct" : "incorrect";
+      return { model, results, mean, verdict };
+    });
+    const means = models.map((item) => item.mean);
+    const spread = means.length > 1 && means.every((mean) => mean !== null) ? Math.max(...means as number[]) - Math.min(...means as number[]) : 0;
+    return { stableKey, title: models.flatMap((item) => item.results)[0]?.title ?? stableKey, models, spread };
+  });
+}
 
+export type DerivedResultVerdict = "correct" | "incorrect" | "unknown";
+
+/** Derive from deterministic result-comparison fields only; never from AST points. */
+export function deriveResultVerdict(score: CaseScore | Record<string, unknown> | null, businessOnly = false): DerivedResultVerdict {
+  if (!score) return "unknown";
+  const components = [
+    ["execution", 10],
+    ["row_f1", 45],
+    ["column_count", 5],
+    ["column_names", 5],
+    ["ordering", 10],
+  ] as const;
+  const required = businessOnly ? components.filter(([key]) => key !== "column_names") : components;
+  const present = required.filter(([key]) => typeof score[key] === "number");
+  if (present.length !== required.length || (businessOnly && Number(score.execution) < 10)) return "unknown";
+  return present.every(([key, maximum]) => Number(score[key]) >= maximum) ? "correct" : "incorrect";
+}
+
+export function resultVerdictLabel(verdict: DerivedResultVerdict): string {
+  return ({ correct: "结果正确（页面派生）", incorrect: "结果未完全正确（页面派生）", unknown: "结果正确性未知" })[verdict];
+}
 const usageValue = (usage: Record<string, unknown> | null, keys: string[]) => {
   for (const key of keys) { const value = usage?.[key]; if (typeof value === "number" && value >= 0) return value; }
   return 0;

@@ -31,10 +31,10 @@ class TokenPricing(ApiModel):
 
 class ModelProfileCreate(ApiModel):
     name: str
-    adapter_kind: Literal["openai_compatible", "codex_cli", "claude_cli", "gemini_cli"]
+    adapter_kind: Literal["pi"]
     model_id: str
     base_url: str | None = None
-    response_mode: Literal["json_schema", "json_object", "text"] = "json_schema"
+    response_mode: Literal["text"] = "text"
     api_key: str | None = None
     api_key_env: str | None = None
     parameters: dict[str, Any] = Field(default_factory=dict)
@@ -109,7 +109,7 @@ class RunCreate(ApiModel):
     suite_version_id: int
     model_profile_ids: list[int] = Field(min_length=1, max_length=6)
     case_ids: list[int] | None = None
-    attempts: int = Field(default=1, ge=1, le=3)
+    attempts: Literal[1] = 1
 
     @model_validator(mode="after")
     def unique_models(self) -> RunCreate:
@@ -123,6 +123,26 @@ class RunCreated(ApiModel):
     mode: Literal["single", "comparison"]
     status: str
 
+
+class PublicationExportRequest(ApiModel):
+    preview_digest: str = Field(min_length=64, max_length=64, pattern=r"^[0-9a-f]{64}$")
+
+
+class ChallengeVariantIn(ApiModel):
+    name: str = Field(min_length=1, max_length=100)
+    seed_sql: str = Field(min_length=1, max_length=200_000)
+
+
+class ChallengeCandidateIn(ApiModel):
+    name: str = Field(min_length=1, max_length=100)
+    sql: str = Field(min_length=1, max_length=100_000)
+    expected: Literal["correct", "incorrect"]
+
+
+class ChallengeCheckRequest(ApiModel):
+    case_key: str = Field(min_length=1, max_length=120)
+    variants: list[ChallengeVariantIn] = Field(min_length=1, max_length=10)
+    candidates: list[ChallengeCandidateIn] = Field(min_length=1, max_length=20)
 
 class EventOut(ApiModel):
     seq: int

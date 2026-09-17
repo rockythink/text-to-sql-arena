@@ -27,6 +27,7 @@ htmlcov/
 
 # Frontend
 frontend/node_modules/
+runtime/pi/node_modules/
 frontend/dist/
 frontend/*.tsbuildinfo
 frontend/vite.config.js

@@ -4,6 +4,7 @@ import type { PropsWithChildren } from "react";
 import { MemoryRouter, Route, Routes } from "react-router-dom";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { api, eventStream } from "../api/client";
+import * as workflows from "../api/workflows";
 import { SqlWorkspace } from "../components/SqlWorkspace";
 import { RunLivePage } from "../pages/RunLivePage";
 import { RunNewPage } from "../pages/RunNewPage";
@@ -12,7 +13,7 @@ import type { CaseRunDetail, ModelProfile, ModelRun, RunEvent, RunSnapshot, Suit
 
 vi.mock("@monaco-editor/react", () => ({ DiffEditor: ({ modified }: { modified: string }) => <pre data-testid="diff-modified">{modified}</pre> }));
 
-const healthy = (id: number, name: string): ModelProfile => ({ id, name, adapter_kind: "codex_cli", model_id: name.toLowerCase(), base_url: null, response_mode: "text", parameters: {}, pricing: null, enabled: true, has_secret: false, secret_backend: "none", health_status: "healthy", health_details: {}, last_checked_at: null, health_expires_at: null });
+const healthy = (id: number, name: string, adapterKind: ModelProfile["adapter_kind"] = "pi"): ModelProfile => ({ id, name, adapter_kind: adapterKind, model_id: name.toLowerCase(), base_url: null, response_mode: "text", parameters: adapterKind === "pi" ? { provider: "openai-codex", auth_mode: "oauth", timeout_seconds: 180 } : {}, pricing: null, enabled: true, has_secret: false, secret_backend: "none", health_status: "healthy", health_details: {}, last_checked_at: null, health_expires_at: null });
 const suite: Suite = { id: 1, name: "retail", description: "", versions: [{ id: 10, version: 1, status: "published", dialect: "duckdb", content_hash: "abcdef1234567890", published_at: null, schema_sql: "", seed_sql: "", semantic: {}, prompt_template: "", structure: {}, cases: [{ id: 11, stable_key: "case-1", title: "题一", category: "filter", radar_dimension: "基础查询", difficulty: "easy", question: "q", required_ast: [], comparison: {}, weight: 1, sort_order: 1 }] }] };
 
 function Wrapper({ children }: PropsWithChildren) {
@@ -20,21 +21,38 @@ function Wrapper({ children }: PropsWithChildren) {
   return <QueryClientProvider client={client}><MemoryRouter>{children}</MemoryRouter></QueryClientProvider>;
 }
 
-describe("新建评测门禁与比较条件", () => {
-  it("未选模型时禁用并随参评模型更新运行摘要", async () => {
+describe("新建评测门禁", () => {
+  it("只有当前选择通过预检才能开赛，新增不健康模型后重新锁定", async () => {
     vi.spyOn(api, "profiles").mockResolvedValue([healthy(1, "Alpha"), healthy(2, "Beta")]);
     vi.spyOn(api, "suites").mockResolvedValue([suite]);
     vi.spyOn(api, "runs").mockResolvedValue({ runs: [] });
+    vi.spyOn(workflows, "preflightRun").mockImplementation(async (payload) => ({
+      ready: !payload.model_profile_ids.includes(2), total_calls: payload.model_profile_ids.length,
+      selected_case_count: 1, models: [], estimate: { basis: "matching_completed_calls", sample_calls: 0, estimated_duration_seconds: null, estimated_cost_usd: null },
+      issues: payload.model_profile_ids.includes(2) ? [{ code: "health_expired", severity: "error", message: "健康检查已过期", entity_type: "model", entity_id: 2 }] : [],
+    }));
     render(<RunNewPage/>, { wrapper: Wrapper });
     const launch = await screen.findByRole("button", { name: "开始评测" });
     expect(launch).toBeDisabled();
     fireEvent.click(screen.getByRole("button", { name: /Alpha/ }));
-    expect(screen.getByRole("button", { name: "开始评测" })).toBeEnabled();
-    expect(screen.getByText("单模型评测")).toBeInTheDocument();
-    expect(screen.getByText("1 次")).toBeInTheDocument();
+    await waitFor(() => expect(launch).toBeEnabled());
     fireEvent.click(screen.getByRole("button", { name: /Beta/ }));
-    expect(screen.getByRole("button", { name: "开始评测" })).toBeEnabled();
-    expect(screen.getByText("纯模型对比")).toBeInTheDocument();
+    await screen.findByText("健康检查已过期");
+    expect(launch).toBeDisabled();
+    fireEvent.click(screen.getByRole("button", { name: /Beta/ }));
+    await waitFor(() => expect(launch).toBeEnabled());
+  });
+  it("历史适配器可见但不可选择，且新运行固定单次尝试", async () => {
+    vi.spyOn(api, "profiles").mockResolvedValue([healthy(1, "Pi Alpha"), healthy(9, "Legacy Codex", "codex_cli")]);
+    vi.spyOn(api, "suites").mockResolvedValue([suite]);
+    vi.spyOn(api, "runs").mockResolvedValue({ runs: [] });
+    vi.spyOn(workflows, "preflightRun").mockResolvedValue({ ready: true, total_calls: 1, selected_case_count: 1, models: [], estimate: { basis: "matching_completed_calls", sample_calls: 0, estimated_duration_seconds: null, estimated_cost_usd: null }, issues: [] });
+    render(<RunNewPage/>, { wrapper: Wrapper });
+    const legacy = await screen.findByRole("button", { name: /Legacy Codex/ });
+    expect(legacy).toBeDisabled();
+    expect(legacy).toHaveTextContent("历史配置 · 不可参赛");
+    expect(screen.getAllByRole("button", { name: "1 次" }).every((button) => button.hasAttribute("disabled"))).toBe(true);
+    expect(screen.queryByRole("button", { name: "2 次" })).not.toBeInTheDocument();
   });
 });
 

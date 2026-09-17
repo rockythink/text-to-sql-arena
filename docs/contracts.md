@@ -4,10 +4,10 @@
 
 | 合同 | 当前值 | 变更原则 |
 | --- | --- | --- |
-| 应用 | `0.3.0` | 功能和持久化行为变化 |
-| 评分器 | `1.0.0` | 评分公式、比较语义或聚合语义变化必须升级 |
+| 应用 | `0.4.0` | 功能和持久化行为变化 |
+| 评分器 | `2.0.0` | 全精度数值、整数列精确比较、别名无关结构检查；旧分不重算 |
 | 模型输出 | `query-plan-v1` | 必填字段或语义不兼容变化必须新版本 |
-| 运行报告 | `run-report-v2` | 增加 `efficiency-v1` 资源指标、覆盖率和价格快照 |
+| 运行报告 | `run-report-v4` | `result-quality-v2` 与实际调用证据；旧 scorer 1.x 保留 v3/v1 |
 | 公开证据 | `text-to-sql-evidence-v1` | 目录/清单/验真语义不兼容变化必须新版本 |
 | DuckDB | `1.5.5` | 精确固定 |
 | SQLGlot | 运行时解析版本 | 每次运行冻结实际包版本 |
@@ -46,7 +46,7 @@ required_ast: []
 comparison:
   row_order_significant: boolean
   duplicate_policy: multiset
-  decimal_scale: 0..12
+  decimal_scale: 0..12 # 保留题库结构字段；scorer 2.x 不以它舍入判等值
   abs_tolerance: decimal string
   rel_tolerance: decimal string
   max_rows: 1..10000
@@ -96,7 +96,7 @@ sort_order: positive integer # 版本内唯一
 - `suite_version_id`
 - `suite_content_hash`
 - `selected_case_keys_json`
-- `attempts`
+- `attempts`（新建运行固定为 `1`；历史快照可保留旧值）
 - `app_version_snapshot`
 - `scorer_version_snapshot`
 - `duckdb_version_snapshot`
@@ -118,15 +118,15 @@ sort_order: positive integer # 版本内唯一
 不可变快照：
 
 - `profile_name_snapshot`
-- `adapter_kind_snapshot`
-- `base_url_snapshot`
-- `response_mode_snapshot`
+- `adapter_kind_snapshot`（新运行固定 `pi`）
+- `base_url_snapshot`（仅 API Key 模式可用）
+- `response_mode_snapshot`（新运行固定 `text`）
 - `requested_model_id`
-- `parameters_snapshot_json`
+- `parameters_snapshot_json`：`provider`、`auth_mode`、固定 `timeout_seconds=180`，以及可选 `temperature`/`reasoning_effort`；`max_tokens` 仅 API Key Provider 可选，`openai-codex` 明确拒绝并由 Provider 管理输出上限
 - `pricing_snapshot_json`（USD/百万 Token 的可选价格快照）
-- `api_key_ref_snapshot`（仅引用，不是密钥）
-- `cli_version_snapshot`
-- `isolation_snapshot_json`
+- `api_key_ref_snapshot`（仅引用，不是密钥；OAuth/API Key 明文都不进入报告）
+- `cli_version_snapshot`（Pi bridge/harness 版本；字段名为历史兼容保留）
+- `isolation_snapshot_json`（harness/policy、无工具、单次生成、上下文、Prompt 摘要、Provider/认证、模型身份来源与有效参数）
 
 运行结果：
 
@@ -164,19 +164,19 @@ sort_order: positive integer # 版本内唯一
 
 历史运行中无法恢复的 `provider_request_id` 和 `generation_ms` 为 `null`。
 
-### 效率派生合同 `efficiency-v1`
+### 效率派生合同 `efficiency-v2`
 
 模型报告包含：
 
-- `correct_case_equivalents = sum(case_score / 100)`；
+- `correct_cases = count(result_correct is true)`；
 - 标准化 Token：`input`、`cached_input`、`cache_write_input`、`output`、`reasoning_output`、`total`；
 - `estimated_cost_usd`，仅在所有已用 Token 类型都有冻结单价时产生；
 - 模型生成耗时 `total/mean/p50/p95`；
 - SQL 执行耗时 `total/mean`；
-- `per_correct_case_equivalent.tokens/cost/generation_ms`；
+- `per_correct_case.tokens/estimated_cost_usd/generation_ms`；正确题数为零或该指标覆盖不完整则为 null；
 - 每类指标的 `coverage.measured/total`。
 
-`reasoning_output` 只作披露，不在 `total` 中重复计数。缺失 Token、单价或耗时不得按 0 填充。费用是价格快照下的 Token 估算，不代表 CLI 包月订阅的实际边际账单。
+`reasoning_output` 只作披露，不在 `total` 中重复计数。Pi input 已排除 cacheRead，不重复相减。费用是冻结价格下的估算，订阅无价则 null。历史 scorer 1.x 保留 `efficiency-v1`、`correct_case_equivalents=sum(score/100)` 与 `per_correct_case_equivalent`；这些是得分折算，不是正确题，不能混排。
 
 ## 5. 事件合同
 
@@ -249,7 +249,9 @@ sort_order: positive integer # 版本内唯一
 | POST | `/model-profiles` | 创建配置；明文 API Key 只进入密钥存储 |
 | PATCH | `/model-profiles/{id}` | 修改当前配置，不改历史快照 |
 | DELETE | `/model-profiles/{id}` | 软删除；运行引用保留 |
-| POST | `/model-profiles/{id}/check` | 执行适配器健康/兼容性检查 |
+| POST | `/model-profiles/{id}/check` | 只检查本地 catalog、凭据、参数和 Pi bridge 就绪状态；不生成内容、不证明 Provider 可用 |
+
+新建 profile 合同：`adapter_kind="pi"`、`response_mode="text"`。`parameters.provider` 为非空字符串，`parameters.auth_mode` 为 `oauth|api_key`，`parameters.timeout_seconds=180`。`openai-codex` 只允许 OAuth 且拒绝 Base URL/API Key/`max_tokens`，输出上限由 Provider 管理；API Key 模式可使用 OpenAI、Anthropic、Google 或自定义 Provider 标识，`api_key` 与 `api_key_env` 互斥。旧适配器记录仍可由 GET/DELETE 访问；前端不提供编辑或检查，并禁止其进入 preflight 和新运行。OAuth 本地检查只从支持的外部 Pi CLI 或既有 Codex 登录凭据文件导入系统钥匙串，不生成内容，也没有独立 auth API。
 
 ### 题库
 
@@ -261,17 +263,21 @@ sort_order: positive integer # 版本内唯一
 | PATCH | `/suite-versions/{id}` | 只允许修改 draft |
 | POST | `/suite-versions/{id}/publish` | 确定性构建、校验、哈希和发布 |
 | GET | `/suite-versions/{id}/prompt-preview?case_id=` | 返回实际 Prompt 和输出 Schema，不返回参考 SQL |
+| POST | `/suite-versions/{id}/challenge-check` | 在临时 DuckDB 数据变体上检验候选 SQL 能否区分正确/错误答案；只读且不修改题库 |
 
 ### 运行
 
 | 方法 | 路径 | 合同 |
 | --- | --- | --- |
 | GET | `/runs?limit=` | 最近运行摘要，limit 1..100 |
-| POST | `/runs` | 冻结配置并异步启动；返回运行 ID |
+| POST | `/runs/preflight` | 只读预检 suite/Pi model/case、固定 `attempts=1`、本地就绪检查有效期和价格；不调用模型、不创建运行 |
+| POST | `/runs` | 仅接受 Pi profile 与 `attempts=1`，冻结配置并异步启动；返回运行 ID |
 | POST | `/runs/{id}/cancel` | 幂等取消请求 |
-| POST | `/runs/{id}/rerun?mode=exact|current` | 精确快照或当前配置复跑 |
+| POST | `/runs/{id}/rerun?mode=exact\|current&scope=all\|failed` | 精确快照或当前配置复跑；failed 为各模型失败、未完成或未满分案例的有序并集，所有模型使用同一子集 |
 | GET | `/runs/{id}` | 运行快照和案例摘要 |
-| GET | `/runs/{id}/report` | `run-report-v2` 静态报告 |
+| GET | `/runs/{id}/report` | run-report-v3 动态生成报告，保留历史官方分数 |
+| GET | `/runs/{id}/publication-preview` | 终态运行的脱敏发布预览、清单摘要、警告和确认摘要；只读 |
+| POST | `/runs/{id}/publication-export` | 请求体确认 preview_digest 后导出该运行及所属题库的临时 ZIP；不替换 evidence/，也不部署 |
 | GET | `/case-runs/{id}?include_reference=false` | 完整案例证据；默认不揭示参考 SQL/金标 |
 
 ### 事件
@@ -294,15 +300,15 @@ sort_order: positive integer # 版本内唯一
 
 HTTP 验证错误同样使用此信封。异常 details 会脱敏。
 
-## 7. 报告合同 `run-report-v2`
+## 7. 报告合同 `run-report-v4`
 
 顶层至少包含：
 
-- `report_schema_version`
+- `report_schema_version` 与 `quality_schema_version=result-quality-v2`；
 - `id`、`source_run_id`、状态和时间；
 - `suite_version_id`、`suite_content_hash`、案例选择、attempts；
 - `protocol`：输出/app/scorer/DuckDB/SQLGlot 版本和案例数；
-- `fairness`；
+- `fairness`：新 Pi 多模型报告为 `controlled_harness`，表示共享 Pi/文本/单轮/无工具/无重试/Prompt 控制；Provider、认证、模型和显式参数仍披露为控制或差异。历史 `pure_model`/`access_path`/`single_model` 原样保留；
 - `models`；
 - `conclusion`。
 
@@ -312,8 +318,12 @@ HTTP 验证错误同样使用此信封。异常 details 会脱敏。
 - 请求/解析模型 ID；
 - 适配器、响应模式、参数、价格、CLI 和隔离快照；
 - 状态、official score、失败数；
-- categories、attempt statistics 与 `efficiency-v1`；
-- 全部案例及其输入、输出、结果、评分与效率字段。
+- categories、attempt statistics 与 `efficiency-v2`；非零分率仍叫 `nonzero_score_rate`，不冒充成功率；
+- `quality`：业务结果、执行、JSON、格式分别计数；分母 total 为全部计划尝试，evaluated 披露已执行结果证据覆盖率。列名/AST 不决定业务正确。未执行 result_correct=null；failure_counts 区分政策拒绝、协议、执行、Provider、基础设施、取消、业务结果及格式错误；
+- `endpoint_fingerprint`：冻结 endpoint 的 SHA-256 或 null，用于对照检查，不输出原始 endpoint；
+- 全部案例的题目、权重、结果、评分、效率、质量及 `invocation`；后者仅从实际调用事件提取，不复制预检快照。包含实际参数、wire_generation、SDK/bridge/lock/policy/系统 Prompt 摘要、请求身份来源及完成状态；无事件时 null，不作推断；
+
+历史官方分数和 efficiency-v1 不重算。scorer 1.x 动态报告仍为 run-report-v3/result-quality-v1；所有既有公开证据保持原字节、原字段、原摘要。精确复跑若 app/scorer/DuckDB/SQLGlot 已变化，返回 exact_environment_changed，不把当前裁判冒充原环境。
 
 报告中的 `conclusion.status` 描述是否能形成结论；顶层 `status` 描述运行状态，两者不是同一字段。例如某模型个别案例失败时，顶层可为 `completed_with_errors`，但仍可形成模型比较结论。
 

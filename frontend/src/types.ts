@@ -11,15 +11,17 @@ export interface TokenPricing {
 }
 
 export interface EfficiencyMetrics {
-  metric_schema_version: "efficiency-v1";
+  metric_schema_version: "efficiency-v1" | "efficiency-v2";
   attempted_cases: number;
-  correct_case_equivalents: number;
+  correct_case_equivalents?: number;
+  correct_cases?: number;
   coverage: Record<string, { measured: number; total: number }>;
   tokens: { input: number; cached_input: number; cache_write_input: number; output: number; reasoning_output: number; total: number } | null;
   estimated_cost_usd: number | null;
   generation_ms: { total: number | null; mean: number | null; p50: number | null; p95: number | null };
   execution_ms: { total: number | null; mean: number | null };
-  per_correct_case_equivalent: { tokens: number | null; estimated_cost_usd: number | null; generation_ms: number | null };
+  per_correct_case_equivalent?: { tokens: number | null; estimated_cost_usd: number | null; generation_ms: number | null };
+  per_correct_case?: { tokens: number | null; estimated_cost_usd: number | null; generation_ms: number | null };
   pricing: TokenPricing | null;
   cost_basis: "estimated_token_price" | "unavailable";
 }
@@ -27,7 +29,7 @@ export interface EfficiencyMetrics {
 export interface ModelProfile {
   id: number;
   name: string;
-  adapter_kind: "openai_compatible" | "codex_cli" | "claude_cli" | "gemini_cli";
+  adapter_kind: "pi" | "openai_compatible" | "codex_cli" | "claude_cli" | "gemini_cli";
   model_id: string;
   base_url: string | null;
   response_mode: "json_schema" | "json_object" | "text";
@@ -128,6 +130,10 @@ export interface CaseRun {
   case_id: number;
   stable_key: string;
   title: string;
+  question?: string;
+  weight?: number;
+  quality?: CaseQuality;
+  invocation?: Record<string, unknown> | null;
   category: string;
   radar_dimension: string;
   attempt: number;
@@ -160,10 +166,36 @@ export interface ModelRun {
   efficiency?: EfficiencyMetrics;
   categories?: Record<string, number>;
   failure_count?: number;
+  quality?: ModelQuality;
+  endpoint_fingerprint?: string | null;
+  attempt_statistics?: Record<string, { mean: number; nonzero_score_rate: number; stddev: number }>;
+}
+
+export interface CaseQuality {
+  result_correct: boolean | null;
+  execution_ok: boolean | null;
+  protocol_ok: boolean | null;
+  format_ok?: boolean | null;
+  failure_kind?: string | null;
+  reason: string;
+}
+
+export interface ModelQuality {
+  total: number;
+  evaluated: number;
+  result_correct: number;
+  execution_ok: number;
+  protocol_ok: number;
+  correct_rate: number | null;
+  execution_rate: number | null;
+  protocol_rate: number | null;
+  format_ok?: number;
+  format_rate?: number | null;
+  failure_counts?: Record<string, number>;
 }
 
 export interface FairnessContract {
-  comparison_mode: "single_model" | "pure_model" | "access_path";
+  comparison_mode: "single_model" | "pure_model" | "access_path" | "controlled_harness";
   pure_model_comparison: boolean;
   controlled_fields: string[];
   differences: string[];
@@ -173,6 +205,8 @@ export interface FairnessContract {
 
 export interface RunSnapshot {
   id: number;
+  report_schema_version?: string;
+  quality_schema_version?: string;
   source_run_id: number | null;
   suite_version_id: number;
   suite_content_hash: string;
@@ -215,6 +249,7 @@ export interface CaseRunDetail {
   difficulty: string;
   status: string;
   attempt: number;
+  invocation?: Record<string, unknown> | null;
   prompt: string;
   raw_output: string | null;
   plan: QueryPlan | null;

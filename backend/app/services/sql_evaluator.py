@@ -13,7 +13,7 @@ import duckdb
 import sqlglot
 from pydantic import BaseModel, ConfigDict, Field
 from sqlglot import exp
-from sqlglot.optimizer.scope import traverse_scope
+from sqlglot.optimizer.scope import Scope, traverse_scope
 
 from backend.app.domain import (
     AggregateCaseRule,
@@ -239,17 +239,61 @@ def load_gold(path: Path) -> QueryResult:
     return QueryResult.model_validate(payload)
 
 
-def _canonical_expression(expression: exp.Expression, aliases: dict[str, exp.Expression]) -> str:
+def _source_identity(source: exp.Table | Scope) -> tuple[str, object]:
+    if isinstance(source, exp.Table):
+        database = source.db.casefold()
+        return (
+            "table",
+            (
+                source.catalog.casefold(),
+                "" if database == "main" else database,
+                source.name.casefold(),
+            ),
+        )
+    return ("scope", id(source))
+
+
+def _unique_scope_sources(scope: Scope) -> dict[str, exp.Table | Scope]:
+    return {alias.casefold(): source for alias, (_, source) in scope.selected_sources.items()}
+
+
+def _resolve_column_source(scope: Scope, column: exp.Column) -> tuple[str, object] | None:
+    sources = _unique_scope_sources(scope)
+    identities = {_source_identity(source) for source in sources.values()}
+    if column.table:
+        source = sources.get(column.table.casefold())
+        if source is not None:
+            return _source_identity(source)
+    return next(iter(identities)) if len(identities) == 1 else None
+
+
+def _canonical_expression(
+    expression: exp.Expression,
+    aliases: dict[str, exp.Expression],
+    scope: Scope,
+) -> str:
     candidate = expression.copy()
     if isinstance(candidate, exp.Column) and not candidate.table:
         replacement = aliases.get(candidate.name.casefold())
         if replacement is not None:
             candidate = replacement.copy()
+    for column in candidate.find_all(exp.Column):
+        identity = _resolve_column_source(scope, column)
+        if identity is None:
+            continue
+        kind, source = identity
+        if kind == "table":
+            catalog, database, table = cast(tuple[str, str, str], source)
+            label = "__table_" + "_".join(part for part in (catalog, database, table) if part)
+        else:
+            label = f"__scope_{source}"
+        column.set("table", exp.to_identifier(label))
     return candidate.sql(dialect="duckdb").casefold()
 
 
 def _window_matches(query: exp.Query, rule: WindowFunctionRule) -> int:
     matches = 0
+    scopes = {id(scope.expression): scope for scope in traverse_scope(query)}
     for window in query.find_all(exp.Window):
         function = window.this
         function_name = function.sql_name().upper()
@@ -261,13 +305,16 @@ def _window_matches(query: exp.Query, rule: WindowFunctionRule) -> int:
             for projection in select.expressions:
                 if isinstance(projection, exp.Alias):
                     aliases[projection.alias.casefold()] = projection.this
+        scope = scopes.get(id(select)) if select is not None else None
+        if scope is None:
+            continue
         partitions = [
-            _canonical_expression(cast(exp.Expression, item), aliases)
+            _canonical_expression(cast(exp.Expression, item), aliases, scope)
             for item in (window.args.get("partition_by") or [])
         ]
         wanted_partitions = [
             _canonical_expression(
-                cast(exp.Expression, sqlglot.parse_one(item, read="duckdb")), aliases
+                cast(exp.Expression, sqlglot.parse_one(item, read="duckdb")), aliases, scope
             )
             for item in rule.partition_columns
         ]
@@ -278,7 +325,7 @@ def _window_matches(query: exp.Query, rule: WindowFunctionRule) -> int:
                 assert isinstance(ordered, exp.Ordered)
                 actual_order.append(
                     (
-                        _canonical_expression(cast(exp.Expression, ordered.this), aliases),
+                        _canonical_expression(cast(exp.Expression, ordered.this), aliases, scope),
                         "DESC" if ordered.args.get("desc") else "ASC",
                     )
                 )
@@ -290,6 +337,7 @@ def _window_matches(query: exp.Query, rule: WindowFunctionRule) -> int:
                         sqlglot.parse_one(item.expression, read="duckdb"),
                     ),
                     aliases,
+                    scope,
                 ),
                 item.direction,
             )
@@ -313,24 +361,21 @@ def _query_depth(query: exp.Query) -> int:
     return max(depths, default=0)
 
 
-def _table_aliases(select: exp.Select) -> dict[str, str]:
-    aliases: dict[str, str] = {}
-    for table in select.find_all(exp.Table):
-        if isinstance(table.this, exp.Identifier):
-            aliases[(table.alias_or_name or table.name).casefold()] = table.name.casefold()
-    return aliases
-
-
-def _cte_has_measure(
-    cte: exp.CTE,
+def _scope_has_measure(
+    scope: Scope,
     table_name: str,
     column_name: str,
     group_keys: list[str],
 ) -> bool:
-    select = cte.this
+    select = scope.expression
     if not isinstance(select, exp.Select):
         return False
-    aliases = _table_aliases(select)
+    if any(
+        str(join.args.get("kind") or "").upper() == "CROSS"
+        for join in select.args.get("joins") or []
+        if isinstance(join, exp.Join)
+    ):
+        return False
     groups = select.args.get("group")
     grouped = {
         item.name.casefold()
@@ -340,48 +385,41 @@ def _cte_has_measure(
     if not {key.casefold() for key in group_keys}.issubset(grouped):
         return False
     for aggregate in select.find_all(exp.Sum):
-        for column in aggregate.find_all(exp.Column):
-            source = aliases.get(column.table.casefold(), column.table.casefold())
-            if column.name.casefold() == column_name.casefold() and (
-                source == table_name.casefold()
-                or (not source and table_name.casefold() in aliases.values())
-            ):
-                return True
+        if aggregate.find_ancestor(exp.Select) is not select:
+            continue
+        columns = list(aggregate.find_all(exp.Column))
+        if len(columns) != 1 or columns[0].name.casefold() != column_name.casefold():
+            continue
+        identity = _resolve_column_source(scope, columns[0])
+        if identity == ("table", ("", "", table_name.casefold())):
+            return True
     return False
 
 
-def _direct_final_tables(query: exp.Query) -> set[str]:
-    if not isinstance(query, exp.Select):
-        return set()
-    tables: set[str] = set()
-    from_clause = query.args.get("from_")
-    if isinstance(from_clause, exp.From) and isinstance(from_clause.this, exp.Table):
-        tables.add(from_clause.this.name.casefold())
-    for join in query.args.get("joins") or []:
-        if isinstance(join, exp.Join) and isinstance(join.this, exp.Table):
-            tables.add(join.this.name.casefold())
-    return tables
-
-
 def _separate_preaggregation(query: exp.Query, rule: SeparateMeasurePreaggregationRule) -> bool:
-    ctes = {cte.alias_or_name.casefold(): cte for cte in query.find_all(exp.CTE)}
-    left = ctes.get(rule.left_cte.casefold())
-    right = ctes.get(rule.right_cte.casefold())
-    if left is None or right is None:
+    scopes = list(traverse_scope(query))
+    if not scopes:
         return False
-    if _direct_final_tables(query) != {rule.left_cte.casefold(), rule.right_cte.casefold()}:
+    root = scopes[-1]
+    root_sources = [source for _, source in root.selected_sources.values()]
+    if any(isinstance(source, exp.Table) for source in root_sources):
         return False
-    return _cte_has_measure(
-        left,
-        rule.left_measure_table,
-        rule.left_measure_column,
-        rule.group_keys,
-    ) and _cte_has_measure(
-        right,
-        rule.right_measure_table,
-        rule.right_measure_column,
-        rule.group_keys,
-    )
+    consumed_scopes = {id(source): source for source in root_sources if isinstance(source, Scope)}
+    left = [
+        scope
+        for scope in consumed_scopes.values()
+        if _scope_has_measure(
+            scope, rule.left_measure_table, rule.left_measure_column, rule.group_keys
+        )
+    ]
+    right = [
+        scope
+        for scope in consumed_scopes.values()
+        if _scope_has_measure(
+            scope, rule.right_measure_table, rule.right_measure_column, rule.group_keys
+        )
+    ]
+    return any(left_scope is not right_scope for left_scope in left for right_scope in right)
 
 
 def evaluate_ast_rules(query: exp.Query, rules: Iterable[AstRule]) -> list[AstRuleResult]:
@@ -556,12 +594,12 @@ def weighted_average(values: Iterable[tuple[float, float]]) -> float:
 
 def attempt_statistics(scores: list[float]) -> dict[str, float]:
     if not scores:
-        return {"mean": 0.0, "success_rate": 0.0, "stddev": 0.0}
+        return {"mean": 0.0, "nonzero_score_rate": 0.0, "stddev": 0.0}
     mean = sum(scores) / len(scores)
     variance = sum((score - mean) ** 2 for score in scores) / len(scores)
     return {
         "mean": round(mean, 2),
-        "success_rate": sum(score > 0 for score in scores) / len(scores),
+        "nonzero_score_rate": sum(score > 0 for score in scores) / len(scores),
         "stddev": math.sqrt(variance),
     }
 

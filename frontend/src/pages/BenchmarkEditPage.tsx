@@ -8,6 +8,7 @@ import { useNavigate, useParams } from "react-router-dom";
 import { toast } from "sonner";
 import { api } from "../api/client";
 import { PageHeader, StatusPill } from "../components/AppShell";
+import { ChallengeLab } from "../components/ChallengeLab";
 
 const tabs = [["schema", "Schema", "sql"], ["seed", "Seed", "sql"], ["semantic", "语义层", "json"], ["prompt", "Prompt", "markdown"], ["cases", "用例", "json"]] as const;
 
@@ -81,5 +82,6 @@ export function BenchmarkEditPage() {
         </section>
       </aside>
     </div>
+    <ChallengeLab key={versionId} version={located.version}/>
   </div>;
 }

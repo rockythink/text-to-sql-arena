@@ -3,6 +3,8 @@ from __future__ import annotations
 import math
 from typing import Any
 
+from backend.app.services.quality import case_result_quality
+
 _TOKEN_KEYS = {
     "input": ("input_tokens", "prompt_tokens"),
     "cached_input": ("cached_input_tokens", "cache_read_input_tokens", "cache_read_tokens"),
@@ -10,6 +12,7 @@ _TOKEN_KEYS = {
         "cache_write_input_tokens",
         "cache_creation_input_tokens",
         "cache_creation_tokens",
+        "cache_write_tokens",
     ),
     "output": ("output_tokens", "completion_tokens"),
     "reasoning_output": ("reasoning_output_tokens", "reasoning_tokens"),
@@ -38,7 +41,7 @@ def normalize_token_usage(
     reported_input = values["input"]
     cached_input = values["cached_input"]
     cache_write_input = values["cache_write_input"]
-    if adapter_kind == "claude_cli":
+    if adapter_kind in {"pi", "claude_cli"}:
         uncached_input = reported_input
     else:
         uncached_input = max(reported_input - cached_input, 0)
@@ -115,6 +118,8 @@ def aggregate_efficiency(
     cases: list[dict[str, Any]],
     adapter_kind: str,
     pricing: dict[str, Any] | None,
+    *,
+    legacy: bool = False,
 ) -> dict[str, Any]:
     token_totals = {
         "input": 0,
@@ -132,9 +137,12 @@ def aggregate_efficiency(
     correct_case_equivalents = 0.0
 
     for case in cases:
-        score = (case.get("score") or {}).get("total", 0)
-        if isinstance(score, (int, float)) and not isinstance(score, bool):
-            correct_case_equivalents += max(float(score), 0) / 100
+        if legacy:
+            score = (case.get("score") or {}).get("total", 0)
+            if isinstance(score, (int, float)) and not isinstance(score, bool):
+                correct_case_equivalents += max(float(score), 0) / 100
+        elif case_result_quality(case.get("score"))["result_correct"] is True:
+            correct_case_equivalents += 1
         metric = case_efficiency(case, adapter_kind, pricing)
         tokens = metric["tokens"]
         if tokens is not None:
@@ -158,9 +166,9 @@ def aggregate_efficiency(
     equivalent = round(correct_case_equivalents, 4)
 
     return {
-        "metric_schema_version": "efficiency-v1",
+        "metric_schema_version": "efficiency-v1" if legacy else "efficiency-v2",
         "attempted_cases": attempted_cases,
-        "correct_case_equivalents": equivalent,
+        "correct_case_equivalents" if legacy else "correct_cases": equivalent,
         "coverage": {
             "tokens": {"measured": measured_token_cases, "total": attempted_cases},
             "cost": {"measured": measured_cost_cases, "total": attempted_cases},
@@ -183,15 +191,19 @@ def aggregate_efficiency(
             if execution_values
             else None,
         },
-        "per_correct_case_equivalent": {
+        "per_correct_case_equivalent" if legacy else "per_correct_case": {
             "tokens": round(total_tokens / equivalent, 2)
-            if total_tokens is not None and equivalent > 0
+            if total_tokens is not None
+            and equivalent > 0
+            and (legacy or measured_token_cases == attempted_cases)
             else None,
             "estimated_cost_usd": round(total_cost / equivalent, 8)
             if total_cost is not None and equivalent > 0
             else None,
             "generation_ms": round(total_generation_ms / equivalent, 2)
-            if total_generation_ms is not None and equivalent > 0
+            if total_generation_ms is not None
+            and equivalent > 0
+            and (legacy or len(generation_values) == attempted_cases)
             else None,
         },
         "pricing": pricing,

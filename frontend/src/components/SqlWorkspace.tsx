@@ -61,6 +61,7 @@ export function SqlWorkspace({ open, onOpenChange, models, selectedCase }: { ope
     const nextId = eligible.some(({ run }) => run.id === selectedRunId) ? selectedRunId! : eligible[0].run.id;
     setSelectedRunId(nextId);
     setShowReference(false);
+    setDetail(null);
     let active = true;
     api.caseRun(nextId, false).then((value) => { if (active) setDetail(value); }).catch((error: Error) => toast.error(error.message));
     return () => { active = false; };
@@ -76,7 +77,7 @@ export function SqlWorkspace({ open, onOpenChange, models, selectedCase }: { ope
   };
 
   return <Dialog.Root open={open} onOpenChange={onOpenChange}><Dialog.Portal><Dialog.Overlay className="sheet-overlay"/><Dialog.Content className="sql-sheet">
-    <div className="sheet-head"><div><Dialog.Title>查询规划 / SQL / 结果证据</Dialog.Title><Dialog.Description>{detail?.title ?? selectedCase ?? "请选择题目"} · {detail?.question ?? "全过程证据随运行持久化"}</Dialog.Description></div><Dialog.Close className="icon-only"><X/></Dialog.Close></div>
+    <div className="sheet-head"><div><Dialog.Title>查询规划 / SQL / 结果证据</Dialog.Title><Dialog.Description>{detail?.title ?? selectedCase ?? "请选择题目"} · {detail?.question ?? "全过程证据随运行持久化"}</Dialog.Description></div><Dialog.Close className="icon-only" aria-label="关闭证据工作台"><X/></Dialog.Close></div>
     <div className="workspace-toolbar">
       <label>模型作答<select value={selectedRunId ?? ""} onChange={(event) => setSelectedRunId(Number(event.target.value))}>{eligible.map(({ model, run }) => <option key={run.id} value={run.id}>{displayModelName(model.name)} · A{run.attempt}</option>)}</select><ChevronDown/></label>
       {availableAttempts.length > 1 && <div className="attempt-switch" aria-label="选择作答轮次">{availableAttempts.map((value) => <button className={attempt === value ? "active" : ""} key={value} onClick={() => setAttempt(value)}>A{value}</button>)}</div>}

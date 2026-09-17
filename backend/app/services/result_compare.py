@@ -7,7 +7,7 @@ import unicodedata
 from collections import Counter, deque
 from dataclasses import dataclass
 from datetime import UTC, date, datetime
-from decimal import ROUND_HALF_UP, Decimal
+from decimal import Decimal
 from typing import Any, Literal
 
 from pydantic import BaseModel, ConfigDict, Field
@@ -74,16 +74,15 @@ def _canonical_bytes(value: Any) -> bytes:
     )
 
 
-def _decimal_quantum(scale: int) -> Decimal:
-    return Decimal(1).scaleb(-scale)
-
-
-def _number_cell(value: Decimal, scale: int) -> NormalizedCell:
+def _number_cell(value: Decimal) -> NormalizedCell:
     if not value.is_finite():
         raise ValueError("numeric values must be finite")
-    quantized = value.quantize(_decimal_quantum(scale), rounding=ROUND_HALF_UP)
-    rendered = f"{quantized:.{scale}f}"
-    return NormalizedCell(kind="number", value=quantized, public=rendered)
+    if value.is_zero():
+        return NormalizedCell(kind="number", value=Decimal(0), public="0")
+    rendered = format(value, "f")
+    if "." in rendered:
+        rendered = rendered.rstrip("0").rstrip(".")
+    return NormalizedCell(kind="number", value=value, public=rendered)
 
 
 def _normalize_timestamp(value: datetime | str) -> str:
@@ -97,19 +96,19 @@ def _normalize_timestamp(value: datetime | str) -> str:
 
 
 def normalize_cell(value: Any, declared_type: str, scale: int) -> NormalizedCell:
-    type_name = declared_type.upper()
+    type_family = _type_family(declared_type)
     if value is None:
         return NormalizedCell(kind="null", value=None, public=None)
     if isinstance(value, bool):
         return NormalizedCell(kind="bool", value=value, public=value)
     if isinstance(value, int):
-        return _number_cell(Decimal(value), scale)
+        return _number_cell(Decimal(value))
     if isinstance(value, Decimal):
-        return _number_cell(value, scale)
+        return _number_cell(value)
     if isinstance(value, float):
         if not math.isfinite(value):
             raise ValueError("float values must be finite")
-        return _number_cell(Decimal(str(value)), scale)
+        return _number_cell(Decimal(str(value)))
     if isinstance(value, datetime):
         rendered = _normalize_timestamp(value)
         return NormalizedCell(kind="timestamp", value=rendered, public=rendered)
@@ -117,26 +116,12 @@ def normalize_cell(value: Any, declared_type: str, scale: int) -> NormalizedCell
         rendered = value.isoformat()
         return NormalizedCell(kind="date", value=rendered, public=rendered)
     if isinstance(value, str):
-        if any(
-            token in type_name
-            for token in (
-                "DECIMAL",
-                "NUMERIC",
-                "HUGEINT",
-                "BIGINT",
-                "INTEGER",
-                "SMALLINT",
-                "TINYINT",
-                "DOUBLE",
-                "FLOAT",
-                "REAL",
-            )
-        ):
-            return _number_cell(Decimal(value), scale)
-        if "TIMESTAMP" in type_name:
+        if type_family in {"exact_number", "tolerant_number"}:
+            return _number_cell(Decimal(value))
+        if type_family == "timestamp":
             rendered = _normalize_timestamp(value)
             return NormalizedCell(kind="timestamp", value=rendered, public=rendered)
-        if type_name == "DATE":
+        if type_family == "date":
             rendered = date.fromisoformat(value).isoformat()
             return NormalizedCell(kind="date", value=rendered, public=rendered)
         rendered = unicodedata.normalize("NFC", value)
@@ -154,9 +139,7 @@ def normalize_rows(result: QueryResult, scale: int) -> list[NormalizedRow]:
             for index, value in enumerate(row)
         )
         public = [cell.public for cell in cells]
-        normalized.append(
-            NormalizedRow(cells=cells, public=public, canonical=_canonical_bytes(public))
-        )
+        normalized.append(NormalizedRow(cells=cells, public=public, canonical=_row_key(cells)))
     return normalized
 
 
@@ -180,6 +163,57 @@ def _normalized_name(name: str) -> str:
     return stripped.casefold()
 
 
+def _row_key(cells: tuple[NormalizedCell, ...]) -> bytes:
+    return _canonical_bytes([{"kind": cell.kind, "value": cell.public} for cell in cells])
+
+
+def _type_family(declared_type: str) -> str:
+    base_type = declared_type.upper().partition("(")[0].strip()
+    if base_type in {"DECIMAL", "NUMERIC", "DOUBLE", "DOUBLE PRECISION", "FLOAT", "REAL"}:
+        return "tolerant_number"
+    if base_type in {
+        "TINYINT",
+        "SMALLINT",
+        "INTEGER",
+        "BIGINT",
+        "HUGEINT",
+        "UTINYINT",
+        "USMALLINT",
+        "UINTEGER",
+        "UBIGINT",
+        "INT",
+        "INT1",
+        "INT2",
+        "INT4",
+        "INT8",
+        "INT16",
+        "INT32",
+        "INT64",
+        "UINT",
+        "UINT8",
+        "UINT16",
+        "UINT32",
+        "UINT64",
+    }:
+        return "exact_number"
+    if base_type.startswith("TIMESTAMP"):
+        return "timestamp"
+    if base_type == "DATE":
+        return "date"
+    if base_type in {"BOOL", "BOOLEAN"}:
+        return "bool"
+    return "string"
+
+
+def _types_compatible(expected_type: str, actual_type: str) -> bool:
+    expected_family = _type_family(expected_type)
+    actual_family = _type_family(actual_type)
+    numeric = {"exact_number", "tolerant_number"}
+    return (
+        expected_family in numeric and actual_family in numeric
+    ) or expected_family == actual_family
+
+
 def _name_mapping(expected: QueryResult, actual: QueryResult) -> tuple[int, ...] | None:
     expected_names = [_normalized_name(column.name) for column in expected.columns]
     actual_names = [_normalized_name(column.name) for column in actual.columns]
@@ -198,31 +232,116 @@ def _column_fingerprint(rows: list[NormalizedRow], index: int) -> tuple[tuple[by
     return tuple(sorted(values.items()))
 
 
-def _fingerprint_mapping(
-    expected_rows: list[NormalizedRow], actual_rows: list[NormalizedRow], width: int
+def _maximum_cardinality_mapping(
+    candidates: list[list[int]], banned: tuple[int, int] | None = None
 ) -> tuple[int, ...] | None:
-    expected = [_column_fingerprint(expected_rows, index) for index in range(width)]
-    actual = [_column_fingerprint(actual_rows, index) for index in range(width)]
-    candidates = [
-        [actual_index for actual_index, value in enumerate(actual) if value == expected_value]
-        for expected_value in expected
-    ]
-    if any(not options for options in candidates):
+    right_to_left: dict[int, int] = {}
+
+    def augment(left: int, seen: set[int]) -> bool:
+        for right in candidates[left]:
+            if (left, right) == banned or right in seen:
+                continue
+            seen.add(right)
+            owner = right_to_left.get(right)
+            if owner is None or augment(owner, seen):
+                right_to_left[right] = left
+                return True
+        return False
+
+    if not all(augment(left, set()) for left in range(len(candidates))):
         return None
-    solutions: list[tuple[int, ...]] = []
+    left_to_right = {left: right for right, left in right_to_left.items()}
+    return tuple(left_to_right[left] for left in range(len(candidates)))
 
-    def search(position: int, chosen: list[int]) -> None:
-        if len(solutions) > 1:
-            return
-        if position == width:
-            solutions.append(tuple(chosen))
-            return
-        for candidate in candidates[position]:
-            if candidate not in chosen:
-                search(position + 1, [*chosen, candidate])
 
-    search(0, [])
-    return solutions[0] if len(solutions) == 1 else None
+def _unique_mapping(candidates: list[list[int]]) -> tuple[int, ...] | None:
+    mapping = _maximum_cardinality_mapping(candidates)
+    if mapping is None:
+        return None
+    if any(
+        _maximum_cardinality_mapping(candidates, (left, right)) is not None
+        for left, right in enumerate(mapping)
+    ):
+        return None
+    return mapping
+
+
+def _columns_equal(
+    expected_rows: list[NormalizedRow],
+    expected_index: int,
+    actual_rows: list[NormalizedRow],
+    actual_index: int,
+    tolerant_numeric: bool,
+    abs_tolerance: Decimal,
+    rel_tolerance: Decimal,
+) -> bool:
+    if len(expected_rows) != len(actual_rows):
+        return False
+    candidates = [
+        [
+            actual_row
+            for actual_row in range(len(actual_rows))
+            if _cell_equal(
+                expected_rows[expected_row].cells[expected_index],
+                actual_rows[actual_row].cells[actual_index],
+                tolerant_numeric,
+                abs_tolerance,
+                rel_tolerance,
+            )
+        ]
+        for expected_row in range(len(expected_rows))
+    ]
+    return _maximum_cardinality_mapping(candidates) is not None
+
+
+def _fingerprint_mapping(
+    expected_result: QueryResult,
+    actual_result: QueryResult,
+    expected_rows: list[NormalizedRow],
+    actual_rows: list[NormalizedRow],
+    abs_tolerance: Decimal,
+    rel_tolerance: Decimal,
+) -> tuple[int, ...] | None:
+    width = len(expected_result.columns)
+    expected_fingerprints = [_column_fingerprint(expected_rows, index) for index in range(width)]
+    actual_fingerprints = [_column_fingerprint(actual_rows, index) for index in range(width)]
+    exact_candidates = [
+        [
+            actual_index
+            for actual_index, actual_fingerprint in enumerate(actual_fingerprints)
+            if actual_fingerprint == expected_fingerprint
+            and _types_compatible(
+                expected_result.columns[expected_index].type,
+                actual_result.columns[actual_index].type,
+            )
+        ]
+        for expected_index, expected_fingerprint in enumerate(expected_fingerprints)
+    ]
+    exact_mapping = _unique_mapping(exact_candidates)
+    if exact_mapping is not None:
+        return exact_mapping
+
+    tolerant_candidates = [
+        [
+            actual_index
+            for actual_index in range(width)
+            if _types_compatible(
+                expected_result.columns[expected_index].type,
+                actual_result.columns[actual_index].type,
+            )
+            and _columns_equal(
+                expected_rows,
+                expected_index,
+                actual_rows,
+                actual_index,
+                _type_family(expected_result.columns[expected_index].type) == "tolerant_number",
+                abs_tolerance,
+                rel_tolerance,
+            )
+        ]
+        for expected_index in range(width)
+    ]
+    return _unique_mapping(tolerant_candidates)
 
 
 def _align_rows(rows: list[NormalizedRow], mapping: tuple[int, ...]) -> list[NormalizedRow]:
@@ -230,21 +349,22 @@ def _align_rows(rows: list[NormalizedRow], mapping: tuple[int, ...]) -> list[Nor
     for row in rows:
         cells = tuple(row.cells[index] for index in mapping)
         public = [cell.public for cell in cells]
-        aligned.append(
-            NormalizedRow(cells=cells, public=public, canonical=_canonical_bytes(public))
-        )
+        aligned.append(NormalizedRow(cells=cells, public=public, canonical=_row_key(cells)))
     return aligned
 
 
 def _cell_equal(
     expected: NormalizedCell,
     actual: NormalizedCell,
+    tolerant_numeric: bool,
     abs_tolerance: Decimal,
     rel_tolerance: Decimal,
 ) -> bool:
     if expected.kind == "number" and actual.kind == "number":
         assert isinstance(expected.value, Decimal)
         assert isinstance(actual.value, Decimal)
+        if not tolerant_numeric:
+            return expected.value == actual.value
         difference = abs(expected.value - actual.value)
         tolerance = max(
             abs_tolerance,
@@ -259,18 +379,22 @@ def _cell_equal(
 def _row_equal(
     expected: NormalizedRow,
     actual: NormalizedRow,
+    tolerant_columns: tuple[bool, ...],
     abs_tolerance: Decimal,
     rel_tolerance: Decimal,
 ) -> bool:
     return len(expected.cells) == len(actual.cells) and all(
-        _cell_equal(left, right, abs_tolerance, rel_tolerance)
-        for left, right in zip(expected.cells, actual.cells, strict=True)
+        _cell_equal(left, right, tolerant_numeric, abs_tolerance, rel_tolerance)
+        for left, right, tolerant_numeric in zip(
+            expected.cells, actual.cells, tolerant_columns, strict=True
+        )
     )
 
 
 def _maximum_matching(
     expected: list[NormalizedRow],
     actual: list[NormalizedRow],
+    tolerant_columns: tuple[bool, ...],
     abs_tolerance: Decimal,
     rel_tolerance: Decimal,
 ) -> tuple[dict[int, int], list[int], list[int]]:
@@ -295,7 +419,11 @@ def _maximum_matching(
             actual_index
             for actual_index in actual_order
             if _row_equal(
-                expected[expected_index], actual[actual_index], abs_tolerance, rel_tolerance
+                expected[expected_index],
+                actual[actual_index],
+                tolerant_columns,
+                abs_tolerance,
+                rel_tolerance,
             )
         ]
         for expected_index in expected_order
@@ -374,7 +502,14 @@ def compare_results(
         _normalized_name(column.name) for column in actual.columns
     ]
     if mapping is None:
-        mapping = _fingerprint_mapping(expected_rows, actual_rows, len(expected.columns))
+        mapping = _fingerprint_mapping(
+            expected,
+            actual,
+            expected_rows,
+            actual_rows,
+            Decimal(comparison.abs_tolerance),
+            Decimal(comparison.rel_tolerance),
+        )
         column_names_equal = False
     if mapping is None:
         return ResultDiff(
@@ -396,7 +531,11 @@ def compare_results(
     abs_tolerance = Decimal(comparison.abs_tolerance)
     rel_tolerance = Decimal(comparison.rel_tolerance)
     pairs, missing, extra = _maximum_matching(
-        expected_rows, aligned_actual, abs_tolerance, rel_tolerance
+        expected_rows,
+        aligned_actual,
+        tuple(_type_family(column.type) == "tolerant_number" for column in expected.columns),
+        abs_tolerance,
+        rel_tolerance,
     )
     matched = len(pairs)
     expected_count = len(expected_rows)
@@ -407,7 +546,15 @@ def compare_results(
     ordered_equal = f1 == 1.0
     if comparison.row_order_significant:
         ordered_equal = expected_count == actual_count and all(
-            _row_equal(left, right, abs_tolerance, rel_tolerance)
+            _row_equal(
+                left,
+                right,
+                tuple(
+                    _type_family(column.type) == "tolerant_number" for column in expected.columns
+                ),
+                abs_tolerance,
+                rel_tolerance,
+            )
             for left, right in zip(expected_rows, aligned_actual, strict=True)
         )
     verdict = "equal" if f1 == 1.0 and ordered_equal else "row_mismatch"

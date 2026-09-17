@@ -42,7 +42,10 @@ PROMPT_VARIABLES = (
 )
 DIALECT_RULES = (
     "Use DuckDB SQL. Return exactly one read-only query. "
-    "Do not access files, URLs, extensions, or schemas outside the supplied tables."
+    "FROM table functions are forbidden, including generate_series, range, read_csv, "
+    "and every other table-valued function. FROM may use only supplied published tables, "
+    "CTEs, read-only subqueries, or VALUES. Do not access files, URLs, extensions, or "
+    "schemas outside the supplied tables."
 )
 
 

@@ -5,13 +5,14 @@ import json
 import re
 import shutil
 import tempfile
+import zipfile
 from collections.abc import Mapping, Sequence
 from datetime import UTC, date, datetime
 from pathlib import Path
 from typing import Any
 
 import yaml
-from sqlalchemy import select
+from sqlalchemy import func, select
 from sqlalchemy.orm import selectinload
 
 from backend.app.config import settings
@@ -32,7 +33,7 @@ from backend.app.services.reporting import (
     build_run_report,
     build_run_snapshot,
 )
-from backend.app.services.suites import compute_content_hash, validate_and_build
+from backend.app.services.suites import canonical_bytes, compute_content_hash
 
 EVIDENCE_SCHEMA_VERSION = "text-to-sql-evidence-v1"
 _TEMP_PATH = re.compile(r"(?:/private)?/var/folders/[^\s\"']+/T/llm-test-[^\s\"']+")
@@ -131,7 +132,7 @@ def _bundle_manifest(directory: Path, metadata: dict[str, Any]) -> dict[str, Any
     return manifest
 
 
-def _suite_source(suite: BenchmarkSuite, version: SuiteVersion) -> SuiteSource:
+def suite_source_from_models(suite: BenchmarkSuite, version: SuiteVersion) -> SuiteSource:
     cases = [
         BenchmarkCaseDefinition(
             stable_key=case.stable_key,
@@ -173,7 +174,11 @@ def _write_suite_source(directory: Path, source: SuiteSource) -> None:
     (source_dir / "cases.yaml").write_bytes(cases_yaml)
 
 
-async def _export_suites(staging: Path) -> list[dict[str, Any]]:
+async def _export_suites(
+    staging: Path,
+    *,
+    version_ids: set[int] | None = None,
+) -> list[dict[str, Any]]:
     async with SessionLocal() as session:
         suites = list(
             (
@@ -185,76 +190,92 @@ async def _export_suites(staging: Path) -> list[dict[str, Any]]:
             ).all()
         )
     index: list[dict[str, Any]] = []
-    with tempfile.TemporaryDirectory(prefix="llm-test-evidence-suites-") as temp_name:
-        artifact_root = Path(temp_name)
-        for suite in suites:
-            for version in sorted(suite.versions, key=lambda item: item.version):
-                if version.status != "published" or not version.content_hash:
-                    continue
-                source = _suite_source(suite, version)
-                computed = compute_content_hash(source)
-                if computed != version.content_hash:
+    for suite in suites:
+        for version in sorted(suite.versions, key=lambda item: item.version):
+            if (
+                version.status != "published"
+                or not version.content_hash
+                or (version_ids is not None and version.id not in version_ids)
+            ):
+                continue
+            source = suite_source_from_models(suite, version)
+            computed = compute_content_hash(source)
+            if computed != version.content_hash:
+                raise RuntimeError(
+                    f"Suite version {version.id} hash mismatch: "
+                    f"{computed} != {version.content_hash}"
+                )
+            artifact = settings.var_dir / "suites" / version.content_hash
+            artifact_manifest = json.loads((artifact / "manifest.json").read_text(encoding="utf-8"))
+            if artifact_manifest["suite_hash"] != version.content_hash:
+                raise RuntimeError(f"Suite version {version.id} frozen artifact hash mismatch")
+            for case in version.cases:
+                gold = json.loads(
+                    (artifact / "gold" / f"{case.stable_key}.json").read_text(encoding="utf-8")
+                )
+                digest = gold.pop("digest")
+                if (
+                    hashlib.sha256(canonical_bytes(gold)).hexdigest() != digest
+                    or digest != artifact_manifest["gold"][case.stable_key]["digest"]
+                ):
                     raise RuntimeError(
-                        f"Suite version {version.id} hash mismatch: "
-                        f"{computed} != {version.content_hash}"
+                        f"Suite version {version.id} frozen gold mismatch: {case.stable_key}"
                     )
-                published = validate_and_build(source, artifact_root)
-                if published.content_hash != version.content_hash:
-                    raise RuntimeError(f"Suite version {version.id} rebuilt with different hash")
-                target = staging / "suites" / version.content_hash
-                _write_suite_source(target, source)
-                artifact = Path(published.artifact_dir)
-                shutil.copy2(artifact / "manifest.json", target / "artifact-manifest.json")
-                shutil.copytree(artifact / "gold", target / "gold")
-                _write_json(
-                    target / "suite.json",
-                    {
-                        "suite_id": suite.id,
-                        "suite_version_id": version.id,
-                        "name": suite.name,
-                        "description": suite.description,
-                        "version": version.version,
-                        "status": version.status,
-                        "dialect": version.dialect,
-                        "content_hash": version.content_hash,
-                        "published_at": version.published_at,
-                        "structure": version.structure_snapshot_json,
-                        "warehouse": {
-                            "committed": False,
-                            "reason": (
-                                "Deterministically rebuilt from source/schema.sql "
-                                "and source/seed.sql"
-                            ),
-                        },
+            target = staging / "suites" / version.content_hash
+            _write_suite_source(target, source)
+            shutil.copy2(artifact / "manifest.json", target / "artifact-manifest.json")
+            shutil.copytree(artifact / "gold", target / "gold")
+            _write_json(
+                target / "suite.json",
+                {
+                    "suite_id": suite.id,
+                    "suite_version_id": version.id,
+                    "name": suite.name,
+                    "description": suite.description,
+                    "version": version.version,
+                    "status": version.status,
+                    "dialect": version.dialect,
+                    "content_hash": version.content_hash,
+                    "published_at": version.published_at,
+                    "structure": version.structure_snapshot_json,
+                    "warehouse": {
+                        "committed": False,
+                        "reason": (
+                            "Deterministically rebuilt from source/schema.sql and source/seed.sql"
+                        ),
                     },
-                )
-                manifest = _bundle_manifest(
-                    target,
-                    {
-                        "kind": "suite",
-                        "suite_version_id": version.id,
-                        "content_hash": version.content_hash,
-                    },
-                )
-                index.append(
-                    {
-                        "suite_version_id": version.id,
-                        "version": version.version,
-                        "content_hash": version.content_hash,
-                        "path": f"suites/{version.content_hash}",
-                        "bundle_sha256": manifest["bundle_sha256"],
-                    }
-                )
+                },
+            )
+            manifest = _bundle_manifest(
+                target,
+                {
+                    "kind": "suite",
+                    "suite_version_id": version.id,
+                    "content_hash": version.content_hash,
+                },
+            )
+            index.append(
+                {
+                    "suite_version_id": version.id,
+                    "version": version.version,
+                    "content_hash": version.content_hash,
+                    "path": f"suites/{version.content_hash}",
+                    "bundle_sha256": manifest["bundle_sha256"],
+                }
+            )
     return index
 
 
-async def _export_runs(staging: Path) -> list[dict[str, Any]]:
+async def _export_runs(
+    staging: Path,
+    *,
+    run_ids: set[int] | None = None,
+) -> list[dict[str, Any]]:
     async with SessionLocal() as session:
-        runs = list(
-            (
-                await session.scalars(select(ComparisonRun).order_by(ComparisonRun.id))
-            ).all()
-        )
+        query = select(ComparisonRun).order_by(ComparisonRun.id)
+        if run_ids is not None:
+            query = query.where(ComparisonRun.id.in_(run_ids))
+        runs = list((await session.scalars(query)).all())
         index: list[dict[str, Any]] = []
         for run in runs:
             target = staging / "runs" / f"run-{run.id:04d}"
@@ -408,3 +429,97 @@ def verify_evidence(output_dir: Path) -> dict[str, int]:
     if suite_count != index.get("suite_count") or run_count != index.get("run_count"):
         raise RuntimeError("Evidence index count mismatch")
     return {"suite_count": suite_count, "run_count": run_count}
+
+
+async def build_publication_preview(
+    session: Any,
+    run_id: int,
+) -> dict[str, Any]:
+    run = await session.get(ComparisonRun, run_id)
+    if run is None:
+        raise LookupError("run_not_found")
+    snapshot = await build_run_snapshot(session, run_id)
+    report = public_sanitize(build_run_report(snapshot))
+    event_count = (
+        await session.scalar(
+            select(func.count(RunEvent.id)).where(RunEvent.comparison_run_id == run_id)
+        )
+        or 0
+    )
+    case_run_count = sum(len(model["cases"]) for model in report["models"])
+    suite_case_count = (
+        await session.scalar(
+            select(func.count(BenchmarkCase.id)).where(
+                BenchmarkCase.suite_version_id == run.suite_version_id
+            )
+        )
+        or 0
+    )
+    warnings: list[str] = []
+    if run.status != "completed":
+        warnings.append(f"运行终态为 {run.status}；发布包会如实保留失败或未完成证据。")
+    manifest_summary = {
+        "schema_version": EVIDENCE_SCHEMA_VERSION,
+        "suite_content_hash": run.suite_content_hash,
+        "event_count": event_count,
+        "case_run_count": case_run_count,
+        # Root index; run report/events/manifest; suite's five sources, metadata,
+        # artifact manifest, bundle manifest; plus each case evidence and gold file.
+        "file_count": case_run_count + suite_case_count + 12,
+    }
+    digest_payload = {
+        "run_id": run.id,
+        "status": run.status,
+        "report": report,
+        "manifest_summary": manifest_summary,
+    }
+    summary_digest = hashlib.sha256(_json_bytes(digest_payload, pretty=False)).hexdigest()
+    return {
+        "run_id": run.id,
+        "status": run.status,
+        "eligible": run.status
+        in {
+            "completed",
+            "completed_with_errors",
+            "failed",
+            "cancelled",
+            "interrupted",
+        },
+        "summary_digest": summary_digest,
+        "preview": report,
+        "manifest_summary": manifest_summary,
+        "warnings": warnings,
+    }
+
+
+async def export_run_evidence_zip(run_id: int, output_zip: Path) -> dict[str, Any]:
+    """Build an isolated one-run package without touching the committed evidence directory."""
+    await ensure_schema()
+    async with SessionLocal() as session:
+        run = await session.get(ComparisonRun, run_id)
+        if run is None:
+            raise LookupError("run_not_found")
+        suite_version_id = run.suite_version_id
+    with tempfile.TemporaryDirectory(prefix="llm-test-publication-") as name:
+        staging = Path(name) / "evidence"
+        suites = await _export_suites(staging, version_ids={suite_version_id})
+        runs = await _export_runs(staging, run_ids={run_id})
+        if len(suites) != 1 or len(runs) != 1:
+            raise RuntimeError("Publication package scope could not be reconstructed")
+        index = {
+            "schema_version": EVIDENCE_SCHEMA_VERSION,
+            "exported_at": datetime.now(UTC),
+            "scope": "one persisted run and its published suite version",
+            "suite_count": 1,
+            "run_count": 1,
+            "suites": suites,
+            "runs": runs,
+        }
+        _write_json(staging / "index.json", index)
+        verify_evidence(staging)
+        output_zip.parent.mkdir(parents=True, exist_ok=True)
+        with zipfile.ZipFile(output_zip, "w", compression=zipfile.ZIP_DEFLATED) as archive:
+            for path in sorted(staging.rglob("*")):
+                if path.is_file():
+                    archive.write(path, path.relative_to(staging))
+    return index

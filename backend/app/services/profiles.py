@@ -46,10 +46,17 @@ async def check_profile(
     registry: AdapterRegistry = adapter_registry,
 ) -> AdapterHealth:
     profile.health_status = "checking"
-    try:
-        health = await registry.get(profile.adapter_kind).check(profile_snapshot(profile))
-    except Exception as exc:
-        health = AdapterHealth(status="error", message=str(exc))
+    if profile.adapter_kind != "pi":
+        health = AdapterHealth(
+            status="unavailable",
+            message="历史适配器配置不可再运行；请新建 Pi 模型配置（仍可禁用或删除此配置）",
+            details={"historical": True, "migration_required": True},
+        )
+    else:
+        try:
+            health = await registry.get(profile.adapter_kind).check(profile_snapshot(profile))
+        except Exception as exc:
+            health = AdapterHealth(status="error", message=str(exc))
     now = datetime.now(UTC)
     profile.health_status = health.status
     profile.health_details_json = {
@@ -82,6 +89,18 @@ def profile_public(profile: ModelProfile) -> dict[str, Any]:
         if reference.startswith("env:")
         else "none"
     )
+    historical = profile.adapter_kind != "pi"
+    health_status = "unavailable" if historical else profile.health_status
+    health_details = (
+        {
+            **profile.health_details_json,
+            "historical": True,
+            "migration_required": True,
+            "message": "历史适配器配置不可再运行；请新建 Pi 模型配置",
+        }
+        if historical
+        else profile.health_details_json
+    )
     return {
         "id": profile.id,
         "name": profile.name,
@@ -94,8 +113,8 @@ def profile_public(profile: ModelProfile) -> dict[str, Any]:
         "enabled": profile.enabled,
         "has_secret": bool(profile.api_key_ref),
         "secret_backend": backend,
-        "health_status": profile.health_status,
-        "health_details": profile.health_details_json,
+        "health_status": health_status,
+        "health_details": health_details,
         "last_checked_at": profile.last_checked_at,
         "health_expires_at": profile.health_expires_at,
         "created_at": profile.created_at,

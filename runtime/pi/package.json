@@ -1,0 +1,9 @@
+{
+  "name": "sql-arena-pi-runtime",
+  "private": true,
+  "type": "module",
+  "version": "1.0.0",
+  "engines": { "node": ">=22.19.0" },
+  "scripts": { "check": "node bridge.mjs --version" },
+  "dependencies": { "@earendil-works/pi-ai": "0.85.1" }
+}

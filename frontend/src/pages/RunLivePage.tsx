@@ -1,6 +1,6 @@
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useVirtualizer } from "@tanstack/react-virtual";
-import { Ban, CircleDot, ExternalLink, Filter, Radio, RotateCcw, Search, TerminalSquare } from "lucide-react";
+import { Ban, ExternalLink, Filter, Radio, RotateCcw, Search, TerminalSquare } from "lucide-react";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { Link, useParams } from "react-router-dom";
 import { toast } from "sonner";
@@ -71,14 +71,18 @@ export function RunLivePage() {
   const [serverResult, setServerResult] = useState<{ events: RunEvent[]; total: number } | null>(null);
   const [serverLoading, setServerLoading] = useState(false);
   const logRef = useRef<HTMLDivElement>(null);
+  const terminalRun = run.data ? terminal.has(run.data.status) : null;
 
   useEffect(() => {
+    if (terminalRun === null) return;
+    setReconnecting(false);
     let closeStream: () => void = () => undefined;
     let active = true;
     api.history(runId).then((result) => {
       if (!active) return;
       hydrateEvents(result.events);
       setHistoryTotal(result.total);
+      if (terminalRun) return;
       const last = result.events.at(-1)?.seq ?? 0;
       closeStream = eventStream(runId, last, (event) => {
         appendEvent(event);
@@ -88,7 +92,7 @@ export function RunLivePage() {
       }, () => setReconnecting(true));
     }).catch((error: Error) => toast.error(error.message));
     return () => { active = false; closeStream(); };
-  }, [appendEvent, hydrateEvents, queryClient, runId, setReconnecting]);
+  }, [appendEvent, hydrateEvents, queryClient, runId, setReconnecting, terminalRun]);
 
   useEffect(() => {
     if (!selectedCase && run.data?.selected_case_keys[0]) setSelectedCase(run.data.selected_case_keys[0]);
@@ -141,36 +145,46 @@ export function RunLivePage() {
   useEffect(() => { if (follow && filtered.length) virtualizer.scrollToIndex(filtered.length - 1, { align: "end" }); }, [filtered.length, follow, virtualizer]);
 
   const snapshot = run.data;
+  if (run.error) return <div className="page"><p className="notice error">运行读取失败：{(run.error as Error).message}</p><button className="button" onClick={() => void run.refetch()}>重新读取</button></div>;
   if (!snapshot) return <div className="loading-screen"><Radio className="spin"/>正在读取运行数据…</div>;
   const cases = snapshot.selected_case_keys;
+  const finished = terminal.has(snapshot.status);
+  const allAttempts = snapshot.models.flatMap((model) => model.cases);
+  const settled = allAttempts.filter((item) => ["completed", "failed", "cancelled"].includes(item.status)).length;
+  const total = cases.length * snapshot.attempts * snapshot.models.length;
+  const focusCase = allAttempts.find((item) => item.stable_key === selectedCase);
+  const byCaseId = new Map(allAttempts.map((item) => [item.id, item]));
+  const byModelId = new Map(snapshot.models.map((item) => [item.id, item]));
   const cancel = async () => { try { await api.cancelRun(runId); await queryClient.invalidateQueries({ queryKey: ["run", runId] }); } catch (error) { toast.error((error as Error).message); } };
   const clearFilters = () => { setSearch(""); setLevels([]); setModelFilters([]); setCaseFilter("all"); setEventType("all"); };
   const loadMore = async () => {
     if (!serverResult) return;
     setServerLoading(true);
-    try {
-      const next = await api.history(runId, queryFor(serverResult.events.length));
-      setServerResult({ events: [...serverResult.events, ...next.events], total: next.total });
-    } catch (error) {
-      toast.error((error as Error).message);
-    } finally {
-      setServerLoading(false);
-    }
+    try { const next = await api.history(runId, queryFor(serverResult.events.length)); setServerResult({ events: [...serverResult.events, ...next.events], total: next.total }); }
+    catch (error) { toast.error((error as Error).message); }
+    finally { setServerLoading(false); }
   };
 
   return <div className="page live-page">
-    <PageHeader eyebrow={`运行 #${runId} · ${terminal.has(snapshot.status) ? "已结束" : "进行中"}`} title={statusTitles[snapshot.status] ?? "评测正在运行"} actions={<>{terminal.has(snapshot.status) && <Link className="button primary" to={`/runs/${runId}/report`}>查看报告<ExternalLink/></Link>}<button className="button danger" disabled={terminal.has(snapshot.status)} onClick={cancel}><Ban/>取消运行</button></>}/>
+    <PageHeader eyebrow={`运行 #${runId} · ${finished ? "历史记录" : "真实运行"}`} title={finished ? "这场较量，留下了什么？" : statusTitles[snapshot.status] ?? "比赛正在进行"} description={finished ? "历史运行记录 · 下方展示真实持久化事件。逐题回放和关键回合请进入赛后报告。" : "真实模型调用中。得分来自执行与比较，不由观看或预测改变。"} actions={<>{finished && <Link className="button primary" to={`/runs/${runId}/report`}>赛后报告与回放<ExternalLink/></Link>}{!finished && <button className="button danger" disabled={snapshot.status === "cancelling"} onClick={cancel}><Ban/>取消运行</button>}</>}/>
     <Scoreboard suiteHash={snapshot.suite_content_hash} models={snapshot.models.map((model) => ({ id: model.id, name: model.name, modelId: model.resolved_model_id ?? model.requested_model_id, adapterKind: model.adapter_kind, score: model.official_score, status: model.status }))}/>
+    <section className="live-overview"><div><p className="eyebrow">{finished ? "回看一道题" : "把注意力放在问题上"}</p><h2>{focusCase?.title ?? "等待题目"}</h2><p>{focusCase?.question ?? "点击下方任意回合，展开模型的规划、SQL 和实际执行结果。"}</p><small>{snapshot.attempts} 次作答全部保留 · 下方分数为每题全部计划尝试均分</small></div><div className="live-progress"><b>{settled} / {total} 次作答已收场</b><progress value={settled} max={Math.max(total, 1)} aria-label="作答进度"/><small><StatusPill status={snapshot.status}/> · 错误与取消同样保留</small></div></section>
     <div className="live-workspace">
-      <section className={`model-lanes lanes-${Math.min(snapshot.models.length, 4)}`}>{snapshot.models.map((model) => <article className="model-lane" key={model.id}><header><div><ModelLogo name={model.name} modelId={model.resolved_model_id ?? model.requested_model_id} adapterKind={model.adapter_kind}/><div><h3>{displayModelName(model.name)}</h3><code>{model.resolved_model_id ?? model.requested_model_id}</code></div></div><StatusPill status={model.status}/></header><div className="case-grid">{cases.map((key, index) => { const attempts = model.cases.filter((item) => item.stable_key === key); const result = attempts.at(-1); return <button key={key} className={`case-tile ${selectedCase === key ? "active" : ""} status-${result?.status ?? "queued"}`} onClick={() => { setSelectedCase(key); if (result) setWorkspace(true); }}><span>{String(index + 1).padStart(2,"0")}</span><div><b>{result?.title ?? key}</b><small>{result ? `A${result.attempt} · ${result.status}` : "候场"}</small></div><em>{result?.score?.total == null ? "—" : Number(result.score.total).toFixed(0)}</em></button>; })}</div><footer><span><CircleDot/> {model.cli_version ?? model.response_mode}</span><b>{model.cases.filter((item) => item.status === "completed").length}/{cases.length * snapshot.attempts}</b></footer></article>)}</section>
+      <section className="model-lanes" aria-label="参赛者逐题表现">{snapshot.models.map((model) => <article className="model-lane" key={model.id}><header><div><ModelLogo name={model.name} modelId={model.resolved_model_id ?? model.requested_model_id} adapterKind={model.adapter_kind}/><div><h3>{displayModelName(model.name)}</h3><code>{model.resolved_model_id ?? model.requested_model_id}</code></div></div><StatusPill status={model.status}/></header><div className="case-grid">{cases.map((key, index) => {
+        const attempts = model.cases.filter((item) => item.stable_key === key);
+        const result = attempts.at(-1);
+        const complete = attempts.length === snapshot.attempts && attempts.every((item) => ["completed", "failed", "cancelled"].includes(item.status));
+        const score = complete ? attempts.reduce((sum, item) => sum + (item.score?.total ?? 0), 0) / snapshot.attempts : null;
+        return <button key={key} className={`case-tile ${selectedCase === key ? "active" : ""} status-${result?.status ?? "queued"}`} aria-pressed={selectedCase === key} onClick={() => { setSelectedCase(key); setWorkspace(true); }}><span>{String(index + 1).padStart(2, "0")}</span><div><b>{result?.title ?? key}</b><small>{attempts.filter((item) => item.status === "failed").length ? "有失败 · 查看原因" : result?.status === "completed" ? "已作答 · 查看证据" : result?.status === "running" ? "正在作答" : result?.status === "cancelled" ? "已取消" : "等待作答"}</small></div><em>{score == null ? "—" : score.toFixed(1)}</em></button>;
+      })}</div><footer><span>执行完成，不等于结果正确</span><b>{model.cases.filter((item) => item.status === "completed").length} 次完成</b></footer></article>)}</section>
       <section className="log-panel">
         <header><div className="log-title"><TerminalSquare/><div><b>运行日志</b><small>{historyTotal} 条持久化事件 · {filtered.length} 条匹配 {reconnecting && "· 正在重连"}</small></div></div>
           <div className="log-filters"><Filter/>
             <details className="multi-filter"><summary>{modelFilters.length ? `模型 ${modelFilters.length}` : "全部模型"}</summary><div>{snapshot.models.map((model) => <label key={model.id}><input type="checkbox" checked={modelFilters.includes(model.id)} onChange={() => setModelFilters((values) => toggleValue(values, model.id))}/>{displayModelName(model.name)}</label>)}</div></details>
-            <select aria-label="Case 筛选" value={caseFilter} onChange={(event) => setCaseFilter(event.target.value)}><option value="all">全部 Case</option>{cases.map((key, index) => <option value={key} key={key}>{String(index + 1).padStart(2,"0")} · {key}</option>)}</select>
-            <details className="multi-filter"><summary>{levels.length ? `级别 ${levels.length}` : "全部级别"}</summary><div>{["info","warning","error"].map((value) => <label key={value}><input type="checkbox" checked={levels.includes(value)} onChange={() => setLevels((items) => toggleValue(items, value))}/>{value}</label>)}</div></details>
+            <select aria-label="Case 筛选" value={caseFilter} onChange={(event) => setCaseFilter(event.target.value)}><option value="all">全部题目</option>{cases.map((key, index) => <option value={key} key={key}>{String(index + 1).padStart(2,"0")} · {key}</option>)}</select>
+            <details className="multi-filter"><summary>{levels.length ? `级别 ${levels.length}` : "全部级别"}</summary><div>{["info","warning","error"].map((value) => <label key={value}><input type="checkbox" checked={levels.includes(value)} onChange={() => setLevels((items) => toggleValue(items, value))}/>{eventLevelLabel[value]}</label>)}</div></details>
             <select aria-label="事件类型筛选" value={eventType} onChange={(event) => setEventType(event.target.value)}><option value="all">全部事件</option>{availableEventTypes.map((value) => <option value={value} key={value}>{value}</option>)}</select>
-            <label><Search/><input value={search} onChange={(event) => setSearch(event.target.value)} placeholder="搜索日志"/></label>
+            <label><Search/><input aria-label="搜索日志" value={search} onChange={(event) => setSearch(event.target.value)} placeholder="搜索日志"/></label>
             <button onClick={clearFilters}><RotateCcw/>清空</button>
           </div>
         </header>
@@ -179,8 +193,8 @@ export function RunLivePage() {
           {filtered.length === 0 && <div className="log-empty">{serverLoading ? "正在加载筛选结果…" : "暂无匹配日志"}</div>}
           <div style={{ height: virtualizer.getTotalSize(), position: "relative" }}>{virtualizer.getVirtualItems().map((row) => {
             const event = filtered[row.index];
-            const model = snapshot.models.find((item) => item.id === event.model_run_id);
-            const caseItem = snapshot.models.flatMap((item) => item.cases).find((item) => item.id === event.case_run_id);
+            const model = event.model_run_id == null ? undefined : byModelId.get(event.model_run_id);
+            const caseItem = event.case_run_id == null ? undefined : byCaseId.get(event.case_run_id);
             const payload = event.payload ?? {};
             const hasPayload = Object.keys(payload).length > 0;
             const eventGroup = event.event_type.split(".")[0];

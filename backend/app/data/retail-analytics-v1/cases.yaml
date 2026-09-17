@@ -44,9 +44,9 @@
   category: subquery
   radar_dimension: 复杂查询
   difficulty: hard
-  question: 找出金额高于同客户分群已完成订单平均金额的已完成订单，输出 order_id、customer_id、segment、total_amount、segment_avg_amount，并按 total_amount 降序、order_id 升序；必须使用外层引用的相关子查询。
+  question: 找出金额严格高于同客户分群已完成订单原始平均金额的已完成订单，输出 order_id、customer_id、segment、total_amount、segment_avg_amount；segment_avg_amount 仅在输出时四舍五入 2 位，过滤不得使用四舍五入后的均值。按 total_amount 降序、order_id 升序；必须使用外层引用的相关子查询。
   reference_sql: >-
-    SELECT o.order_id, o.customer_id, c.segment, o.total_amount, a.segment_avg_amount FROM fact_orders o JOIN dim_customers c ON c.customer_id = o.customer_id JOIN LATERAL (SELECT ROUND(AVG(o2.total_amount), 2) AS segment_avg_amount FROM fact_orders o2 JOIN dim_customers c2 ON c2.customer_id = o2.customer_id WHERE o2.status = 'completed' AND c2.segment = c.segment) a ON TRUE WHERE o.status = 'completed' AND o.total_amount > a.segment_avg_amount ORDER BY o.total_amount DESC, o.order_id ASC
+    SELECT o.order_id, o.customer_id, c.segment, o.total_amount, ROUND(a.raw_segment_avg, 2) AS segment_avg_amount FROM fact_orders o JOIN dim_customers c ON c.customer_id = o.customer_id JOIN LATERAL (SELECT AVG(o2.total_amount) AS raw_segment_avg FROM fact_orders o2 JOIN dim_customers c2 ON c2.customer_id = o2.customer_id WHERE o2.status = 'completed' AND c2.segment = c.segment) a ON TRUE WHERE o.status = 'completed' AND o.total_amount > a.raw_segment_avg ORDER BY o.total_amount DESC, o.order_id ASC
   required_ast:
     - {id: correlated, kind: correlated_subquery, min: 1}
   comparison: {row_order_significant: true, duplicate_policy: multiset, decimal_scale: 2, abs_tolerance: '0.005', rel_tolerance: '0', max_rows: 10000}
@@ -72,7 +72,7 @@
   category: window_rank
   radar_dimension: 时间与窗口
   difficulty: hard
-  question: 按净销售额取每个品类恰好前三商品，同额时按 product_id 升序打破并列；输出 category、product_id、product_name、net_revenue、rank_no，并按 category、rank_no 升序；必须使用 ROW_NUMBER 分区窗口。
+  question: 按净销售额取每个品类最多前三个有已完成销量的商品；不足三个时返回现有商品，同额时按 product_id 升序打破并列。输出 category、product_id、product_name、net_revenue、rank_no，并按 category、rank_no 升序；必须使用 ROW_NUMBER 分区窗口。
   reference_sql: >-
     WITH product_revenue AS (SELECT p.category, p.product_id, p.product_name, SUM(i.quantity * i.unit_price - i.discount_amount) AS net_revenue FROM fact_order_items i JOIN fact_orders o ON o.order_id = i.order_id JOIN dim_products p ON p.product_id = i.product_id WHERE o.status = 'completed' GROUP BY p.category, p.product_id, p.product_name), ranked AS (SELECT category, product_id, product_name, net_revenue, ROW_NUMBER() OVER (PARTITION BY category ORDER BY net_revenue DESC, product_id ASC) AS rank_no FROM product_revenue) SELECT category, product_id, product_name, net_revenue, rank_no FROM ranked WHERE rank_no <= 3 ORDER BY category ASC, rank_no ASC
   required_ast:
@@ -93,9 +93,9 @@
   category: window_aggregate
   radar_dimension: 时间与窗口
   difficulty: medium
-  question: 输出 2025 年每月已完成订单收入及累计收入 month、monthly_revenue、cumulative_revenue，按 month 升序；必须使用 SUM 窗口并按 month 排序。
+  question: 固定输出 2025 自然年 12 个月（2025-01 至 2025-12）的已完成订单收入及累计收入 month、monthly_revenue、cumulative_revenue；无活动月份补 0，按 month 升序；必须使用 SUM 窗口并按 month 排序。不得在 FROM 中使用表函数，日历可用 VALUES 或固定月份 CTE。
   reference_sql: >-
-    WITH monthly AS (SELECT strftime(order_date, '%Y-%m') AS month, SUM(total_amount) AS monthly_revenue FROM fact_orders WHERE status = 'completed' AND order_date >= DATE '2025-01-01' AND order_date < DATE '2026-01-01' GROUP BY month) SELECT month, monthly_revenue, SUM(monthly_revenue) OVER (ORDER BY month ASC ROWS BETWEEN UNBOUNDED PRECEDING AND CURRENT ROW) AS cumulative_revenue FROM monthly ORDER BY month ASC
+    WITH calendar(month) AS (VALUES ('2025-01'), ('2025-02'), ('2025-03'), ('2025-04'), ('2025-05'), ('2025-06'), ('2025-07'), ('2025-08'), ('2025-09'), ('2025-10'), ('2025-11'), ('2025-12')), monthly AS (SELECT strftime(order_date, '%Y-%m') AS month, SUM(total_amount) AS monthly_revenue FROM fact_orders WHERE status = 'completed' AND order_date >= DATE '2025-01-01' AND order_date < DATE '2026-01-01' GROUP BY month), filled AS (SELECT c.month, COALESCE(m.monthly_revenue, 0) AS monthly_revenue FROM calendar c LEFT JOIN monthly m ON m.month = c.month) SELECT month, monthly_revenue, SUM(monthly_revenue) OVER (ORDER BY month ASC ROWS BETWEEN UNBOUNDED PRECEDING AND CURRENT ROW) AS cumulative_revenue FROM filled ORDER BY month ASC
   required_ast:
     - id: running-sum
       kind: window_function
@@ -113,9 +113,9 @@
   category: window_offset
   radar_dimension: 时间与窗口
   difficulty: medium
-  question: 输出 2025 年每月收入及环比百分比 month、monthly_revenue、mom_pct，首月为 NULL，其余四舍五入 2 位，按 month 升序；必须使用 LAG。
+  question: 固定输出 2025 自然年 12 个月（2025-01 至 2025-12）的已完成订单收入及环比百分比 month、monthly_revenue、mom_pct；无活动月份补 0，首月及前月收入为 0 时 mom_pct 为 NULL，其余四舍五入 2 位，按 month 升序；必须使用 LAG。不得在 FROM 中使用表函数，日历可用 VALUES 或固定月份 CTE。
   reference_sql: >-
-    WITH monthly AS (SELECT strftime(order_date, '%Y-%m') AS month, SUM(total_amount) AS monthly_revenue FROM fact_orders WHERE status = 'completed' AND order_date >= DATE '2025-01-01' AND order_date < DATE '2026-01-01' GROUP BY month), lagged AS (SELECT month, monthly_revenue, LAG(monthly_revenue) OVER (ORDER BY month ASC) AS previous_revenue FROM monthly) SELECT month, monthly_revenue, ROUND((monthly_revenue - previous_revenue) / NULLIF(previous_revenue, 0) * 100, 2) AS mom_pct FROM lagged ORDER BY month ASC
+    WITH calendar(month) AS (VALUES ('2025-01'), ('2025-02'), ('2025-03'), ('2025-04'), ('2025-05'), ('2025-06'), ('2025-07'), ('2025-08'), ('2025-09'), ('2025-10'), ('2025-11'), ('2025-12')), monthly AS (SELECT strftime(order_date, '%Y-%m') AS month, SUM(total_amount) AS monthly_revenue FROM fact_orders WHERE status = 'completed' AND order_date >= DATE '2025-01-01' AND order_date < DATE '2026-01-01' GROUP BY month), filled AS (SELECT c.month, COALESCE(m.monthly_revenue, 0) AS monthly_revenue FROM calendar c LEFT JOIN monthly m ON m.month = c.month), lagged AS (SELECT month, monthly_revenue, LAG(monthly_revenue) OVER (ORDER BY month ASC) AS previous_revenue FROM filled) SELECT month, monthly_revenue, ROUND((monthly_revenue - previous_revenue) / NULLIF(previous_revenue, 0) * 100, 2) AS mom_pct FROM lagged ORDER BY month ASC
   required_ast:
     - id: mom-lag
       kind: window_function
@@ -133,7 +133,7 @@
   category: nested_query
   radar_dimension: 复杂查询
   difficulty: hard
-  question: 找出累计已完成消费高于有已完成订单客户平均累计消费的客户，输出 customer_id、customer_name、total_spend，并按 total_spend 降序、customer_id 升序；必须至少两层 derived table 或子查询。
+  question: 找出累计已完成消费高于有已完成订单客户平均累计消费的客户。total_spend 按该客户已完成订单的 fact_orders.total_amount 存储值求和；即使订单头与明细存在对账差异，也不得用商品行净额替代。平均值只对至少有一笔已完成订单的客户计算，包括累计金额为 0 的客户。输出 customer_id、customer_name、total_spend，并按 total_spend 降序、customer_id 升序；必须至少两层嵌套的 derived table 或子查询（最外层 SELECT 不计）。
   reference_sql: >-
     SELECT spend.customer_id, c.customer_name, spend.total_spend FROM (SELECT customer_id, SUM(total_amount) AS total_spend FROM fact_orders WHERE status = 'completed' GROUP BY customer_id) spend JOIN dim_customers c ON c.customer_id = spend.customer_id WHERE spend.total_spend > (SELECT AVG(avg_source.total_spend) FROM (SELECT customer_id, SUM(total_amount) AS total_spend FROM fact_orders WHERE status = 'completed' GROUP BY customer_id) avg_source) ORDER BY spend.total_spend DESC, spend.customer_id ASC
   required_ast:
@@ -147,9 +147,9 @@
   category: conditional_aggregation
   radar_dimension: 聚合与指标
   difficulty: medium
-  question: 按渠道类型输出 channel_type、paid_amount、refunded_amount、failed_amount，并按 channel_type 升序；必须使用三组 SUM(CASE WHEN ...) 条件聚合。
+  question: 按渠道类型输出 channel_type、paid_amount、refunded_amount、failed_amount；支付金额只按 fact_payments.status 分类，不附加订单状态过滤，并保留所有渠道类型（没有支付记录时三项均为 0）。按 channel_type 升序；必须使用三组 SUM(CASE WHEN ...) 条件聚合。
   reference_sql: >-
-    SELECT ch.channel_type, SUM(CASE WHEN p.status = 'paid' THEN p.amount ELSE 0 END) AS paid_amount, SUM(CASE WHEN p.status = 'refunded' THEN p.amount ELSE 0 END) AS refunded_amount, SUM(CASE WHEN p.status = 'failed' THEN p.amount ELSE 0 END) AS failed_amount FROM fact_payments p JOIN fact_orders o ON o.order_id = p.order_id JOIN dim_channels ch ON ch.channel_id = o.channel_id WHERE o.status = 'completed' GROUP BY ch.channel_type ORDER BY ch.channel_type ASC
+    SELECT ch.channel_type, SUM(CASE WHEN p.status = 'paid' THEN p.amount ELSE 0 END) AS paid_amount, SUM(CASE WHEN p.status = 'refunded' THEN p.amount ELSE 0 END) AS refunded_amount, SUM(CASE WHEN p.status = 'failed' THEN p.amount ELSE 0 END) AS failed_amount FROM dim_channels ch LEFT JOIN fact_orders o ON o.channel_id = ch.channel_id LEFT JOIN fact_payments p ON p.order_id = o.order_id GROUP BY ch.channel_type ORDER BY ch.channel_type ASC
   required_ast:
     - {id: sum-case-3, kind: aggregate_case_count, aggregate: SUM, when_count: 3}
   comparison: {row_order_significant: true, duplicate_policy: multiset, decimal_scale: 2, abs_tolerance: '0.005', rel_tolerance: '0', max_rows: 10000}
@@ -260,9 +260,9 @@
   category: ratio_analysis
   radar_dimension: 聚合与指标
   difficulty: medium
-  question: 按语义层净销售额口径计算每个品类的 net_revenue 和占全部品类净销售额的 revenue_share_pct，百分比四舍五入 2 位；按 revenue_share_pct 降序、category 升序。
+  question: 从商品维表中的全部品类出发，按语义层净销售额口径计算每个品类的 net_revenue（无已完成销量补 0）和占全部品类净销售额的 revenue_share_pct；总收入为 0 时占比为 NULL，否则百分比四舍五入 2 位。按 revenue_share_pct 降序 NULLS LAST、category 升序。
   reference_sql: >-
-    WITH category_revenue AS (SELECT p.category, SUM(i.quantity * i.unit_price - i.discount_amount) AS net_revenue FROM fact_order_items i JOIN fact_orders o ON o.order_id = i.order_id JOIN dim_products p ON p.product_id = i.product_id WHERE o.status = 'completed' GROUP BY p.category), total_revenue AS (SELECT SUM(net_revenue) AS total_value FROM category_revenue) SELECT c.category, c.net_revenue, ROUND(c.net_revenue / NULLIF(t.total_value, 0) * 100, 2) AS revenue_share_pct FROM category_revenue c CROSS JOIN total_revenue t ORDER BY revenue_share_pct DESC, c.category ASC
+    WITH category_revenue AS (SELECT p.category, COALESCE(SUM(CASE WHEN o.status = 'completed' THEN i.quantity * i.unit_price - i.discount_amount ELSE 0 END), 0) AS net_revenue FROM dim_products p LEFT JOIN fact_order_items i ON i.product_id = p.product_id LEFT JOIN fact_orders o ON o.order_id = i.order_id GROUP BY p.category), total_revenue AS (SELECT SUM(net_revenue) AS total_value FROM category_revenue) SELECT c.category, c.net_revenue, ROUND(c.net_revenue / NULLIF(t.total_value, 0) * 100, 2) AS revenue_share_pct FROM category_revenue c CROSS JOIN total_revenue t ORDER BY revenue_share_pct DESC NULLS LAST, c.category ASC
   required_ast:
     - {id: revenue-share-ctes, kind: cte_count, min: 2}
   comparison: {row_order_significant: true, duplicate_policy: multiset, decimal_scale: 2, abs_tolerance: '0.005', rel_tolerance: '0', max_rows: 10000}
@@ -274,7 +274,7 @@
   category: data_quality
   radar_dimension: 数据开发
   difficulty: medium
-  question: 对账订单头金额与订单行净额。输出存在差异的 order_id、stored_total、calculated_total、difference，其中 calculated_total 为订单行 quantity * unit_price - discount_amount 之和，difference 为 stored_total - calculated_total，均四舍五入 2 位；按绝对差异降序、order_id 升序。
+  question: 对账全部状态的订单头金额与订单行净额。输出存在差异的 order_id、stored_total、calculated_total、difference；没有明细的订单 calculated_total 按 0，calculated_total 和 difference 均四舍五入 2 位。按绝对差异降序、order_id 升序。
   reference_sql: >-
     WITH item_totals AS (SELECT order_id, SUM(quantity * unit_price - discount_amount) AS calculated_total FROM fact_order_items GROUP BY order_id) SELECT o.order_id, o.total_amount AS stored_total, ROUND(COALESCE(i.calculated_total, 0), 2) AS calculated_total, ROUND(o.total_amount - COALESCE(i.calculated_total, 0), 2) AS difference FROM fact_orders o LEFT JOIN item_totals i ON i.order_id = o.order_id WHERE ABS(o.total_amount - COALESCE(i.calculated_total, 0)) > 0.005 ORDER BY ABS(difference) DESC, o.order_id ASC
   required_ast:

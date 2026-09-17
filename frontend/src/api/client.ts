@@ -8,7 +8,7 @@ export class ApiError extends Error {
   }
 }
 
-async function request<T>(path: string, init: RequestInit = {}): Promise<T> {
+async function fetchResponse(path: string, init: RequestInit = {}): Promise<Response> {
   const method = (init.method ?? "GET").toUpperCase();
   const headers = new Headers(init.headers);
   if (init.body) headers.set("Content-Type", "application/json");
@@ -18,8 +18,25 @@ async function request<T>(path: string, init: RequestInit = {}): Promise<T> {
     const error = await response.json().catch(() => ({ code: "http_error", message: response.statusText, details: {} }));
     throw new ApiError(response.status, error.code, error.message, error.details);
   }
+  return response;
+}
+
+export async function request<T>(path: string, init: RequestInit = {}): Promise<T> {
+  const response = await fetchResponse(path, init);
   if (response.status === 204) return undefined as T;
   return response.json() as Promise<T>;
+}
+
+export async function requestBlob(
+  path: string,
+  init: RequestInit = {},
+): Promise<{ blob: Blob; filename: string }> {
+  const response = await fetchResponse(path, init);
+  const disposition = response.headers.get("Content-Disposition") ?? "";
+  const encoded = disposition.match(/filename\*=UTF-8''([^;]+)/i)?.[1];
+  const plain = disposition.match(/filename="?([^";]+)"?/i)?.[1];
+  const filename = encoded ? decodeURIComponent(encoded) : plain ?? "download";
+  return { blob: await response.blob(), filename };
 }
 
 export async function bootstrap(): Promise<void> {

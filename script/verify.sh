@@ -4,6 +4,8 @@ set -euo pipefail
 root_dir="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 cd "$root_dir"
 
+pnpm --dir runtime/pi install --frozen-lockfile --ignore-scripts
+pnpm --dir runtime/pi check
 uv sync --frozen
 uv run ruff check .
 uv run mypy backend tests

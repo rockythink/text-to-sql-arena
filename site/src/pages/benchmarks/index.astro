@@ -1,44 +1,38 @@
 ---
+import ChallengeProposal from "../../components/ChallengeProposal.astro";
 import SiteLayout from "../../layouts/SiteLayout.astro";
 import { formatDate, getSuites, githubEvidenceRoot } from "../../lib/evidence";
-
 const suites = (await getSuites()).sort((a, b) => b.version - a.version);
 ---
-<SiteLayout title="测试用例" description="浏览报告实际采用、不可变且哈希锁定的 Text-to-SQL 测试用例版本。" current="benchmarks">
-  <header class="page-frame">
-    <h1 class="page-title">测试用例版本</h1>
-    <p class="page-lede">每个版本包含 Schema、Seed、语义层、Prompt 和案例。内容规范化后计算哈希，发布后不再修改。</p>
+<SiteLayout title="测试用例" description="浏览已发布、哈希锁定的真实业务题库版本，并在本地整理新的挑战提案。" current="benchmarks">
+  <header class="page-frame benchmark-hero">
+    <p class="kicker">题库不是题目清单，而是一份可复现合同</p>
+    <h1 class="page-title">模型到底在解什么业务问题</h1>
+    <p class="page-lede">每个公开版本同时冻结 Schema、种子数据、语义口径、Prompt、金标与比较规则。发布后不原地改题；修正会进入新版本。</p>
   </header>
-  <section class="section" style="padding-top:0">
+
+  <section class="section">
+    <div class="section-heading"><h2>已发布版本</h2><p>数字只是规模，不代表难度或覆盖完整度。进入源文件可核对每一道题和金标。</p></div>
     <div class="suite-list">
       {suites.map((suite) => <article class="suite-card">
-        <div class="suite-card-head">
-          <div><span class="suite-version">版本 {String(suite.version).padStart(2, "0")}</span><h2>{suite.name}</h2><p>{suite.description}</p></div>
-          <div class="evidence-actions"><a class="button-link primary" href={`${githubEvidenceRoot}/${suite.path}`}>浏览源与金标 ↗</a></div>
-        </div>
-        <div class="suite-facts">
-          <div><span>CASES</span><b>{suite.gold_count}</b></div>
-          <div><span>GOLD ROWS</span><b>{suite.row_count}</b></div>
-          <div><span>DIALECT</span><b>{suite.dialect}</b></div>
-        </div>
-        <div class="protocol-grid">
-          <div class="protocol-item"><small>DuckDB</small><code>{suite.duckdb_version}</code></div>
-          <div class="protocol-item"><small>SQLGlot</small><code>{suite.sqlglot_version}</code></div>
-          <div class="protocol-item"><small>Scorer</small><code>{suite.scorer_version}</code></div>
-          <div class="protocol-item"><small>Published</small><code>{formatDate(suite.published_at)}</code></div>
-        </div>
-        <div class="suite-hash">CONTENT SHA-256<br/>{suite.content_hash}<br/><br/>BUNDLE SHA-256<br/>{suite.bundle_sha256}</div>
+        <header><p>版本 {String(suite.version).padStart(2, "0")} · {formatDate(suite.published_at)}</p><h2>{suite.name}</h2><p>{suite.description}</p></header>
+        <dl class="suite-facts"><div><dt>业务题</dt><dd>{suite.gold_count}</dd></div><div><dt>金标结果行</dt><dd>{suite.row_count}</dd></div><div><dt>方言</dt><dd>{suite.dialect}</dd></div></dl>
+        <div class="suite-contract"><p><span>执行引擎</span><code>DuckDB {suite.duckdb_version}</code></p><p><span>解析器</span><code>SQLGlot {suite.sqlglot_version}</code></p><p><span>评分器</span><code>{suite.scorer_version}</code></p></div>
+        <details class="hash-details"><summary>查看内容与发布摘要</summary><p><span>Content SHA-256</span><code>{suite.content_hash}</code></p><p><span>Bundle SHA-256</span><code>{suite.bundle_sha256}</code></p></details>
+        <div class="story-actions"><a class="button-link primary" href={`${githubEvidenceRoot}/${suite.path}`}>浏览题目、数据与金标 ↗</a></div>
       </article>)}
     </div>
   </section>
 
-  <section class="section">
-    <div class="section-heading"><div><h2>模型输入边界</h2></div><p>公开证据包含答案和金标；实际模型 Prompt 不包含 Reference SQL、金标结果或 AST 评分规则。</p></div>
-    <div class="method-grid">
-      <article class="method-step"><small>题库源</small><h3>完整配置</h3><p>包含 Reference SQL 和金标，用于构建和验证题库。</p></article>
-      <article class="method-step"><small>模型输入</small><h3>排除答案</h3><p>只发送结构、语义、业务问题、Dialect 规则和输出合同。</p></article>
-      <article class="method-step"><small>本地执行</small><h3>结果比较</h3><p>模型 SQL 与固定 DuckDB 金标进行确定性比较。</p></article>
-      <article class="method-step"><small>公开证据</small><h3>保留记录</h3><p>发布 Prompt、模型输出、结果、评分和事件日志。</p></article>
-    </div>
+  <section class="section boundary-section">
+    <div class="section-heading"><h2>答案如何与模型隔离</h2><p>公开后你能看到金标，不代表模型运行时看到了答案。</p></div>
+    <ol class="method-grid">
+      <li><b>01</b><h3>冻结题库</h3><p>维护者用 Reference SQL 生成并验证金标结果。</p></li>
+      <li><b>02</b><h3>裁剪输入</h3><p>模型只收到结构、语义、业务问题、方言规则和输出合同。</p></li>
+      <li><b>03</b><h3>本地执行</h3><p>生成 SQL 在固定 DuckDB 数据上运行，再与金标结果比较。</p></li>
+      <li><b>04</b><h3>发布证据</h3><p>运行结束后才公开 Prompt、输出、评分、日志与摘要。</p></li>
+    </ol>
   </section>
+
+  <section class="section"><ChallengeProposal /></section>
 </SiteLayout>

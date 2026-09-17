@@ -90,5 +90,8 @@ if settings.static_dir.exists():
     async def spa_fallback(path: str) -> FileResponse:
         requested = settings.static_dir / path
         if path and requested.is_file() and requested.is_relative_to(settings.static_dir):
-            return FileResponse(requested)
-        return FileResponse(settings.static_dir / "index.html")
+            headers = {"Cache-Control": "no-cache"} if requested.suffix == ".html" else None
+            return FileResponse(requested, headers=headers)
+        return FileResponse(
+            settings.static_dir / "index.html", headers={"Cache-Control": "no-cache"}
+        )

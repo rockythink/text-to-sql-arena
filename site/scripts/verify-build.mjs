@@ -43,8 +43,21 @@ for (const run of index.runs) {
   ));
 }
 
-if (htmlFiles.length !== index.run_count + casePageCount + 13) {
-  failures.push(`expected ${index.run_count + casePageCount + 13} HTML pages, found ${htmlFiles.length}`);
+const expectedStaticPages = [
+  "404.html",
+  "index.html",
+  "benchmarks/index.html",
+  "runs/index.html",
+  "docs/index.html",
+  "docs/evidence/index.html",
+  "docs/methodology/index.html",
+].map((relative) => path.join(dist, relative));
+const expectedPageCount = index.run_count + casePageCount + expectedStaticPages.length;
+if (htmlFiles.length !== expectedPageCount) {
+  failures.push(`expected ${expectedPageCount} HTML pages, found ${htmlFiles.length}`);
+}
+for (const page of expectedStaticPages) {
+  if (!files.includes(page)) failures.push(`missing static page: ${page}`);
 }
 
 for (const run of index.runs) {

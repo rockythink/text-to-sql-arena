@@ -2,63 +2,78 @@
 import ModelIdentity from "../components/ModelIdentity.astro";
 import RunCard from "../components/RunCard.astro";
 import SiteLayout from "../layouts/SiteLayout.astro";
-import { formatDate, getEvidenceIndex, getRuns, runSlug, scoreText } from "../lib/evidence";
+import { displayModelName, formatDate, getCaseRounds, getEvidenceIndex, getRuns, runSlug, scoreText } from "../lib/evidence";
 
 const [index, runs] = await Promise.all([getEvidenceIndex(), getRuns()]);
 const latest = runs.find(({ report }) => report.models.some((model) => model.official_score != null)) ?? runs[0];
 const base = import.meta.env.BASE_URL;
+const keyRounds = (latest ? getCaseRounds(latest.report) : [])
+  .filter((item) => item.spread > 0)
+  .sort((a, b) => b.spread - a.spread)
+  .slice(0, 3);
+const sampleSize = latest?.report.selected_case_keys.length ?? 0;
 ---
-<SiteLayout title="首页" description="Text-to-SQL 评测报告、报告证据、测试用例与评测方法。" current="home">
-  <section class="hero">
+<SiteLayout title="首页" description="有证据可复核的 Text-to-SQL 实测报道：结论、关键回合、业务题意与完整原始记录。" current="home">
+  <header class="hero editorial-hero">
     <div class="hero-copy">
-      <h1 class="hero-title">Text-to-SQL 评测记录</h1>
-      <p class="page-lede">只公开经选择的评测报告、支持结论的报告证据、实际测试用例与评测方法。当前收录 {index.run_count} 次已发布运行。</p>
+      <p class="kicker">公开评测报道 · 结论可回到证据</p>
+      <h1 class="hero-title">模型写 SQL，<br/><span>我们把关键回合摊开讲。</span></h1>
+      <p class="page-lede">这里不拿一次高分冒充长期能力。每篇报告同时给出业务题意、固定评分、失败记录和原始证据，让“为什么得这个分”可以被复核。</p>
+      <div class="hero-actions">
+        {latest && <a class="button-link primary" href={`${base}runs/${runSlug(latest.report.id)}/`}>读最新比赛报道</a>}
+        <a class="button-link" href={`${base}benchmarks/`}>查看真实题库</a>
+      </div>
     </div>
-    <aside class="hero-rail" aria-label="公开证据统计">
-      <div class="rail-label">数据概况</div>
+    <aside class="hero-rail" aria-label="公开证据规模">
+      <div class="rail-label">公开样本</div>
       <div class="rail-stats">
-        <div class="rail-stat"><b>{index.run_count}</b><span>运行记录</span></div>
-        <div class="rail-stat"><b>{index.suite_count}</b><span>题库版本</span></div>
-        <div class="rail-stat"><b>100</b><span>评分上限</span></div>
+        <div class="rail-stat"><b>{index.run_count}</b><span>已发布运行</span></div>
+        <div class="rail-stat"><b>{index.suite_count}</b><span>锁定题库版本</span></div>
+        <div class="rail-stat"><b>{sampleSize || "—"}</b><span>最新运行题数</span></div>
       </div>
-      <div class="rail-proof">证据格式<code>{index.schema_version}</code></div>
+      <div class="rail-proof">证据协议 <code>{index.schema_version}</code></div>
     </aside>
-  </section>
+  </header>
 
-  {latest && <section class="section">
-    <div class="section-heading">
-      <div><h2>最近运行</h2></div>
-      <p>显示本次运行的模型、综合得分、配置快照和原始证据入口。</p>
-    </div>
-    <div class="latest-match">
-      <div class="match-number"><span>RUN / {formatDate(latest.report.created_at)}</span><b>{String(latest.report.id).padStart(2, "0")}</b></div>
-      <div class="match-body">
-        <div class="match-meta"><span>{latest.report.fairness.comparison_mode.toUpperCase()}</span><code>{latest.report.suite_content_hash.slice(0, 18)}</code></div>
-        <div class="match-models">
-          {latest.report.models.map((model) => <article class="match-model">
-            <small>{model.resolved_model_id ?? model.requested_model_id}</small>
-            <h3><ModelIdentity name={model.name} modelId={model.resolved_model_id ?? model.requested_model_id} adapterKind={model.adapter_kind}/></h3>
-            <strong>{scoreText(model.official_score)}</strong>
-          </article>)}
-        </div>
-        <div class="evidence-actions">
-          <a class="button-link primary" href={`${base}runs/${runSlug(latest.report.id)}/`}>打开完整报告 ↗</a>
-          <a class="button-link" href="https://github.com/rockythink/text-to-sql-arena/tree/main/evidence">查看原始证据</a>
-        </div>
+  {latest && <>
+    <section class="section lead-story">
+      <div class="story-heading">
+        <p class="kicker">最新一场 · {formatDate(latest.report.created_at)}</p>
+        <h2>这次测到了什么</h2>
+        <p>{latest.report.models.length} 组模型在同一套 {sampleSize} 道题上的固定快照。综合得分是多项规则的加权分，不是正确率；这个小样本只能说明本次题库与配置下的表现，不能推出稳定赢家。</p>
       </div>
-    </div>
-  </section>}
+      <div class="scoreboard" aria-label={`运行 ${latest.report.id} 综合得分`}>
+        {latest.report.models.map((model, index) => <article class:list={["scoreboard-team", index % 2 === 0 ? "team-cyan" : "team-orange"]}>
+          <p>{model.resolved_model_id ?? model.requested_model_id}</p>
+          <h3><ModelIdentity name={model.name} modelId={model.resolved_model_id ?? model.requested_model_id} adapterKind={model.adapter_kind}/></h3>
+          <strong>{scoreText(model.official_score)}</strong>
+          <span>综合得分 / 100</span>
+        </article>)}
+      </div>
+      <div class="story-actions">
+        <a class="button-link primary" href={`${base}runs/${runSlug(latest.report.id)}/`}>逐题读完整报告</a>
+        <a class="button-link" href="https://github.com/rockythink/text-to-sql-arena/tree/main/evidence">核验原始证据 ↗</a>
+      </div>
+    </section>
 
+    {keyRounds.length > 0 && <section class="section rounds-section">
+      <div class="section-heading"><h2>改变比分的关键回合</h2><p>按全部计划尝试的每题均分差排列，只陈述证据中发生的事。</p></div>
+      <div class="round-list">
+        {keyRounds.map((round, index) => <article class="round-row">
+          <div class="round-index">{String(index + 1).padStart(2, "0")}</div>
+          <div class="round-copy"><h3>{round.title}</h3><code>{round.stableKey}</code><p>{round.models.flatMap(({ results }) => results).find((result) => result.visible_summary)?.visible_summary ?? "本次报告没有可见业务摘要。"}</p></div>
+          <div class="round-results">
+            {round.models.map(({ model, mean, verdict }) => <div><span>{displayModelName(model.name)}</span><b>{scoreText(mean)}</b><small>{verdict === "correct" ? "全部作答正确*" : verdict === "incorrect" ? "作答未全对*" : "正确性未知"}</small></div>)}
+          </div>
+        </article>)}
+      </div>
+      <p class="derivation-note">* 页面仅根据执行、行结果、列名、列数与排序分项派生；不把 AST / SQL 能力分混入“结果正确”。原始评分未被修改。</p>
+    </section>}
+  </>}
 
   <section class="section">
-    <div class="section-heading">
-      <div><h2>运行记录</h2></div>
-      <p>列表包含完成、失败、取消和中断的运行；缺失字段保持为空。</p>
-    </div>
-    <div class="run-list">
-      {runs.slice(0, 4).map(({ index: runIndex, report }) => <RunCard index={runIndex} report={report} compact />)}
-    </div>
-    <div class="evidence-actions"><a class="button-link" href={`${base}runs/`}>查看全部运行 →</a></div>
+    <div class="section-heading"><h2>更多运行记录</h2><p>失败、取消和中断也保留；缺失证据就显示未知，不补故事。</p></div>
+    <div class="run-list">{runs.slice(0, 4).map(({ index: runIndex, report }) => <RunCard index={runIndex} report={report} compact />)}</div>
+    <div class="story-actions"><a class="button-link" href={`${base}runs/`}>浏览全部运行</a></div>
   </section>
-
 </SiteLayout>

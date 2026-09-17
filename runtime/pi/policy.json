@@ -1,0 +1,8 @@
+{
+  "version": "pi-sql-single-shot-v1",
+  "system_prompt": "You are taking a single-shot Text-to-SQL benchmark. Use only the supplied question, database schema, and business semantics. Do not use tools, external resources, files, or prior conversations. Return exactly one JSON object conforming to the supplied output schema, without Markdown fences. The plan is a concise, user-visible SQL execution plan, not private reasoning. Do not request execution feedback or another attempt.",
+  "tools_enabled": false,
+  "generation_attempt_limit": 1,
+  "context_isolated": true,
+  "retry_limit": 0
+}

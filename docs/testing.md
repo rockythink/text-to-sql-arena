@@ -41,7 +41,7 @@
 保护：
 
 - 相同源生成相同 content hash 和 lock；
-- v2 恰好 18 题、六维均衡和难度分布；
+- 当前题库恰好 18 题、六维均衡和难度分布；
 - 雷达维度是可版本化字符串，历史维度可重建；
 - 固定表基数和专用边界数据存在；
 - 所有参考 SQL 与提交的 lock 完全一致；
@@ -66,7 +66,7 @@
 
 保护：
 
-- Decimal 定标和容差；
+- 全精度 Decimal、整数列精确比较与非整数列容差；
 - NULL、布尔、日期、UTC 时间戳和 Unicode NFC；
 - 重复行按多重集处理；
 - 列名大小写/引用符与列重排；
@@ -86,32 +86,25 @@
 - Worker 超时、行数上限和错误映射；
 - 窗口、相关子查询、NOT EXISTS、CTE、条件聚合和预聚合 AST 规则；
 - 100 分固定公式及部分失败得分；
-- 案例权重、attempt mean/success/stddev 和结论生成。
+- 案例权重、attempt mean/nonzero-score/stddev 和结论生成；
+- `result-quality-v1` 对完整评分、未知证据和全计划尝试分母的判定；
+- challenge check 用真实 DuckDB 验证典型错解可区分，并保护“全错但空结果相同”不得误报的边界。
 
-未证明：SQLGlot 或 DuckDB 不存在未知漏洞；因此实现还保留运行时只读和 external access 双层防守。
+未证明：SQLGlot 或 DuckDB 不存在未知漏洞；因此实现还保留运行时只读和 external access 双层防守。challenge check 是题库自检，不是模型能力测试；变体只在临时目录构建，不改变 canonical hash 或发布目录。
 
-### `tests/test_adapters.py`
+### Pi 适配器与桥接测试
 
 保护：
 
-- loopback HTTP 不继承环境代理；
-- Codex JS launcher 只解析唯一原生二进制；
-- Codex Seatbelt 默认拒绝、用户主目录边界、项目显式拒绝、认证/案例目录精确放行；
-- 录制的 Codex、Claude、Gemini JSONL 和 OpenAI SSE 解析；
-- 只恢复单一 JSON fence；
-- Gemini 临时设置仅保留认证选择并禁用 skills；
-- Gemini 工具调用判策略违规；
-- 递归密钥脱敏；
-- CLI 1 MiB 输出上限；
-- CLI 超时会终止进程组。
+- 新 profile 只接受 `pi`/`text`，验证 Provider、认证、默认 180 秒超时和可选生成参数；界面固定 180 秒，API 可显式配置超时并在快照中披露；
+- `openai-codex` 只接受 OAuth，catalog 覆盖 `gpt-5.6-luna` / `gpt-5.6-sol`，并拒绝 Base URL/API Key/`max_tokens`；
+- 本地检查仅导入支持的 Pi/Codex 登录凭据，不读取配置、工具或会话、不发生成请求；新登录可更新 keyring，但较旧认证文件不能覆盖已刷新的令牌，原认证文件保持不变；
+- Node bridge 固定 `@earendil-works/pi-ai` 0.85.1，结构化 stdin/stdout 合同、取消、超时和错误映射可在无 Provider 网络调用下验证；
+- 隔离快照披露单轮、无工具、生成尝试上限 1（本地检查实际生成 0 次）、固定 Prompt 摘要、Provider/认证和有效参数，不包含凭据；
+- 旧适配器实现及专属解析测试已移除；接口测试保护历史配置不可用于新运行或复测，历史报告继续读取冻结证据而不重算分数；
+- 递归密钥脱敏继续覆盖事件、报告和公开证据。
 
-此外，发布前执行真实 macOS `sandbox-exec` smoke：
-
-- 案例临时文件可读；
-- 仓库文件读取返回非零；
-- 当前 Codex 原生二进制在同一策略下 `--version` 可启动。
-
-未证明：录制夹具等于所有未来 CLI 版本；健康检查和历史 CLI 版本快照用于发现漂移。
+自动化检查不调用真实 Provider。另已对 GPT 订阅路径完成一次独立 smoke：Pi 0.85.1、`openai-codex/gpt-5.6-luna`、既有 OAuth 凭据导入系统钥匙串、单请求、无工具，严格 JSON 的 `SELECT 1` 执行得到 `[(1,)]`（生成 2839 ms；381 input / 66 output Token）。它没有创建 benchmark run 或历史记录，不是完整评测，也不证明其他远端 Provider 可用。另用真实 Pi SDK 连接本地协议服务，验证 Anthropic/Google 单请求路径，以及超时、取消和超长输出的错误边界；这些本地检查不是远端模型实测。
 
 ### `tests/test_api_integration.py`
 
@@ -119,7 +112,7 @@
 
 保护：
 
-- 创建/健康检查模型配置；
+- 创建/本地就绪检查模型配置；
 - Prompt preview；
 - 双模型完整状态机；
 - 成功模型 18 题真实执行和 100 分链路；
@@ -128,9 +121,9 @@
 - 事件严格递增、history `after_seq` 和 SSE 续传；
 - 默认隐藏和显式揭示 reference/gold；
 - 生成耗时与 Provider request ID 落库；
-- `run-report-v2` 协议版本、公平性、Token/费用/时长聚合与缺失数据覆盖率；
+- run-report-v4/result-quality-v2 的业务结果、格式、失败分类与效率；旧 scorer 1.x 动态报告及历史公开证据保留原合同；
 - profile 改名后历史报告仍使用名称快照；
-- exact rerun 复制原模型和题库快照；
+- exact rerun 复制冻结快照；执行/评分环境变化时拒绝冒充原环境；
 - 取消到终态；
 - Host、Origin 和 CSRF 拒绝；
 - 全量证据导出、路径/密钥脱敏、摘要验真和篡改检测。
@@ -143,12 +136,13 @@
 
 保护：
 
-- 新建运行的健康门禁和公平性提示；
+- 新建运行只允许 Pi profile；历史 profile 保持可见、不可选且仍可删除；
+- 竞技场固定单次尝试，预检通过后才能开赛；
 - SSE 按最后 `seq` 重连且不重复消费；
 - 演示模式只写当前 tab 的 `sessionStorage`；
 - SQL 工作区把 plan、SQL、固定金标和实际结果放在正确位置；
-- 运行中取消调用正确 API 并刷新状态；
-- 旧事件缺失 payload 时页面仍可渲染。
+- 报告分开披露配置和逐题实际调用；相同配置但实际 wire 预算不同或请求缺失时不输出进退结论；嵌套控制项不暴露密钥；
+- 运行中取消调用正确 API 并刷新状态；旧事件缺失 payload 时页面仍可渲染；
 
 未覆盖：
 
@@ -170,6 +164,7 @@
 5. 实时日志筛选和历史事件加载正常；
 6. 生产构建没有浏览器 console error；
 7. 404 前端路径回退到 SPA。
+8. 新运行选择器禁用历史适配器并固定 1 次尝试；报告将 `controlled_harness` 解释为统一 Pi 控制而非同端点/同模型。此 smoke 不创建 profile、不调用 Provider。
 
 Smoke 只确认被操作的路径，不替代自动化合同测试。
 
@@ -246,7 +241,7 @@ cd frontend
 pnpm audit --prod
 ```
 
-Python 依赖由 `uv.lock` 固定，前端由 `pnpm-lock.yaml` 固定。依赖漏洞扫描只能发现已登记 CVE，不证明应用安全；Host/Origin/CSRF、CLI 沙箱、SQL 双层守卫和脱敏仍需行为测试。
+Python 依赖由 `uv.lock` 固定，前端和 Pi bridge 分别由各自的 `pnpm-lock.yaml` 固定；CI 与 `script/verify.sh` 在后端测试前安装锁定的 Pi 运行时。依赖漏洞扫描只能发现已登记 CVE，不证明应用安全；Host/Origin/CSRF、进程隔离、SQL 双层守卫和脱敏仍需行为验证。
 
 ## 10. 证据等级
 
@@ -261,3 +256,27 @@ Python 依赖由 `uv.lock` 固定，前端由 `pnpm-lock.yaml` 固定。依赖�
 7. 文档或源码静态声明。
 
 对外结论必须标明它依赖哪一级。尤其不能用 FixtureAdapter 的 100 分替代真实模型结果。
+
+## 11. 0.4.0 验收
+
+- backend：67 个测试通过，Ruff、mypy、空库 Alembic 升级通过。测试环境仍有 Starlette/httpx 弃用警告，未屏蔽。
+- frontend：13 个测试通过，ESLint、TypeScript、Vite 构建通过。
+- site：Astro 检查无错误，构建验真为 188 页、2 个历史题库、18 场已公开运行，内部链接通过；未部署。
+- v3 真实评测使用 Pi 0.85.1、Luna/Sol 现有订阅、medium、每题每轮一次，不回传错误、不重试、不择优。记录实际 wire 参数、调用次数、工具状态及上下文隔离。
+- 真实浏览器已确认新报告业务正确率优先、配置与实际请求分列；1440px 无横向溢出。
+- v3 试运行发现累计消费口径未明确，另冻结 v4 澄清订单头存储金额优先。v3 原分和调用保留，不旁路重评分；v4 的参考答案与回归验收不等于模型实测。
+
+## 12. v3 三轮独立诊断记录
+
+运行 #20、#21、#22 均完整结束；每轮两份现有订阅配置、18 题，每题一次，共 108 次生成。三轮均冻结 v3 hash bd6e5a90192057b51f6ab8c37cf7155255b2392368271a417367c1abaaf4c090，未中途切换到 v4。每轮事件均为 36 条 provider.requested 和 36 条 provider.completed，每个案例恰好一条请求。
+
+| 配置 | 三轮金标匹配题数 | 三轮辅助综合分 | 平均分 / 轮间标准差 |
+| --- | --- | --- | --- |
+| Luna · Pi 订阅 | 17/18、17/18、17/18 | 98.15、96.90、97.32 | 97.46 / 0.52 |
+| Sol · Pi 订阅 | 17/18、17/18、17/18 | 98.15、98.98、98.98 | 98.70 / 0.39 |
+
+标准差按这三轮总体描述计算，不作统计显著性推断。两者金标匹配率均为 51/54=94.44%，三轮该比率波动为 0；执行、JSON 和格式均 54/54。唯一业务结果不匹配均在 Q9，来自订单头/明细金额口径歧义，因此不用于判定模型优劣，也不事后删题改分。Q8、Q11、Q15 的其他分差来自辅助 AST 结构项，行结果仍匹配。
+
+全部 108 次调用记录 generation_attempts=1、tool_calls_observed=0、context_isolated=true；实际参数均为 openai-codex/OAuth、180 秒、reasoning medium，输出上限 provider_managed。模型身份仅 requested_catalog，不能证明服务端实际版本。双方总 Token 分别为 198714 与 198793；订阅单题费用未知。
+
+本地完整报告：var/validation-v3-three-rounds.json。逐题 18×2×3 结果、AST 失分、失败类型、统计和解释限制：var/validation-v3-summary.json。这些本地诊断文件未复制到公开 evidence/，未部署。当前 v4 hash addba1a63b88ae88b088c015a8fc0da5563980d3fe47684a32dc97bd48bf0bdb 仅澄清 Q9 来源与嵌套要求；本次没有额外调用模型验证 v4。

@@ -21,10 +21,8 @@ flowchart LR
     API --> Suite[Suite Service]
     API --> Engine[Benchmark Engine]
     Engine --> Adapter[ModelAdapter Interface]
-    Adapter --> OA[OpenAI-compatible]
-    Adapter --> CX[Codex CLI]
-    Adapter --> CL[Claude CLI]
-    Adapter --> GM[Gemini CLI]
+    Adapter --> PI[Pi bridge · pi-ai 0.85.1]
+    PI --> Providers[OpenAI Codex OAuth / API Providers]
     Engine --> Guard[SQLGlot Guard]
     Guard --> Worker[Spawned DuckDB Worker]
     Worker --> Compare[Result Comparator]
@@ -46,8 +44,8 @@ flowchart LR
 | `backend/app/models.py` | SQLAlchemy 持久化模型和不可变快照字段 | 评分和业务判断 |
 | `backend/app/services/suites.py` | 内容哈希、DuckDB 构建、结构提取、金标生成、发布自检 | 模型调用 |
 | `backend/app/services/benchmark_engine.py` | 运行状态机、取消、模型/案例编排、证据落库 | HTTP 序列化、具体 Provider 协议 |
-| `backend/app/adapters/base.py` | `ModelAdapter`、请求/响应/错误/事件接口，CLI 进程治理 | SQL 评分 |
-| `backend/app/adapters/*` | 单一 Provider/CLI 的健康检查、隔离、协议解析 | 题库和金标读取 |
+| `backend/app/adapters/base.py` | `ModelAdapter`、请求/响应/错误/事件接口 | SQL 评分 |
+| `backend/app/adapters/pi.py` 与 `runtime/pi/` | 新配置的本地就绪检查、凭据解析、统一低层调用和隔离快照 | 题库、金标或 coding-agent 工具执行 |
 | `backend/app/services/sql_evaluator.py` | SQL AST 守卫、隔离执行、AST 能力规则、评分 | 模型身份判断 |
 | `backend/app/services/result_compare.py` | 类型归一化、列对齐、多重集匹配、差异摘要 | SQL 执行 |
 | `backend/app/services/events.py` | 有序持久化事件、SSE Hub、delta 缓冲 | 运行状态推进 |
@@ -61,12 +59,12 @@ flowchart LR
 
 ### `ModelAdapter`
 
-一个适配器只需实现：
+一个适配器仍实现：
 
 - `check(profile) -> AdapterHealth`
 - `generate(profile, request, emit, cancel) -> GenerationResponse`
 
-运行引擎只依赖标准化结果：原始输出、解析输出、请求/解析模型身份、Token、Provider request ID、耗时和协议严格性。Provider 特有 JSONL/SSE、命令行参数、认证和错误映射全部留在适配器内部。
+新运行只注册 Pi 适配器。运行引擎依赖标准化结果：原始文本、解析输出、请求/解析模型身份、Token、Provider request ID、耗时和协议严格性。Pi bridge 固定 `@earendil-works/pi-ai` 0.85.1，负责 Provider 协议和认证差异；它不是 coding-agent，也不加载工具、配置或会话。
 
 ### `SuiteSource -> PublishedSuite`
 
@@ -126,12 +124,14 @@ stateDiagram-v2
 
 实际 Prompt 会持久化并公开，可直接审查是否泄漏。公开题库是“对人开放、对单次模型运行盲测”，不是秘密 benchmark。
 
-### 6.2 CLI 适配器
+### 6.2 Pi 统一调用边界
 
-- Codex：macOS Seatbelt 默认拒绝。运行时数据读取只允许用户主目录以外的系统路径；用户主目录仅精确放行原生 Codex 二进制和认证文件。项目和 `~/.ssh` 显式拒绝，案例临时目录可读写。测试同时验证策略文本和真实 `sandbox-exec`：案例文件可读、项目文件被拒、Codex 原生二进制可启动。
-- Gemini：新建临时 Home，只复制认证选择，禁用 skills，解析到任何工具调用即失败。
-- Claude：不启用工具，使用受控工作目录和环境。
-- OpenAI-compatible：只有 Prompt 和输出合同离开进程；远端服务本身在本项目信任边界之外。
+- 新 profile 固定 `adapter_kind=pi`、`response_mode=text`；Provider、认证、180 秒超时和可选生成参数写入 `parameters`。
+- 每个案例是单轮、固定 Prompt、无工具、无重试调用；Node bridge 不接触题库路径、参考 SQL 或评分规则。
+- GPT 订阅使用 `provider=openai-codex` 与 `auth_mode=oauth`，本地 catalog 包含 `gpt-5.6-luna` / `gpt-5.6-sol`，不接受 Base URL、API Key 或 `max_tokens`；输出上限由 Provider 管理。检查只验证本地 catalog/凭据/参数，不生成内容或证明 Provider 可用。凭据可由支持的外部 Pi CLI 登录或既有 Codex 登录文件导入系统钥匙串；不读取配置、工具或会话。
+- API Key 模式支持 OpenAI、Anthropic、Google 和自定义 Provider 标识；这只描述接入入口，不承诺覆盖各 Provider 的全部模型目录。
+- isolation_snapshot_json 仅是运行创建时的配置/本地预检快照，不证明实际调用。报告从 provider.requested/completed 事件生成逐题 invocation，披露实际 wire_generation、SDK/bridge/lock/policy/系统 Prompt 摘要及完成状态；请求模型名不冒充 Provider 已确认身份。
+- 旧 CLI/HTTP profile 与历史运行不改写；它们不能被本地就绪检查或选择进入新运行，但仍可查看和删除。
 
 ### 6.3 SQL 执行
 
@@ -185,8 +185,8 @@ DuckDB 是每个发布题库的执行数据面。产物目录以题库 SHA-256 �
 
 - 应用、评分器、DuckDB、SQLGlot、输出合同版本；
 - profile 显示名；
-- 适配器、Base URL、响应模式、请求模型、参数和密钥引用；
-- CLI 版本和隔离配置；
+- 适配器、Provider、认证、Base URL（仅 API）、响应模式、请求模型、参数和不含明文的密钥引用；
+- Pi harness/bridge 版本与隔离配置；历史运行保留原 CLI/HTTP 快照；
 - 题库内容哈希和案例选择。
 
 0.2.0 之前没有保存的字段使用迁移时可确认的历史值回填；无法恢复的 Provider request ID 和生成耗时保留 `null`，不伪造。

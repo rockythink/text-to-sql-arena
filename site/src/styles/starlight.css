@@ -11,6 +11,10 @@
   --sl-color-gray-6: #15191a;
   --sl-color-black: #0a0c0d;
   --sl-content-width: 50rem;
+  --type-display: 40px;
+  --type-section: 24px;
+  --type-body: 16px;
+  --type-meta: 14px;
 }
 
 :root[data-theme="light"] {
@@ -51,14 +55,14 @@ header.header {
   letter-spacing: -.01em;
 }
 
-.sl-markdown-content h1 { font-size: clamp(2rem, 4vw, 2.7rem); line-height: 1.12; }
-.sl-markdown-content h2 { font-size: clamp(1.45rem, 2.5vw, 1.8rem); }
-.sl-markdown-content h3 { font-size: 1.2rem; }
+.sl-markdown-content h1 { font-size: var(--type-display); line-height: 1.12; }
+.sl-markdown-content h2 { font-size: var(--type-section); }
+.sl-markdown-content h3 { font-size: var(--type-body); }
 .sl-markdown-content p,
-.sl-markdown-content li { font-size: 1rem; line-height: 1.72; }
+.sl-markdown-content li { font-size: var(--type-body); line-height: 1.72; }
 .sl-markdown-content code { border-radius: 0; }
-.sl-markdown-content table { font-size: .95rem; }
-.sl-markdown-content th { font-size: .78rem; letter-spacing: .03em; }
+.sl-markdown-content table,
+.sl-markdown-content th { font-size: var(--type-meta); letter-spacing: 0; }
 
 .hero h1 {
   font-weight: 400;
@@ -77,3 +81,6 @@ header.header {
 @media (prefers-reduced-motion: reduce) {
   *, *::before, *::after { scroll-behavior: auto !important; transition-duration: .01ms !important; }
 }
+.content-panel h1{font-size:var(--type-display);line-height:1.12}
+.right-sidebar-panel h2{font-size:var(--type-body)}
+body :is(kbd,summary,mobile-starlight-toc .toggle,starlight-toc a,starlight-toc span){font-size:var(--type-meta);line-height:1.5}

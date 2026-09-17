@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from typing import Annotated, Literal
+from typing import Annotated, Any, Literal
 
 from pydantic import BaseModel, ConfigDict, Field, field_validator
 
@@ -196,6 +196,48 @@ class SuiteSource(StrictModel):
         if len(orders) != len(set(orders)):
             raise ValueError("case sort_order must be unique")
         return value
+
+
+class ChallengeVariant(StrictModel):
+    name: str = Field(min_length=1, max_length=100)
+    seed_sql: str = Field(min_length=1, max_length=200_000)
+
+
+class ChallengeCandidate(StrictModel):
+    name: str = Field(min_length=1, max_length=100)
+    sql: str = Field(min_length=1, max_length=100_000)
+    expected: Literal["correct", "incorrect"]
+
+
+class ChallengeCandidateResult(StrictModel):
+    name: str
+    expected: Literal["correct", "incorrect"]
+    status: Literal["matched", "different", "execution_error"]
+    result_correct: bool
+    distinguished: bool
+    error_code: str | None = None
+    error_message: str | None = None
+    diff: dict[str, Any] | None = None
+
+
+class ChallengeVariantResult(StrictModel):
+    name: str
+    baseline: ChallengeCandidateResult
+    candidates: list[ChallengeCandidateResult]
+
+
+class ChallengeSummary(StrictModel):
+    candidate_count: int
+    passed_candidates: int
+    passed: bool
+    indistinguishable: list[str]
+    execution_errors: list[str]
+
+
+class ChallengeCheckResult(StrictModel):
+    case_key: str
+    variants: list[ChallengeVariantResult]
+    summary: ChallengeSummary
 
 
 class QueryPlan(StrictModel):
