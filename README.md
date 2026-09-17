@@ -116,6 +116,13 @@ pnpm dev
 
 执行 `pnpm check && pnpm build && pnpm verify:build` 会生成公开边界内的正文与证据页面并检查内部链接。该命令只构建本地静态产物，不部署站点。
 
+自动部署由 `.github/workflows/docs.yml`（Public site CI and deployment）负责，保留现有 Cloudflare Pages Direct Upload 项目 `text-to-sql-arena` 和域名：
+
+- `main` 上的推送涉及 `site/**`、`docs/**`、`evidence/**`、`frontend/public/fonts/**` 或该工作流时，自动检查、构建并发布；也可在 GitHub Actions 对 `main` 手动运行。
+- PR 只检查和构建，不部署；只有站点检查、构建和生成页面与链接验证全部通过，独立部署任务才上传同一次运行保存的 `site/dist` 产物。生产工作流串行运行，不取消正在执行的生产发布。
+- GitHub Actions Secrets 使用 `CLOUDFLARE_API_TOKEN` 和 `CLOUDFLARE_ACCOUNT_ID`；令牌仅授予目标账户的 Pages Write（控制台中的 Cloudflare Pages / Edit）权限，不使用全局 API Key 或本机 OAuth 凭据。轮换时更新同名 Secret 即可。
+- 明确选中并提交到 `main` 的公开证据会自动上线；本地 `var/`、数据库和未导出的运行不参与站点构建，不会因为 Git 自动部署而公开。
+
 ## 公开证据
 
 仓库内 `evidence/` 包含：
