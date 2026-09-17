@@ -116,11 +116,13 @@ pnpm dev
 
 执行 `pnpm check && pnpm build && pnpm verify:build` 会生成公开边界内的正文与证据页面并检查内部链接。该命令只构建本地静态产物，不部署站点。
 
-自动部署由 `.github/workflows/docs.yml`（Public site CI and deployment）负责，保留现有 Cloudflare Pages Direct Upload 项目 `text-to-sql-arena` 和域名：
+自动部署使用 Cloudflare Pages 原生 Git 集成：项目 `text-to-sql-arena-git` 直接连接 `rockythink/text-to-sql-arena`，生产域名为 `arena.ss-data.cc`。
 
-- `main` 上的推送涉及 `site/**`、`docs/**`、`evidence/**`、`frontend/public/fonts/**` 或该工作流时，自动检查、构建并发布；也可在 GitHub Actions 对 `main` 手动运行。
-- PR 只检查和构建，不部署；只有站点检查、构建和生成页面与链接验证全部通过，独立部署任务才上传同一次运行保存的 `site/dist` 产物。生产工作流串行运行，不取消正在执行的生产发布。
-- GitHub Actions Secrets 使用 `CLOUDFLARE_API_TOKEN` 和 `CLOUDFLARE_ACCOUNT_ID`；令牌仅授予目标账户的 Pages Write（控制台中的 Cloudflare Pages / Edit）权限，不使用全局 API Key 或本机 OAuth 凭据。轮换时更新同名 Secret 即可。
+- `main` 的每次推送由 Cloudflare 自动克隆源码、检查、构建和部署；其他分支生成预览部署，不覆盖生产。
+- Cloudflare 构建根目录为 `site`，输出目录为 `dist`，使用 v3 构建镜像。构建命令为 `pnpm install --frozen-lockfile && pnpm check && pnpm build && pnpm verify:build`；任一步骤失败都不会发布该次产物。
+- 生产与预览的构建变量均在 Cloudflare 项目设置中维护：`NODE_VERSION=22`、`PNPM_VERSION=10.15.1`、`SKIP_DEPENDENCY_INSTALL=true`、`SITE_URL=https://arena.ss-data.cc`、`SITE_BASE=/`。跳过默认依赖安装，统一由构建命令按锁文件安装。
+- `.github/workflows/docs.yml` 仅保留站点 CI 检查，不再上传或部署；GitHub Actions 不需要 Cloudflare 部署密钥。旧的 `site/wrangler.toml` 已移除，避免覆盖控制台中的构建变量。
+- 旧 Direct Upload 项目 `text-to-sql-arena` 仅保留历史部署，不再绑定生产域名，也不再接收 Actions 发布。
 - 明确选中并提交到 `main` 的公开证据会自动上线；本地 `var/`、数据库和未导出的运行不参与站点构建，不会因为 Git 自动部署而公开。
 
 ## 公开证据
