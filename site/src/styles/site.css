@@ -39,10 +39,9 @@ main { min-height: 70vh; }
 .kicker { margin: 0 0 12px; color: var(--lime); font: 650 14px/1.5 var(--mono); }
 .page-frame, .hero-copy, .report-copy { padding: clamp(40px, 7vw, 80px) clamp(20px, 4vw, 48px); }
 .page-title, .hero-title, .report-copy h1, .case-evidence-hero h1 { max-width: 850px; margin: 0; font: 720 clamp(32px, 5vw, 40px)/1.08 var(--display); letter-spacing: -.035em; text-wrap: balance; }
-.hero-title span { color: var(--lime); }
 .page-lede { max-width: 780px; margin: 20px 0 0; color: #cbd1cb; font-size: 18px; line-height: 1.65; }
 .hero { border-bottom: 1px solid var(--line); }
-.editorial-hero .hero-copy { min-height: 420px; display: flex; flex-direction: column; justify-content: center; }
+.hero-copy { padding-block: 40px; }
 .hero-actions, .story-actions, .evidence-actions, .proposal-actions { display: flex; flex-wrap: wrap; gap: 10px; margin-top: 24px; }
 .button-link { min-height: 44px; padding: 9px 14px; display: inline-flex; align-items: center; justify-content: center; border: 1px solid var(--line-strong); border-radius: 0; color: var(--paper); background: transparent; font: 650 14px/1.4 var(--body); text-decoration: none; cursor: pointer; }
 .button-link:hover { border-color: var(--paper); background: var(--panel-2); }
@@ -179,7 +178,7 @@ td small { display: block; color: var(--muted); font-size: 14px; }
 }
 @media (max-width: 640px) {
   .site-shell { border-inline: 0; }.masthead { display: block; }.masthead nav { margin-top: 14px; justify-content: flex-start; gap: 4px 16px; }
-  .editorial-hero .hero-copy { min-height: 0; }.page-lede { font-size: 16px; }
+  .page-lede { font-size: 16px; }
   .hero-rail,.rail-stats,.scoreboard,.round-answer-grid,.case-model-output,.proposal-row { grid-template-columns: 1fr; }.rail-label,.rail-stat,.rail-proof { border: 0; border-bottom: 1px solid var(--line); }.rail-stat:last-child { border-bottom: 0; }
   .scoreboard-team,.round-answer-grid article,.case-model-output article { border-right: 1px solid var(--line); border-bottom: 0; }.scoreboard-team:last-child { border-bottom: 1px solid var(--line); }
   .round-row { grid-template-columns: 40px 1fr; }.round-results { grid-template-columns: 1fr; }.round-results > div { border-right: 0; border-bottom: 1px solid var(--line); }

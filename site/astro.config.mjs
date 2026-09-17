@@ -13,7 +13,7 @@ export default defineConfig({
   integrations: [
     sitemap(),
     starlight({
-      title: "SQL 擂台",
+      title: "SQL 模型评测台",
       description: "Text-to-SQL 评测报告、报告证据、测试用例与评测方法。",
       favicon: "/favicon.svg",
       customCss: ["./src/styles/starlight.css"],

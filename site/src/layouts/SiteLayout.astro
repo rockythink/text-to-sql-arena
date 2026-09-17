@@ -27,7 +27,7 @@ const base = import.meta.env.BASE_URL;
         <nav aria-label="主导航"><a class:list={[{ active: current === "runs" }]} href={`${base}runs/`}>评测报告</a><a class:list={[{ active: current === "benchmarks" }]} href={`${base}benchmarks/`}>测试用例</a><a class:list={[{ active: current === "docs" }]} href={`${base}docs/`}>评测方法</a><a href="https://github.com/rockythink/text-to-sql-arena">源与证据 ↗</a></nav>
       </header>
       <main id="main"><slot /></main>
-      <footer class="site-footer"><p><b>拾穗数据工作室</b><br/>公开报告、题库与可复核证据</p><p>综合得分不是正确率。小样本不代表跨版本稳定性。</p><a href="https://github.com/rockythink/text-to-sql-arena">GitHub 仓库 ↗</a></footer>
+      <footer class="site-footer"><p><b>拾穗数据工作室</b></p><a href={`${base}docs/methodology/`}>评分方法</a><a href="https://github.com/rockythink/text-to-sql-arena">GitHub 仓库 ↗</a></footer>
     </div>
   </body>
 </html>

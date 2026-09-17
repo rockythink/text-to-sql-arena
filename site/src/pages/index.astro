@@ -13,15 +13,14 @@ const keyRounds = (latest ? getCaseRounds(latest.report) : [])
   .slice(0, 3);
 const sampleSize = latest?.report.selected_case_keys.length ?? 0;
 ---
-<SiteLayout title="首页" description="有证据可复核的 Text-to-SQL 实测报道：结论、关键回合、业务题意与完整原始记录。" current="home">
-  <header class="hero editorial-hero">
+<SiteLayout title="首页" description="Text-to-SQL 模型评测结果、逐题评分、测试用例与原始记录。" current="home">
+  <header class="hero">
     <div class="hero-copy">
-      <p class="kicker">公开评测报道 · 结论可回到证据</p>
-      <h1 class="hero-title">模型写 SQL，<br/><span>我们把关键回合摊开讲。</span></h1>
-      <p class="page-lede">这里不拿一次高分冒充长期能力。每篇报告同时给出业务题意、固定评分、失败记录和原始证据，让“为什么得这个分”可以被复核。</p>
+      <h1 class="hero-title">Text-to-SQL 评测</h1>
+      <p class="page-lede">查看模型得分、逐题结果、测试用例和原始记录。</p>
       <div class="hero-actions">
-        {latest && <a class="button-link primary" href={`${base}runs/${runSlug(latest.report.id)}/`}>读最新比赛报道</a>}
-        <a class="button-link" href={`${base}benchmarks/`}>查看真实题库</a>
+        {latest && <a class="button-link primary" href={`${base}runs/${runSlug(latest.report.id)}/`}>最新评测报告</a>}
+        <a class="button-link" href={`${base}benchmarks/`}>测试用例</a>
       </div>
     </div>
     <aside class="hero-rail" aria-label="公开证据规模">
@@ -38,9 +37,9 @@ const sampleSize = latest?.report.selected_case_keys.length ?? 0;
   {latest && <>
     <section class="section lead-story">
       <div class="story-heading">
-        <p class="kicker">最新一场 · {formatDate(latest.report.created_at)}</p>
-        <h2>这次测到了什么</h2>
-        <p>{latest.report.models.length} 组模型在同一套 {sampleSize} 道题上的固定快照。综合得分是多项规则的加权分，不是正确率；这个小样本只能说明本次题库与配置下的表现，不能推出稳定赢家。</p>
+        <p class="kicker">运行 #{latest.report.id} · {formatDate(latest.report.created_at)}</p>
+        <h2>最新评测结果</h2>
+        <p>{latest.report.models.length} 个模型，{sampleSize} 道题。综合得分为规则加权分，不是正确率；结果仅适用于本次题库和配置。</p>
       </div>
       <div class="scoreboard" aria-label={`运行 ${latest.report.id} 综合得分`}>
         {latest.report.models.map((model, index) => <article class:list={["scoreboard-team", index % 2 === 0 ? "team-cyan" : "team-orange"]}>
@@ -51,13 +50,13 @@ const sampleSize = latest?.report.selected_case_keys.length ?? 0;
         </article>)}
       </div>
       <div class="story-actions">
-        <a class="button-link primary" href={`${base}runs/${runSlug(latest.report.id)}/`}>逐题读完整报告</a>
-        <a class="button-link" href="https://github.com/rockythink/text-to-sql-arena/tree/main/evidence">核验原始证据 ↗</a>
+        <a class="button-link primary" href={`${base}runs/${runSlug(latest.report.id)}/`}>查看报告</a>
+        <a class="button-link" href="https://github.com/rockythink/text-to-sql-arena/tree/main/evidence">原始数据 ↗</a>
       </div>
     </section>
 
     {keyRounds.length > 0 && <section class="section rounds-section">
-      <div class="section-heading"><h2>改变比分的关键回合</h2><p>按全部计划尝试的每题均分差排列，只陈述证据中发生的事。</p></div>
+      <div class="section-heading"><h2>题目得分差异</h2><p>按模型间每题均分差降序排列，均分包含全部计划尝试。</p></div>
       <div class="round-list">
         {keyRounds.map((round, index) => <article class="round-row">
           <div class="round-index">{String(index + 1).padStart(2, "0")}</div>
@@ -72,7 +71,7 @@ const sampleSize = latest?.report.selected_case_keys.length ?? 0;
   </>}
 
   <section class="section">
-    <div class="section-heading"><h2>更多运行记录</h2><p>失败、取消和中断也保留；缺失证据就显示未知，不补故事。</p></div>
+    <div class="section-heading"><h2>最近运行</h2></div>
     <div class="run-list">{runs.slice(0, 4).map(({ index: runIndex, report }) => <RunCard index={runIndex} report={report} compact />)}</div>
     <div class="story-actions"><a class="button-link" href={`${base}runs/`}>浏览全部运行</a></div>
   </section>

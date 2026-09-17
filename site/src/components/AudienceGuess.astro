@@ -7,17 +7,17 @@ const { roundKey, options } = Astro.props;
 ---
 <section class="audience-guess" data-guess={roundKey}>
   <div>
-    <h3>先猜这一题</h3>
-    <p>哪组选手的本题全部作答更可能匹配金标？选择只保存在你的浏览器，不上传，也不生成票数。下方完整报告仍可查阅，这不是防止提前查看答案的盲测。</p>
+    <h3>结果预测（可选）</h3>
+    <p>选择你认为本题全部作答结果正确的模型。选择仅保存在本机，不上传、不计票；也可直接展开结果对比。这不是盲测。</p>
   </div>
   <div class="guess-options" role="group" aria-label="选择你猜测结果正确的模型">
     {options.map((option, index) => (
-      <button type="button" data-choice={index} data-label={option.label} data-verdict={option.verdict}>选手 {String.fromCharCode(65 + index)}</button>
+      <button type="button" data-choice={index} data-label={option.label} data-verdict={option.verdict}>模型 {String.fromCharCode(65 + index)}</button>
     ))}
     <button type="button" data-choice="unknown">都不确定</button>
   </div>
-  <p class="guess-result" data-guess-result aria-live="polite">选择后揭晓证据中的结果比较结论。</p>
-  <details data-guess-evidence><summary>直接查看本题证据（跳过竞猜）</summary><slot/></details>
+  <p class="guess-result" data-guess-result aria-live="polite">选择后显示根据评分分项派生的结果比较。</p>
+  <details data-guess-evidence><summary>查看结果对比</summary><slot/></details>
 </section>
 <script>
   for (const root of document.querySelectorAll<HTMLElement>("[data-guess]")) {
@@ -31,7 +31,7 @@ const { roundKey, options } = Astro.props;
         .filter((button) => button.dataset.verdict)
         .map((button) => `${button.dataset.label}：${button.dataset.verdict === "correct" ? "全部作答结果正确" : button.dataset.verdict === "incorrect" ? "作答未全部正确" : "证据不足"}`)
         .join("；");
-      if (result) result.textContent = `已揭晓（页面根据结果比较分项派生）：${evidence}。这不是观众投票，也不代表跨运行稳定性。`;
+      if (result) result.textContent = `结果比较（根据评分分项派生）：${evidence}。`;
       try { localStorage.setItem(`sql-arena-guess:${root.dataset.guess}`, selected.dataset.choice ?? "unknown"); } catch {}
     };
     for (const button of buttons) button.addEventListener("click", () => reveal(button));

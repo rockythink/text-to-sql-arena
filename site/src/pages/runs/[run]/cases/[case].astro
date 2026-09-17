@@ -101,7 +101,7 @@ const eventTime = (value: string) => new Intl.DateTimeFormat("zh-CN", {
       <div><h2>调用请求（{requestEvents.length}）</h2></div>
       <p>按事件序号排列；密钥和 Authorization 已移除。</p>
     </div>
-    {!hasCapturedEnvelope && <p class="evidence-gap"><strong>历史证据边界：</strong>完整 Prompt 已保存，但这次 <code>{model.adapter_kind}</code> 记录没有保存底层 HTTP 报文或 CLI 参数。本站不会把推测内容伪装成原始请求；未来运行会在 <code>provider.requested</code> 中记录脱敏后的完整调用信封。</p>}
+    {!hasCapturedEnvelope && <p class="evidence-gap"><strong>历史调用记录：</strong>本次 <code>{model.adapter_kind}</code> 记录未保存完整调用信封，底层 HTTP 报文或 CLI 参数不可用。已保存的请求字段见下方事件记录。</p>}
     <div class="event-ledger request-ledger">
       {requestEvents.map((event, position) => <article class="event-record">
         <div class="event-record-head"><b>请求 #{position + 1}</b><code>SEQ {event.seq}</code><time>{eventTime(event.created_at)} UTC</time></div>

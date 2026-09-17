@@ -21,15 +21,15 @@ const compactNumber = (value: number | null) => value == null ? "—" : new Intl
 const compactUsd = (value: number | null) => value == null ? "不可估算" : `$${value.toFixed(value < .01 ? 6 : 4)}`;
 const compactTime = (value: number | null) => value == null ? "—" : value >= 1000 ? `${(value / 1000).toFixed(2)}s` : `${value.toFixed(0)}ms`;
 ---
-<SiteLayout title={`运行 #${report.id}`} description={`运行 #${report.id} 的实测结论、关键回合、逐题评分与完整证据。`} current="runs">
+<SiteLayout title={`运行 #${report.id}`} description={`运行 #${report.id} 的模型得分、逐题结果与原始记录。`} current="runs">
   <header class="report-hero">
     <div class="report-copy">
-      <p class="kicker">运行 #{String(report.id).padStart(4, "0")} · {statusLabel(report.status)} · {formatDate(report.created_at)}</p>
-      <h1>一场可复核的 SQL 实测</h1>
-      <p class="page-lede">{report.models.length ? `${report.models.map((model) => displayModelName(model.name)).join(" 与 ")} 在 ${cases.length} 道固定题上的单次记录。` : "这次运行没有完成模型输出。"}综合得分不是正确率；本页不把单次、小样本结果写成长期稳定性。</p>
+      <p class="kicker">{statusLabel(report.status)} · {formatDate(report.created_at)}</p>
+      <h1>运行 #{report.id} 评测报告</h1>
+      <p class="page-lede">{report.models.length ? `${report.models.map((model) => displayModelName(model.name)).join(" 与 ")}，${cases.length} 道题。` : "这次运行没有完成模型输出。"}综合得分为规则加权分，不是正确率。</p>
       {report.fairness.comparison_mode === "controlled_harness" ? <p class="fairness-note"><strong>统一 Pi 调用条件：</strong>无工具、单次作答。订阅/API 通道及服务端条件仍需披露，不等于完全相同的裸模型条件。{report.fairness.differences.length > 0 && ` 已记录差异：${report.fairness.differences.join("、")}。`}</p> : !report.fairness.pure_model_comparison && <p class="fairness-note"><strong>比较条件存在差异：</strong>{report.fairness.differences.join("、") || report.fairness.comparison_mode}。阅读模型间差距时必须保留这一前提。</p>}
-      {report.status === "completed_with_errors" && <p class="fairness-note"><strong>本场并非全量成功：</strong>{totalFailures} 个失败案例已按固定规则计分，逐题证据没有被隐藏。</p>}
-      <div class="story-actions"><a class="button-link primary" href="#rounds">读关键回合</a><a class="button-link" href={`${evidenceUrl}/report.json`}>原始报告 JSON ↗</a><a class="button-link" href={`${evidenceUrl}/events.jsonl`}>事件 JSONL ↗</a></div>
+      {report.status === "completed_with_errors" && <p class="fairness-note"><strong>失败记录：</strong>{totalFailures} 个失败案例已按固定规则计分，详情见逐题结果。</p>}
+      <div class="story-actions"><a class="button-link primary" href="#all-cases">逐题结果</a><a class="button-link" href={`${evidenceUrl}/report.json`}>原始报告 JSON ↗</a><a class="button-link" href={`${evidenceUrl}/events.jsonl`}>事件 JSONL ↗</a></div>
     </div>
     <div class="report-scores">
       {report.models.map((model, index) => <article class:list={["report-score", index % 2 === 0 ? "team-cyan" : "team-orange"]}>
@@ -41,16 +41,16 @@ const compactTime = (value: number | null) => value == null ? "—" : value >= 1
   </header>
 
   <section class="section reading-guide">
-    <div><strong>{cases.length}</strong><span>本场题目</span></div><div><strong>{report.attempts}</strong><span>每题尝试次数</span></div><div><strong>{totalFailures}</strong><span>失败案例</span></div>
+    <div><strong>{cases.length}</strong><span>题目数量</span></div><div><strong>{report.attempts}</strong><span>每题尝试次数</span></div><div><strong>{totalFailures}</strong><span>失败案例</span></div>
     <p>样本边界：结论仅适用于此题库哈希、模型版本、适配器和参数快照。跨版本、跨运行稳定性需要独立复测。</p>
   </section>
 
   {firstKeyRound && <section class="section feature-round" id="rounds">
-    <div class="section-heading"><h2>关键回合：{firstKeyRound.title}</h2><p>按每题全部计划尝试均分，这是本场模型间分差最大的题。先做一个只留在本机的判断，再看证据。</p></div>
+    <div class="section-heading"><h2>分差最大的题目：{firstKeyRound.title}</h2><p>分差按每个模型在该题全部计划尝试的平均得分计算。</p></div>
     <AudienceGuess roundKey={`${report.id}:${firstKeyRound.stableKey}`} options={firstKeyRound.models.map(({ model, verdict }) => ({ label: displayModelName(model.name), verdict }))}>
       <div class="round-answer-grid">
         {firstKeyRound.models.map(({ model, results, mean, verdict }, index) => <article class:list={[index % 2 === 0 ? "team-cyan" : "team-orange"]}>
-          <h3>选手 {String.fromCharCode(65 + index)} · <ModelIdentity compact name={model.name} modelId={model.resolved_model_id ?? model.requested_model_id} adapterKind={model.adapter_kind}/></h3>
+          <h3>模型 {String.fromCharCode(65 + index)} · <ModelIdentity compact name={model.name} modelId={model.resolved_model_id ?? model.requested_model_id} adapterKind={model.adapter_kind}/></h3>
           <div class="round-verdict"><b>{scoreText(mean)}</b><span>全部 {report.attempts} 次作答均分 · {resultVerdictLabel(verdict)}</span></div>
           {results.map((result) => <div><p>A{result.attempt} · {result.visible_summary ?? result.error_message ?? "没有可见摘要。"}</p><a class="text-link" href={`${base}runs/${runSlug(report.id)}/cases/case-run-${String(result.id).padStart(5, "0")}/`}>查看 A{result.attempt} 的执行与评分证据 →</a></div>)}
         </article>)}
@@ -60,7 +60,7 @@ const compactTime = (value: number | null) => value == null ? "—" : value >= 1
   </section>}
 
   {report.models.length > 0 && <section class="section">
-    <div class="section-heading"><h2>得分与资源账单</h2><p>新 efficiency-v2 按业务结果正确题数归一；旧 efficiency-v1 保留综合得分 ÷ 100 的折算口径，两种指标不能混排。记录不完整时不估算单位正确题消耗。</p></div>
+    <div class="section-heading"><h2>得分与资源消耗</h2><p>新 efficiency-v2 按业务结果正确题数归一；旧 efficiency-v1 保留综合得分 ÷ 100 的折算口径，两种指标不能混排。记录不完整时不估算单位正确题消耗。</p></div>
     <div class="case-table-wrap"><table class="case-table"><thead><tr><th>指标</th>{efficiency.map(({ model }) => <th>{displayModelName(model.name)}</th>)}</tr></thead><tbody>
       <tr><td><b>综合得分</b><br/><small>固定规则加权 / 100</small></td>{efficiency.map(({ model }) => <td>{scoreText(model.official_score)}</td>)}</tr>
       <tr><td><b>Token / 归一单位</b></td>{efficiency.map(({ metrics }) => <td>{compactNumber((metrics.per_correct_case ?? metrics.per_correct_case_equivalent)?.tokens ?? null)}<small>{metrics.metric_schema_version === "efficiency-v2" ? "每正确题" : "每得分折算题"} · {metrics.tokens ? `${metrics.coverage.tokens.measured}/${metrics.coverage.tokens.total} 题有记录` : "未记录"}</small></td>)}</tr>
@@ -70,12 +70,12 @@ const compactTime = (value: number | null) => value == null ? "—" : value >= 1
   </section>}
 
   {categories.length > 0 && <section class="section split-section">
-    <div class="section-heading"><h2>本场分项</h2><p>分项仍是加权得分，不等于真实业务正确率。</p></div>
+    <div class="section-heading"><h2>分项得分</h2><p>分项为加权得分，不是业务结果正确率。</p></div>
     <div class="case-table-wrap"><table class="category-table"><thead><tr><th>题目维度</th>{report.models.map((model) => <th>{displayModelName(model.name)}</th>)}</tr></thead><tbody>{categories.map((category) => <tr><td>{category}</td>{report.models.map((model) => <td>{model.categories[category]?.toFixed(2) ?? "—"}</td>)}</tr>)}</tbody></table></div>
   </section>}
 
   <section class="section" id="all-cases">
-    <div class="section-heading"><h2>全部逐题结果</h2><p>数字为全部计划尝试均分；失败保留在分母，未收场显示未知。展开可查看每一次作答，而不是只取首次结果。</p></div>
+    <div class="section-heading"><h2>逐题结果</h2><p>得分为全部计划尝试的均分，失败计入分母，未完成显示未知。展开可查看每次作答。</p></div>
     {cases.length ? <div class="case-ledger">{cases.map((item) => <details>
       <summary><span><b>{item.title}</b><code>{item.stableKey}</code></span><span>{item.models.map(({ mean }) => scoreText(mean)).join(" / ")}</span></summary>
       <div class="case-model-output">{item.models.map(({ model, results, verdict }, index) => <article class:list={[index % 2 === 0 ? "team-cyan" : "team-orange"]}>
@@ -88,7 +88,7 @@ const compactTime = (value: number | null) => value == null ? "—" : value >= 1
   </section>
 
   <section class="section evidence-footer">
-    <div class="section-heading"><h2>复测与验真入口</h2><p>先核对冻结配置和哈希，再复现。同一模型名不代表同一模型版本。</p></div>
+    <div class="section-heading"><h2>配置与校验摘要</h2><p>复测需使用对应的冻结配置和题库哈希。同一模型名不一定对应同一模型版本。</p></div>
     <div class="protocol-grid">{Object.entries(report.protocol).map(([key, value]) => <div class="protocol-item"><span>{key}</span><code>{String(value ?? "null")}</code></div>)}<div class="protocol-item"><span>suite hash</span><code>{report.suite_content_hash}</code></div><div class="protocol-item"><span>bundle sha256</span><code>{index.bundle_sha256}</code></div><div class="protocol-item"><span>report schema</span><code>{report.report_schema_version}</code></div></div>
     <div class="story-actions"><a class="button-link primary" href={`${evidenceUrl}/report.json`}>报告 JSON ↗</a><a class="button-link" href={`${base}benchmarks/`}>题库版本</a><a class="button-link" href={`${base}docs/methodology/`}>评分方法</a></div>
   </section>

@@ -4,15 +4,14 @@ import SiteLayout from "../../layouts/SiteLayout.astro";
 import { formatDate, getSuites, githubEvidenceRoot } from "../../lib/evidence";
 const suites = (await getSuites()).sort((a, b) => b.version - a.version);
 ---
-<SiteLayout title="测试用例" description="浏览已发布、哈希锁定的真实业务题库版本，并在本地整理新的挑战提案。" current="benchmarks">
+<SiteLayout title="测试用例" description="已发布的题库版本、数据、参考结果与测试用例提案。" current="benchmarks">
   <header class="page-frame benchmark-hero">
-    <p class="kicker">题库不是题目清单，而是一份可复现合同</p>
-    <h1 class="page-title">模型到底在解什么业务问题</h1>
-    <p class="page-lede">每个公开版本同时冻结 Schema、种子数据、语义口径、Prompt、金标与比较规则。发布后不原地改题；修正会进入新版本。</p>
+    <h1 class="page-title">测试用例</h1>
+    <p class="page-lede">每个版本包含 Schema、种子数据、语义口径、Prompt、金标与比较规则。已发布版本不可修改，修正需发布新版本。</p>
   </header>
 
   <section class="section">
-    <div class="section-heading"><h2>已发布版本</h2><p>数字只是规模，不代表难度或覆盖完整度。进入源文件可核对每一道题和金标。</p></div>
+    <div class="section-heading"><h2>已发布版本</h2><p>源文件包含各版本的题目、数据和金标结果。</p></div>
     <div class="suite-list">
       {suites.map((suite) => <article class="suite-card">
         <header><p>版本 {String(suite.version).padStart(2, "0")} · {formatDate(suite.published_at)}</p><h2>{suite.name}</h2><p>{suite.description}</p></header>
@@ -25,7 +24,7 @@ const suites = (await getSuites()).sort((a, b) => b.version - a.version);
   </section>
 
   <section class="section boundary-section">
-    <div class="section-heading"><h2>答案如何与模型隔离</h2><p>公开后你能看到金标，不代表模型运行时看到了答案。</p></div>
+    <div class="section-heading"><h2>模型输入与评分流程</h2><p>模型输入不包含 Reference SQL 或金标结果。</p></div>
     <ol class="method-grid">
       <li><b>01</b><h3>冻结题库</h3><p>维护者用 Reference SQL 生成并验证金标结果。</p></li>
       <li><b>02</b><h3>裁剪输入</h3><p>模型只收到结构、语义、业务问题、方言规则和输出合同。</p></li>
