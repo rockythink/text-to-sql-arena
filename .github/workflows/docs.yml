@@ -1,4 +1,4 @@
-name: Static site validation
+name: Public site CI and deployment
 
 on:
   push:
@@ -23,7 +23,7 @@ permissions:
 
 concurrency:
   group: docs-${{ github.ref }}
-  cancel-in-progress: true
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
 
 jobs:
   build:
@@ -64,3 +64,40 @@ jobs:
           SITE_BASE: /
         run: pnpm verify:build
 
+      - name: Save verified public site
+        if: github.ref == 'refs/heads/main' && github.event_name != 'pull_request'
+        uses: actions/upload-artifact@v4
+        with:
+          name: public-site
+          path: site/dist
+          if-no-files-found: error
+
+  deploy:
+    name: Deploy public site to production
+    needs: build
+    if: github.ref == 'refs/heads/main' && github.event_name != 'pull_request'
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    environment:
+      name: production
+      url: https://arena.ss-data.cc
+    steps:
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
+      - name: Download verified public site
+        uses: actions/download-artifact@v4
+        with:
+          name: public-site
+          path: dist
+
+      - name: Deploy to existing Cloudflare Pages project
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+        run: >-
+          npx --yes wrangler@4.123.0 pages deploy dist
+          --project-name=text-to-sql-arena
+          --branch=main
+          --commit-hash="$GITHUB_SHA"
